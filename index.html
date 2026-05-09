@@ -405,7 +405,7 @@ function renderMenus() {
         </div>
         <div class="menu-item-action">
           ${qty === 0
-            ? `<button class="btn-add" onclick="addItem('${item.menuId}')">+</button>`
+            ? `<button class="btn-add" onclick="addItem('${item.menuId}')" style="min-width:44px;min-height:44px;">+</button>`
             : `<div class="qty-ctrl">
                 <button class="qty-btn" onclick="removeItem('${item.menuId}')">−</button>
                 <div class="qty-num">${qty}</div>

@@ -363,6 +363,12 @@ function filterOrders(status, el) {
 function renderOrders() {
   const wrap = document.getElementById("orders-wrap");
   let orders = allOrders;
+  // จำ card ที่เปิดอยู่ก่อน render ใหม่
+  const openCards = new Set();
+  document.querySelectorAll(".order-body.open").forEach(el => {
+    openCards.add(el.id.replace("body-", ""));
+  });
+  
   if (currentFilter === "PROCESS") {
     orders = allOrders.filter(o => ["ASSIGNED","PICKED","DELIVERING"].includes(o.status));
   } else if (currentFilter !== "all") {
@@ -452,6 +458,10 @@ function renderOrders() {
       </div>
     </div>`;
   }).join("");
+  openCards.forEach(orderId => {
+    const body = document.getElementById("body-" + orderId);
+    if (body) body.classList.add("open");
+  });
 }
 
 function getActions(o, needDeposit) {

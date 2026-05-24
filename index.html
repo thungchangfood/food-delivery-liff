@@ -246,6 +246,14 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       </div>
     </div>
     <div class="cart-section">
+      <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
+      <div class="fg" style="display:flex;gap:8px;align-items:center;">
+         <input class="fi" id="promo-input" placeholder="กรอกโค้ดส่วนลด (ถ้ามี)" style="flex:1;">
+         <button onclick="applyPromo()" style="padding:10px 14px;background:#06C755;color:white;border:none;border-radius:10px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap;">ใช้โค้ด</button>
+      </div>
+      <div id="promo-msg" style="font-size:12px;padding:0 16px 8px;display:none;"></div>
+    </div>
+    <div class="cart-section">
       <div class="cart-section-title">💰 ชำระเงิน</div>
       <div class="fg">
         <label class="fl">วิธีชำระ</label>
@@ -367,6 +375,25 @@ async function apiPost(body) {
     body: JSON.stringify(body)
   });
   return r.json();
+}
+
+// ══ PROMO ═════════════════════════════════════════════
+let promoApplied = false;
+
+function applyPromo() {
+  const code = document.getElementById("promo-input").value.trim();
+  const msg = document.getElementById("promo-msg");
+  if (!code) { 
+    msg.style.display = "none"; 
+    promoApplied = false;
+    return; 
+  }
+  // แค่ mark ไว้ก่อน ระบบเช็คตอน submit จริง
+  promoApplied = true;
+  msg.style.display = "block";
+  msg.style.color = "#06C755";
+  msg.textContent = "✅ ใส่โค้ดแล้ว ระบบจะตรวจสอบตอนสั่งอาหารครับ";
+  renderCart(); // รีเฟรช summary
 }
 
 // ══ INIT ══════════════════════════════════════════════
@@ -788,6 +815,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
       action: "createOrder",
       memberId: currentMember.memberId,
       restaurantId: currentShop.restaurantId,
+      promoCode: document.getElementById("promo-input")?.value.trim() || "",
       items: items.map(({item,qty}) => ({ menuId: item.menuId, name: item.menuName, price: item.price, qty })),
       address, note,
       lat: userLat, lng: userLng,

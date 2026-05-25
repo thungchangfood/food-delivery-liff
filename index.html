@@ -818,7 +818,7 @@ async function submitOrder() {
         await apiGet(
           "action=getSystemStatus"
         );
-      console.log("SYSTEM STATUS", res);
+      alert(JSON.stringify(res));
       if (res.success) {
         console.log(res);
         bankAccount =

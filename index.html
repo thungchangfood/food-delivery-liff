@@ -818,6 +818,7 @@ async function submitOrder() {
         await apiGet(
           "action=getSystemStatus"
         );
+      console.log("SYSTEM STATUS", res);
       if (res.success) {
         bankAccount = res.data.bank_account || "";
         bankName = res.data.bank_name || "";

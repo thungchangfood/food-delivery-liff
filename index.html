@@ -827,11 +827,30 @@ async function submitOrder() {
 
   // ถ้ายอดเกิน 300 → ไปหน้าสรุปก่อน
   if (needDeposit) {
-    await showDepositPage(items, subtotal, delivery, total, depositAmount);
+    showPage("page-deposit");
+    document.getElementById("dep-items").innerHTML =
+      items.map(({item,qty}) =>
+        `<div class="track-item-row">
+          <span>${item.menuName} ×${qty}</span>
+          <span>฿${item.price * qty}</span>
+        </div>`
+      ).join("");
+
+    document.getElementById("dep-subtotal").textContent = `฿${subtotal}`;
+    document.getElementById("dep-delivery").textContent = `฿${delivery}`;
+    document.getElementById("dep-total").textContent = `฿${total}`;
+    document.getElementById("dep-deposit-amount").textContent = `฿${depositAmount}`;
+    document.getElementById("dep-bank-account").textContent =
+      bankAccount || "-";
+    document.getElementById("dep-bank-name").textContent =
+      bankName || "-";
+
     return;
   }
-
-  async function doCreateOrder(name, phone, address, note, payment, items) {
+  await doCreateOrder(name, phone, address, note, payment, items);
+}
+  
+async function doCreateOrder(name, phone, address, note, payment, items) {
 
   const btn =
     document.getElementById("order-btn");

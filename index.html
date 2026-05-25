@@ -1172,6 +1172,28 @@ function resetAndHome() {
 
 function goTrackFromSuccess() { goTrack(); }
 
+async function submitOrderWithDeposit() {
+  const name =
+    document.getElementById("f-name").value.trim();
+  const phone =
+    document.getElementById("f-phone").value.trim();
+  const address =
+    document.getElementById("f-address").value.trim();
+  const note =
+    document.getElementById("f-note").value.trim();
+  const payment =
+    document.getElementById("f-payment").value;
+  const items = Object.values(cart);
+  await doCreateOrder(
+    name,
+    phone,
+    address,
+    note,
+    payment,
+    items
+  );
+}
+  
 init();
 </script>
 </body>

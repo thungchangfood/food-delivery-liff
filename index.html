@@ -418,7 +418,7 @@ async function applyPromo() {
       promoApplied = false;
       msg.style.color = "#EF4444";
       msg.textContent = "❌ " + res.error;
-      renderCart();
+      ();
     }
   } catch(e) {
     msg.style.color = "#EF4444";
@@ -671,11 +671,53 @@ function renderCart() {
       </div>`).join("")
     : `<div style="padding:20px;text-align:center;color:#aaa;">ยังไม่มีรายการ</div>`;
 
-  const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
-  const delivery = promoApplied ? 0 : (currentShop?.deliveryFee || 0);
-  document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
-  document.getElementById("s-delivery").textContent = promoApplied ? `฿0 (โค้ดส่งฟรี 🎉)` : `฿${delivery}`;
-  document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
+  const subtotal = items.reduce(
+    (s,{item,qty}) => s + item.price * qty,
+    0
+  );
+  const originalDelivery =
+    currentShop?.deliveryFee || 0;
+  let delivery =
+    promoApplied
+      ? 0
+      : originalDelivery;
+  if (!promoApplied && subtotal >= 180) {
+    delivery -=
+      currentShop?.gpPlan === "gp25"
+        ? 4
+        : 5;
+
+    if (delivery < 0)
+      delivery = 0;
+  }
+
+  document.getElementById("s-subtotal")
+    .textContent = `฿${subtotal}`;
+  document.getElementById("s-delivery")
+    .innerHTML = promoApplied
+      ? `<span style="color:#06C755;font-weight:bold;">
+           ฿0 (โค้ดส่งฟรี 🎉)
+         </span>`
+      : delivery < originalDelivery
+        ? `
+          <span style="
+            text-decoration:line-through;
+            color:#999;
+            margin-right:6px;
+         ">
+           ฿${originalDelivery}
+         </span>
+         <span style="
+           color:#06C755;
+           font-weight:bold;
+         ">
+           ฿${delivery}
+         </span>
+        `
+        : `฿${delivery}`;
+
+  document.getElementById("s-total")
+    .textContent = `฿${subtotal + delivery}`;
 
   // ใส่ชื่อและเบอร์จาก member
   if (currentMember) {

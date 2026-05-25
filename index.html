@@ -418,7 +418,7 @@ async function applyPromo() {
       promoApplied = false;
       msg.style.color = "#EF4444";
       msg.textContent = "❌ " + res.error;
-      ();
+      renderCart(); // แก้ไขจาก (); เป็นฟังก์ชันอัปเดตสถานะตะกร้า
     }
   } catch(e) {
     msg.style.color = "#EF4444";
@@ -815,7 +815,13 @@ async function submitOrder() {
 
   const items = Object.values(cart);
   const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
-  const delivery = currentShop?.deliveryFee || 0;
+  const originalDelivery = currentShop?.deliveryFee || 0;
+  let delivery = promoApplied ? 0 : originalDelivery;
+  if (!promoApplied && subtotal >= 180) {
+    delivery -= currentShop?.gpPlan === "gp25" ? 4 : 5;
+  if (delivery < 0) delivery = 0;
+  }
+  const total = subtotal + delivery;
   const total = subtotal + delivery;
   const needDeposit = subtotal > 300;
   const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : 0;
@@ -899,7 +905,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
       paymentType: payment,
       promoCode: document.getElementById("promo-input")?.value.trim() || "",
       subtotal, needDeposit, depositAmount,
-      deliveryFee: currentShop?.deliveryFee || 0
+      deliveryFee: delivery
     };
 
     const total = subtotal + (pendingOrderData.deliveryFee);

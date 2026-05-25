@@ -822,7 +822,6 @@ async function submitOrder() {
   if (delivery < 0) delivery = 0;
   }
   const total = subtotal + delivery;
-  const total = subtotal + delivery;
   const needDeposit = subtotal > 300;
   const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : 0;
 

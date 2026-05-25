@@ -820,8 +820,15 @@ async function submitOrder() {
         );
       console.log("SYSTEM STATUS", res);
       if (res.success) {
-        bankAccount = res.data.bank_account || "";
-        bankName = res.data.bank_name || "";
+        console.log(res);
+        bankAccount =
+          res.bank_account ||
+          res.data?.bank_account ||
+          "";
+        bankName =
+          res.bank_name ||
+          res.data?.bank_name ||
+          "";
       }
     } catch(e) {
       console.log(
@@ -1207,8 +1214,7 @@ async function submitOrderWithDeposit() {
     payment,
     items
   );
-}
-  
+}  
 init();
 </script>
 </body>

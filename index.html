@@ -389,20 +389,45 @@ async function apiPost(body) {
 // ══ PROMO ═════════════════════════════════════════════
 let promoApplied = false;
 
-function applyPromo() {
+async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();
   const msg = document.getElementById("promo-msg");
+  const btn = event.target;
+
   if (!code) { 
     msg.style.display = "none"; 
     promoApplied = false;
+    renderCart();
     return; 
   }
-  // แค่ mark ไว้ก่อน ระบบเช็คตอน submit จริง
-  promoApplied = true;
+
+  btn.disabled = true;
+  btn.textContent = "กำลังเช็ค...";
   msg.style.display = "block";
-  msg.style.color = "#06C755";
-  msg.textContent = "✅ ใส่โค้ดแล้ว ระบบจะตรวจสอบตอนสั่งอาหารครับ";
-  renderCart(); // รีเฟรช summary
+  msg.style.color = "#888";
+  msg.textContent = "กำลังตรวจสอบโค้ด...";
+
+  try {
+    const res = await apiGet("action=checkPromo&code=" + encodeURIComponent(code));
+    if (res.success) {
+      promoApplied = true;
+      msg.style.color = "#06C755";
+      msg.textContent = res.data.message + " (เหลืออีก " + res.data.remaining + " สิทธิ์)";
+      renderCart(); // อัปเดตค่าส่งเป็น 0
+    } else {
+      promoApplied = false;
+      msg.style.color = "#EF4444";
+      msg.textContent = "❌ " + res.error;
+      renderCart();
+    }
+  } catch(e) {
+    msg.style.color = "#EF4444";
+    msg.textContent = "❌ เกิดข้อผิดพลาด กรุณาลองใหม่";
+    promoApplied = false;
+  }
+
+  btn.disabled = false;
+  btn.textContent = "ใช้โค้ด";
 }
 
 // ══ INIT ══════════════════════════════════════════════
@@ -647,10 +672,10 @@ function renderCart() {
     : `<div style="padding:20px;text-align:center;color:#aaa;">ยังไม่มีรายการ</div>`;
 
   const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
-  const delivery = currentShop?.deliveryFee || 0;
+  const delivery = promoApplied ? 0 : (currentShop?.deliveryFee || 0);
   document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
-  document.getElementById("s-delivery").textContent = `฿${delivery}`;
-  document.getElementById("s-total").textContent = `฿${subtotal+delivery}`;
+  document.getElementById("s-delivery").textContent = promoApplied ? `฿0 (โค้ดส่งฟรี 🎉)` : `฿${delivery}`;
+  document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
 
   // ใส่ชื่อและเบอร์จาก member
   if (currentMember) {

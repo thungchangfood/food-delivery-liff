@@ -809,11 +809,25 @@ async function submitOrder() {
   const address = document.getElementById("f-address").value.trim();
   const note = document.getElementById("f-note").value.trim();
   const payment = document.getElementById("f-payment").value;
-
   if (!name || !phone || !address) { showToast("กรุณากรอกชื่อ เบอร์ และที่อยู่ให้ครบครับ"); return; }
   if (!userLat || !userLng) { showToast("กรุณาปักหมุดตำแหน่งก่อนครับ"); return; }
-
   const items = Object.values(cart);
+  if (!bankAccount) {
+    try {
+      const res =
+        await apiGet(
+          "action=getSystemStatus"
+        );
+      if (res.success) {
+        bankAccount = res.data.bank_account || "";
+        bankName = res.data.bank_name || "";
+      }
+    } catch(e) {
+      console.log(
+      "โหลด bank ไม่สำเร็จ"
+      );
+    }
+  }
   const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
   const originalDelivery = currentShop?.deliveryFee || 0;
   let delivery = promoApplied ? 0 : originalDelivery;

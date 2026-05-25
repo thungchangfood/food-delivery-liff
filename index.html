@@ -812,29 +812,25 @@ async function submitOrder() {
   if (!name || !phone || !address) { showToast("กรุณากรอกชื่อ เบอร์ และที่อยู่ให้ครบครับ"); return; }
   if (!userLat || !userLng) { showToast("กรุณาปักหมุดตำแหน่งก่อนครับ"); return; }
   const items = Object.values(cart);
-  if (!bankAccount) {
-    try {
-      const res =
-        await apiGet(
-          "action=getSystemStatus"
-        );
-      alert(JSON.stringify(res));
-      if (res.success) {
-        console.log(res);
-        bankAccount =
-          res.bank_account ||
-          res.data?.bank_account ||
-          "";
-        bankName =
-          res.bank_name ||
-          res.data?.bank_name ||
-          "";
-      }
-    } catch(e) {
-      console.log(
-      "โหลด bank ไม่สำเร็จ"
-      );
-    }
+  if (!bankAccount || !bankName) {
+  try {
+    const res = await apiGet("action=getSystemStatus");
+    console.log("SYSTEM STATUS =", res);
+    bankAccount =
+      res.bank_account ||
+      res.data?.bank_account ||
+      "";
+    bankName =
+      res.bank_name ||
+      res.data?.bank_name ||
+      "";
+    console.log("BANK =", bankAccount);
+    console.log("NAME =", bankName);
+
+  } catch(e) {
+    console.error(e);
+  }
+}
   }
   const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
   const originalDelivery = currentShop?.deliveryFee || 0;

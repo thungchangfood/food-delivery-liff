@@ -342,6 +342,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <div class="success-title">สั่งอาหารสำเร็จ!</div>
     <div class="success-sub">ทางร้านจะยืนยันออร์เดอร์เร็วๆ นี้<br>ติดตามสถานะได้ที่หน้าหลักครับ</div>
     <div class="order-id-box" id="success-order-id"></div>
+    <div id="countdown-wrap" style="margin-bottom:16px;text-align:center;">
+      <div style="font-size:13px;color:#888;margin-bottom:8px;">สามารถยกเลิกได้ภายใน</div>
+      <div style="font-size:36px;font-weight:700;color:#F59E0B;" id="countdown-sec">10</div>
+      <div style="font-size:12px;color:#aaa;">วินาที</div>
+    </div>
+    <button id="cancel-order-btn" onclick="cancelPendingOrder()" 
+      style="margin-bottom:16px;padding:10px 24px;background:white;border:2px solid #EF4444;color:#EF4444;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;">
+      ❌ ยกเลิกออร์เดอร์
+    </button>
     <div id="payment-info" style="display:none;" class="payment-info"></div>
     <button class="btn-green" onclick="resetAndHome()">กลับหน้าหลัก</button>
   </div>
@@ -802,6 +811,8 @@ async function submitOrderWithDeposit() {
   }
 }
 
+let pendingOrderData = null;
+let countdownTimer = null;
 async function doCreateOrder(name, phone, address, note, payment, items) {
   const btn = document.getElementById("order-btn");
   if (btn) { btn.disabled = true; btn.textContent = "กำลังส่งออร์เดอร์..."; }
@@ -811,41 +822,95 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     const needDeposit = subtotal > 300;
     const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : 0;
 
-    const res = await apiPost({
-      action: "createOrder",
+    // เก็บข้อมูลไว้ก่อน ยังไม่ส่ง API
+    pendingOrderData = {
       memberId: currentMember.memberId,
       restaurantId: currentShop.restaurantId,
-      promoCode: document.getElementById("promo-input")?.value.trim() || "",
       items: items.map(({item,qty}) => ({ menuId: item.menuId, name: item.menuName, price: item.price, qty })),
       address, note,
       lat: userLat, lng: userLng,
-      paymentType: payment
-    });
+      paymentType: payment,
+      promoCode: document.getElementById("promo-input")?.value.trim() || "",
+      subtotal, needDeposit, depositAmount,
+      deliveryFee: currentShop?.deliveryFee || 0
+    };
 
-    if (!res.success) throw new Error(res.error);
+    const total = subtotal + (pendingOrderData.deliveryFee);
 
-    const { orderId, total } = res.data;
-    document.getElementById("success-order-id").textContent = `รหัสออร์เดอร์: ${orderId}`;
-
+    // แสดงหน้า success พร้อม countdown
+    document.getElementById("success-order-id").textContent = `กำลังยืนยันออร์เดอร์...`;
     const pi = document.getElementById("payment-info");
-    if (needDeposit) {
-      pi.style.display = "block";
-      pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
-        <span style="font-size:12px;color:#666;">โอนไปที่: ${bankAccount}<br>${bankName}<br>แอดมินจะยืนยันออร์เดอร์หลังตรวจสอบสลิปครับ</span>`;
-    } else if (payment === "promptpay") {
-      pi.style.display = "block";
-      pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
-    } else {
-      pi.style.display = "none";
-    }
+    pi.style.display = "none";
 
     cart = {};
     updateCartUI();
     showPage("page-success");
+    startCountdown(10);
+
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = "สั่งอาหาร"; }
     throw e;
   }
+}
+
+async function startCountdown(seconds) {
+  const countEl = document.getElementById("countdown-sec");
+  const cancelBtn = document.getElementById("cancel-order-btn");
+  const orderIdEl = document.getElementById("success-order-id");
+
+  let remaining = seconds;
+  countEl.textContent = remaining;
+
+  countdownTimer = setInterval(async () => {
+    remaining--;
+    countEl.textContent = remaining;
+
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+
+      // ส่งออร์เดอร์เข้าระบบ
+      cancelBtn.style.display = "none";
+      document.getElementById("countdown-wrap").style.display = "none";
+      orderIdEl.textContent = "กำลังส่งออร์เดอร์...";
+
+      try {
+        const res = await apiPost({
+          action: "createOrder",
+          ...pendingOrderData
+        });
+
+        if (!res.success) throw new Error(res.error);
+
+        const { orderId, total, needDeposit, depositAmount } = res.data;
+        orderIdEl.textContent = `รหัสออร์เดอร์: ${orderId}`;
+
+        const pi = document.getElementById("payment-info");
+        if (needDeposit) {
+          pi.style.display = "block";
+          pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
+            <span style="font-size:12px;color:#666;">โอนไปที่: ${bankAccount}<br>${bankName}</span>`;
+        } else if (pendingOrderData.paymentType === "promptpay") {
+          pi.style.display = "block";
+          pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
+        }
+        pendingOrderData = null;
+      } catch(e) {
+        orderIdEl.textContent = "เกิดข้อผิดพลาด กรุณาลองใหม่";
+        showToast("เกิดข้อผิดพลาด: " + e.message);
+      }
+    }
+  }, 1000);
+}
+
+function cancelPendingOrder() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  pendingOrderData = null;
+  showToast("ยกเลิกออร์เดอร์แล้วครับ");
+  resetAndHome();
 }
 
 // ══ TRACK ORDER ═══════════════════════════════════════

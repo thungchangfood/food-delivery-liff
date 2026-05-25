@@ -831,97 +831,142 @@ async function submitOrder() {
     return;
   }
 
-  // ยอดไม่เกิน 300 → สั่งได้เลย
-  await doCreateOrder(name, phone, address, note, payment, items);
-}
+  async function doCreateOrder(name, phone, address, note, payment, items) {
 
-async function showDepositPage(items, subtotal, delivery, total, depositAmount) {
-  // ดึง bank info จาก config ถ้ายังไม่มี
-  if (!bankAccount) {
-    try {
-      const res = await apiGet("action=getSystemStatus");
-      bankAccount = res.data?.bankAccount || "-";
-      bankName = res.data?.bankName || "-";
-    } catch(_) {}
+  const btn =
+    document.getElementById("order-btn");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent =
+      "กำลังส่งออร์เดอร์...";
   }
 
-  // แสดงรายการ
-  document.getElementById("dep-items").innerHTML = items.map(({item,qty}) =>
-    `<div class="cart-item">
-      <div class="cart-item-name">${item.menuName}</div>
-      <div class="cart-item-qty">×${qty}</div>
-      <div class="cart-item-price">฿${item.price*qty}</div>
-    </div>`
-  ).join("");
-
-  document.getElementById("dep-subtotal").textContent = `฿${subtotal}`;
-  document.getElementById("dep-delivery").textContent = `฿${delivery}`;
-  document.getElementById("dep-total").textContent = `฿${total}`;
-  document.getElementById("dep-deposit-amount").textContent = `฿${depositAmount}`;
-  document.getElementById("dep-bank-account").textContent = bankAccount;
-  document.getElementById("dep-bank-name").textContent = bankName;
-
-  showPage("page-deposit");
-}
-
-async function submitOrderWithDeposit() {
-  const name = document.getElementById("f-name").value.trim();
-  const phone = document.getElementById("f-phone").value.trim();
-  const address = document.getElementById("f-address").value.trim();
-  const note = document.getElementById("f-note").value.trim();
-  const payment = document.getElementById("f-payment").value;
-  const items = Object.values(cart);
-
-  const btn = document.getElementById("dep-order-btn");
-  btn.disabled = true; btn.textContent = "กำลังส่งออร์เดอร์...";
-
   try {
-    await doCreateOrder(name, phone, address, note, payment, items);
-  } catch(e) {
-    showToast("เกิดข้อผิดพลาด: " + e.message);
-    btn.disabled = false; btn.textContent = "✅ ยืนยันสั่งอาหาร";
-  }
-}
 
-let pendingOrderData = null;
-let countdownTimer = null;
-async function doCreateOrder(name, phone, address, note, payment, items) {
-  const btn = document.getElementById("order-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "กำลังส่งออร์เดอร์..."; }
+    // คำนวณยอดอาหาร
+    const subtotal =
+      items.reduce(
+        (s,{item,qty}) =>
+          s + item.price * qty,
+        0
+      );
 
-  try {
-    const subtotal = items.reduce((s,{item,qty}) => s + item.price*qty, 0);
-    const needDeposit = subtotal > 300;
-    const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : 0;
+    // คำนวณค่าส่ง
+    const originalDelivery =
+      currentShop?.deliveryFee || 0;
 
-    // เก็บข้อมูลไว้ก่อน ยังไม่ส่ง API
+    let delivery =
+      promoApplied
+        ? 0
+        : originalDelivery;
+
+    if (
+      !promoApplied &&
+      subtotal >= 180
+    ) {
+
+      delivery -=
+        currentShop?.gpPlan === "gp25"
+          ? 4
+          : 5;
+
+      if (delivery < 0)
+        delivery = 0;
+    }
+
+    // มัดจำ
+    const needDeposit =
+      subtotal > 300;
+
+    const depositAmount =
+      needDeposit
+        ? Math.ceil(subtotal * 0.5)
+        : 0;
+
+    // เก็บข้อมูลไว้ก่อน
     pendingOrderData = {
-      memberId: currentMember.memberId,
-      restaurantId: currentShop.restaurantId,
-      items: items.map(({item,qty}) => ({ menuId: item.menuId, name: item.menuName, price: item.price, qty })),
-      address, note,
-      lat: userLat, lng: userLng,
+
+      memberId:
+        currentMember.memberId,
+
+      restaurantId:
+        currentShop.restaurantId,
+
+      items:
+        items.map(({item,qty}) => ({
+          menuId: item.menuId,
+          name: item.menuName,
+          price: item.price,
+          qty
+        })),
+
+      address,
+      note,
+
+      lat: userLat,
+      lng: userLng,
+
       paymentType: payment,
-      promoCode: document.getElementById("promo-input")?.value.trim() || "",
-      subtotal, needDeposit, depositAmount,
+
+      promoCode:
+        document.getElementById("promo-input")
+          ?.value.trim() || "",
+
+      subtotal,
+
+      needDeposit,
+
+      depositAmount,
+
       deliveryFee: delivery
     };
 
-    const total = subtotal + (pendingOrderData.deliveryFee);
+    const total =
+      subtotal + delivery;
 
-    // แสดงหน้า success พร้อม countdown
-    document.getElementById("success-order-id").textContent = `กำลังยืนยันออร์เดอร์...`;
-    const pi = document.getElementById("payment-info");
+    console.log("ORDER DATA",
+      pendingOrderData
+    );
+
+    // แสดงหน้า success
+    document.getElementById(
+      "success-order-id"
+    ).textContent =
+      `กำลังยืนยันออร์เดอร์...`;
+
+    const pi =
+      document.getElementById(
+        "payment-info"
+      );
+
     pi.style.display = "none";
 
     cart = {};
+
     updateCartUI();
+
     showPage("page-success");
+
     startCountdown(10);
 
   } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = "สั่งอาหาร"; }
-    throw e;
+
+    console.error(e);
+
+    if (btn) {
+
+      btn.disabled = false;
+
+      btn.textContent =
+        "สั่งอาหาร";
+
+    }
+
+    showToast(
+      "เกิดข้อผิดพลาด"
+    );
+
   }
 }
 

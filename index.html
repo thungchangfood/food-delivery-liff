@@ -312,8 +312,25 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       </div>
       <div style="background:white;border-radius:10px;padding:12px;">
         <div style="font-size:13px;color:#888;margin-bottom:4px;">โอนมาที่</div>
+
         <div style="font-size:15px;font-weight:700;" id="dep-bank-account">-</div>
-        <div style="font-size:13px;color:#555;" id="dep-bank-name">-</div>
+        <div style="font-size:13px;color:#555;margin-bottom:10px;" id="dep-bank-name">-</div>
+
+        <button
+          onclick="copyBankAccount()"
+          style="
+            width:100%;
+            padding:10px;
+            border:none;
+            border-radius:8px;
+            background:#06C755;
+            color:white;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+          ">
+          📋 คัดลอกเลขบัญชี
+        </button>
       </div>
     </div>
 
@@ -1205,6 +1222,25 @@ async function submitOrderWithDeposit() {
     payment,
     items
   );
+}
+
+async function copyBankAccount() {
+  const account =
+    document.getElementById("dep-bank-account")
+      .textContent
+      .trim();
+
+  if (!account || account === "-") {
+    showToast("ไม่พบเลขบัญชี");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(account);
+    showToast("📋 คัดลอกเลขบัญชีแล้ว");
+  } catch (e) {
+    showToast("คัดลอกไม่สำเร็จ");
+  }
 }  
 init();
 </script>

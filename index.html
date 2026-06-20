@@ -304,10 +304,10 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
 
     <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:16px;margin-bottom:12px;">
-      <div style="font-size:15px;font-weight:700;margin-bottom:8px;">💸 ต้องโอนมัดจำก่อน</div>
-      <div style="font-size:13px;color:#555;margin-bottom:12px;">ยอดสั่งเกิน ฿300 ต้องโอนมัดจำ 50% ก่อนครับ อีกครึ่งชำระเมื่อได้รับสินค้า</div>
+      <div id="dep-title" style="font-size:15px;font-weight:700;margin-bottom:8px;">💸 ต้องโอนมัดจำก่อน</div>
+      <div id="dep-desc" style="font-size:13px;color:#555;margin-bottom:12px;">ยอดสั่งเกิน ฿300 ต้องโอนมัดจำ 50% ก่อนครับ อีกครึ่งชำระเมื่อได้รับสินค้า</div>
       <div style="background:white;border-radius:10px;padding:12px;margin-bottom:8px;">
-        <div style="font-size:13px;color:#888;margin-bottom:4px;">ยอดมัดจำ</div>
+        <div id="dep-amount-label" style="font-size:13px;color:#888;margin-bottom:4px;">ยอดมัดจำ</div>
         <div style="font-size:24px;font-weight:700;color:#F59E0B;" id="dep-deposit-amount">฿0</div>
       </div>
       <div style="background:white;border-radius:10px;padding:12px;">
@@ -853,10 +853,11 @@ async function submitOrder() {
   }
   const total = subtotal + delivery;
   const needDeposit = subtotal > 300;
-  const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : 0;
+  const wantsTransfer = !needDeposit && payment !== "cash";
+  const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : (wantsTransfer ? total : 0);
 
-  // ถ้ายอดเกิน 300 → ไปหน้าสรุปก่อน
-  if (needDeposit) {
+  // ถ้ายอดเกิน 300 (มัดจำ) หรือเลือกโอนเองทั้งที่ยอดไม่ถึง 300 (โอนเต็ม) → ไปหน้าสรุปก่อน
+  if (needDeposit || wantsTransfer) {
     showPage("page-deposit");
     document.getElementById("dep-items").innerHTML =
       items.map(({item,qty}) =>
@@ -874,7 +875,16 @@ async function submitOrder() {
       bankAccount || "-";
     document.getElementById("dep-bank-name").textContent =
       bankName || "-";
-
+    if (needDeposit) {
+      document.getElementById("dep-title").textContent = "💸 ต้องโอนมัดจำก่อน";
+      document.getElementById("dep-desc").textContent = "ยอดสั่งเกิน ฿300 ต้องโอนมัดจำ 50% ก่อนครับ อีกครึ่งชำระเมื่อได้รับสินค้า";
+      document.getElementById("dep-amount-label").textContent = "ยอดมัดจำ";
+    } else {
+      document.getElementById("dep-title").textContent = "💸 กรุณาโอนเงินก่อน";
+      document.getElementById("dep-desc").textContent = "กรุณาโอนเงินเต็มจำนวนตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์เพื่อให้แอดมินตรวจสอบ";
+      document.getElementById("dep-amount-label").textContent = "ยอดที่ต้องโอน";
+    }
+    
     return;
   }
   await doCreateOrder(name, phone, address, note, payment, items);
@@ -924,14 +934,17 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
         delivery = 0;
     }
 
-    // มัดจำ
+    // มัดจำ (เกิน 300) หรือ ลูกค้าเลือกโอนเองทั้งที่ไม่ถึง 300 (โอนเต็ม)
     const needDeposit =
       subtotal > 300;
+
+    const wantsTransfer =
+      !needDeposit && payment !== "cash";
 
     const depositAmount =
       needDeposit
         ? Math.ceil(subtotal * 0.5)
-        : 0;
+        : (wantsTransfer ? subtotal : 0);
 
     // เก็บข้อมูลไว้ก่อน
     pendingOrderData = {
@@ -964,7 +977,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
 
       subtotal,
 
-      needDeposit,
+      needDeposit: needDeposit || wantsTransfer,
 
       depositAmount,
 

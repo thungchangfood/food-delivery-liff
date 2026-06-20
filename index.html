@@ -464,7 +464,9 @@ async function init() {
   // เช็ค member จาก lineUserId
   if (lineProfile) {
     try {
+      console.time("getMember");
       const res = await apiGet("action=getMember&lineUserId=" + lineProfile.userId);
+      console.timeEnd("getMember");
       if (res.success) {
         currentMember = res.data;
         // อัปเดต lineUserId ถ้ายังไม่มี
@@ -518,21 +520,32 @@ async function registerMember() {
 
 // ══ SYSTEM CHECK ══════════════════════════════════════
 async function checkAndLoadShops() {
-  try {
-    const res = await apiGet("action=getSystemStatus");
-    if (res.success && !res.data.open) {
-      document.getElementById("closed-msg").textContent = res.data.reason || "กรุณาติดต่อแอดมินครับ";
-      showPage("page-closed");
-      return;
-    }
-  } catch(_) {}
-  await loadShops();
+
+  const [statusRes, shopRes] = await Promise.all([
+    apiGet("action=getSystemStatus"),
+    apiGet("action=getRestaurants")
+  ]);
+
+  if (statusRes.success && !statusRes.data.open) {
+    document.getElementById("closed-msg").textContent =
+      statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+    showPage("page-closed");
+    return;
+  }
+
+  allShops = shopRes.data || [];
+
+  renderCategories();
+  renderShops(allShops);
+  showPage("page-shops");
 }
 
 // ══ SHOPS ═════════════════════════════════════════════
 async function loadShops() {
   try {
+    console.time("getRestaurants");
     const res = await apiGet("action=getRestaurants");
+    console.timeEnd("getRestaurants");
     if (!res.success) throw new Error(res.error);
     allShops = res.data;
     renderCategories();

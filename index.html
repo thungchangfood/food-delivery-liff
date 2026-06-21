@@ -532,10 +532,7 @@ async function registerMember() {
 // ══ SYSTEM CHECK ══════════════════════════════════════
 async function checkAndLoadShops() {
 
-  const [statusRes, shopRes] = await Promise.all([
-    apiGet("action=getSystemStatus"),
-    apiGet("action=getRestaurants")
-  ]);
+  const statusRes = await apiGet("action=getSystemStatus");
 
   if (statusRes.success && !statusRes.data.open) {
     document.getElementById("closed-msg").textContent =
@@ -544,6 +541,7 @@ async function checkAndLoadShops() {
     return;
   }
 
+  const shopRes = await apiGet("action=getRestaurants");
   allShops = shopRes.data || [];
 
   renderCategories();

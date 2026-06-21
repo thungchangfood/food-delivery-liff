@@ -1088,8 +1088,34 @@ async function startCountdown(seconds) {
         const pi = document.getElementById("payment-info");
         if (needDeposit) {
           pi.style.display = "block";
-          pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
-            <span style="font-size:12px;color:#666;">โอนไปที่: ${bankAccount}<br>${bankName}</span>`;
+          pi.innerHTML = 
+            💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
+            <div style="margin-top:10px;background:white;padding:10px;border-radius:8px;">
+              <div style="font-size:12px;color:#666;">โอนไปที่</div>
+              <div id="success-bank-account" style="font-size:16px;font-weight:700;">
+                ${bankAccount}
+              </div>
+              <div style="font-size:13px;color:#666;">
+                ${bankName}
+              </div>
+              <button
+                onclick="copySuccessBankAccount()"
+                style="
+                  margin-top:10px;
+                  width:100%;
+                  padding:10px;
+                  border:none;
+                  border-radius:8px;
+                  background:#06C755;
+                  color:white;
+                  font-size:14px;
+                  font-weight:600;
+                  cursor:pointer;
+                ">
+                📋 คัดลอกเลขบัญชี
+              </button>
+            </div>
+          `;
         } else if (pendingOrderData.paymentType === "promptpay") {
           pi.style.display = "block";
           pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;

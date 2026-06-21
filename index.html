@@ -865,9 +865,17 @@ async function submitOrder() {
   if (delivery < 0) delivery = 0;
   }
   const total = subtotal + delivery;
-  const needDeposit = subtotal > 300;
-  const wantsTransfer = !needDeposit && payment !== "cash";
-  const depositAmount = needDeposit ? Math.ceil(subtotal * 0.5) : (wantsTransfer ? total : 0);
+  // มัดจำเฉพาะ "เงินสด" ที่ยอดเกิน 300
+  const needDeposit =
+    subtotal > 300 && payment === "cash";
+
+  // พร้อมเพย์ = โอนเต็มจำนวนทุกยอด
+  const wantsTransfer =
+    payment !== "cash";
+  const depositAmount =
+    needDeposit
+      ? Math.ceil(subtotal * 0.5)
+      : (wantsTransfer ? total : 0);
 
   // ถ้ายอดเกิน 300 (มัดจำ) หรือเลือกโอนเองทั้งที่ยอดไม่ถึง 300 (โอนเต็ม) → ไปหน้าสรุปก่อน
   if (needDeposit || wantsTransfer) {

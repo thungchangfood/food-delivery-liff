@@ -204,7 +204,7 @@ let currentFilter = "all";
 let prevNewCount = 0;
 let refreshTimer = null;
 let systemOpen = true;
-
+let restaurantsMap = {};
 // ══ LOGIN ══════════════════════════════════════════════
 function doLogin() {
   const pass = document.getElementById("login-pass").value;
@@ -227,10 +227,25 @@ function logout() {
 
 // ══ INIT ═══════════════════════════════════════════════
 async function init() {
+  await loadRestaurants();
   await loadAll();
   refreshTimer = setInterval(loadAll, 10000);
 }
 
+async function loadRestaurants() {
+  try {
+    const res = await apiGet("action=getRestaurants");
+    const list = Array.isArray(res)
+      ? res
+      : (res.data || []);
+    restaurantsMap = {};
+    list.forEach(r => {
+      restaurantsMap[r.restaurantId] = r.name;
+    });
+  } catch (e) {
+    console.error("loadRestaurants", e);
+  }
+}  
 async function loadAll() {
   await Promise.all([loadOrders(), loadSystemStatus()]);
 }
@@ -395,7 +410,7 @@ function renderOrders() {
       <div class="order-head" onclick="toggleCard('${o.orderId}')">
         <div>
           <div class="order-id">${o.orderId}</div>
-          <div class="order-time">${formatTime(o.CreateAT)} · ${o.restaurantId}</div>
+          <div class="order-time">${formatTime(o.CreateAT)} · ${restaurantsMap[o.restaurantId] || o.restaurantId}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="order-status s-${o.status}">${statusTh[o.status]||o.status}</span>
@@ -407,7 +422,7 @@ function renderOrders() {
         <div class="info-grid">
           <div class="info-item">
             <div class="info-label">ร้านอาหาร</div>
-            <div>${o.restaurantId}</div>
+            <div>${restaurantsMap[o.restaurantId] || o.restaurantId}</div>
           </div>
           <div class="info-item">
             <div class="info-label">ไรเดอร์</div>
@@ -443,7 +458,7 @@ function renderOrders() {
           <div style="font-size:12px;color:#888;margin-top:4px;">รอสลิปจากลูกค้าก่อนกดยืนยัน</div>
           <input class="deposit-note" id="deposit-note-${o.orderId}" placeholder="หมายเหตุ เช่น รับสลิป ฿${depositAmount} แล้ว">
           <div class="action-wrap">
-            <button class="btn-action btn-deposit" onclick="confirmDeposit('${o.orderId}')">💸 ยืนยันรับมัดจำแล้ว</button>
+            <button class="btn-action btn-deposit" onclick="confirmDepositAndOrder('${o.orderId}')">💸 รับมัดจำ + ยืนยันออร์เดอร์</button>
           </div>
         </div>` : ""}
 
@@ -525,6 +540,35 @@ async function confirmDeposit(orderId) {
     const res = await apiPost({ action:"confirmDeposit", orderId, note });
     if (!res.success) throw new Error(res.error);
     showToast("✅ ยืนยันรับมัดจำแล้ว");
+    await loadOrders();
+  } catch(e) {
+    showToast("เกิดข้อผิดพลาด: " + e.message);
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  }
+}
+
+async function confirmDepositAndOrder(orderId) {
+  const note =
+    document.getElementById("deposit-note-" + orderId)?.value || "";
+  const btn = event.target;
+  btn.disabled = true;
+  btn.style.opacity = "0.5";
+  try {
+    const dep = await apiPost({
+      action: "confirmDeposit",
+      orderId,
+      note
+    });
+    if (!dep.success)
+      throw new Error(dep.error);
+    const ord = await apiPost({
+      action: "adminConfirmOrder",
+      orderId
+    });
+    if (!ord.success)
+      throw new Error(ord.error);
+    showToast("✅ รับมัดจำและยืนยันออร์เดอร์แล้ว");
     await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);

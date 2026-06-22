@@ -138,8 +138,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;}
     <div class="header-title">🛵 TC Delivery</div>
     <div class="header-right">
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
-      <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
-      <button class="btn-sm" onclick="logout()">ออก</button>
+      <button class="btn-sm" onclick="showReport()">
+        📊 รายงาน
+      </button>
+      <button class="btn-sm" onclick="loadAll()" id="refresh-btn">
+        🔄 รีเฟรช
+      </button>
+      <button class="btn-sm" onclick="logout()">
+        ออก
+      </button>
     </div>
   </div>
 
@@ -188,6 +195,35 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;}
   </div>
 
   <!-- Orders -->
+  <div id="report-page" style="display:none;padding:20px;">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-num" id="report-orders">0</div>
+        <div class="stat-label">ออร์เดอร์วันนี้</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-num" id="report-sales">0</div>
+        <div class="stat-label">ยอดขายรวม</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="report-delivery">0</div>
+        <div class="stat-label">ค่าส่งรวม</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="report-done">0</div>
+        <div class="stat-label">ส่งสำเร็จ</div>
+      </div>
+    </div>
+    <div style="margin-top:15px;">
+      <button class="btn-sm" onclick="exportCSV()">
+        📥 Export CSV
+      </button>
+      <button class="btn-sm" onclick="hideReport()">
+        🔙 กลับ
+      </button>
+    </div>
+  </div>
   <div class="orders-wrap" id="orders-wrap">
     <div class="loading"><div class="spinner"></div>กำลังโหลด...</div>
   </div>
@@ -615,6 +651,48 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 2500);
 }
 
+function showReport(){
+  document.querySelector(".filter-wrap").style.display = "none";
+  document.getElementById("orders-wrap").style.display = "none";
+  document.getElementById("report-page").style.display = "block";
+  buildReport();
+}
+
+function hideReport(){
+  document.querySelector(".filter-wrap").style.display = "";
+  document.getElementById("orders-wrap").style.display = "";
+  document.getElementById("report-page").style.display = "none";
+}
+
+function buildReport(){
+  const today = new Date().toDateString();
+  const todayOrders = allOrders.filter(o => {
+    return new Date(o.CreateAT).toDateString()
+      === today;
+  });
+
+  let sales = 0;
+  let delivery = 0;
+  let done = 0;
+
+  todayOrders.forEach(o => {
+    sales += Number(o.total || 0);
+    delivery += Number(o.deliveryFee || 0);
+    if(o.status === "DONE"){
+      done++;
+    }
+  });
+
+  document.getElementById("report-orders").textContent =
+    todayOrders.length;
+  document.getElementById("report-sales").textContent =
+    "฿" + sales.toLocaleString();
+  document.getElementById("report-delivery").textContent =
+    "฿" + delivery.toLocaleString();
+  document.getElementById("report-done").textContent =
+    done;
+}
+  
 // ══ AUTO LOGIN ═════════════════════════════════════════
 if (sessionStorage.getItem("admin_auth") === "1") {
   document.getElementById("login-screen").style.display = "none";

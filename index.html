@@ -652,7 +652,7 @@ function renderMenus() {
     html += `<div class="menu-cat-title">${cat}</div>`;
     grouped[cat].forEach(item => {
       const qty = cart[item.menuId]?.qty || 0;
-      const imgHtml = item.imageUrl ? `<img src="${driveThumb(item.imageUrl,150)}" onerror="this.parentElement.innerHTML='🍽'" loading="lazy" decoding="async">` : `🍽`;
+      const imgHtml = item.imageUrl ? `<img src="${driveThumb(item.imageUrl,300)}" onerror="this.parentElement.innerHTML='🍽'" loading="lazy" decoding="async">` : `🍽`;
       html += `<div class="menu-item">
         <div class="menu-item-img">${imgHtml}</div>
         <div class="menu-item-info">

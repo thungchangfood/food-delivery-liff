@@ -15,8 +15,9 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-sm{background:#333;color:white;border:none;padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:.2s;}
 .btn-sm:hover{background:#444;}
 .btn-sm:disabled{background:#666;cursor:not-allowed;opacity:.6;}
+.btn-close-day{background:#f59e0b;color:#fff;font-weight:700;}
 
-/* System Toggle */
+  /* System Toggle */
 .system-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #e8e8e8;}
 .system-bar.open{background:#f0fdf4;}
 .system-bar.closed{background:#fef2f2;}
@@ -231,6 +232,10 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     </div>
     <div style="margin-top:15px;display:flex;gap:8px;">
       <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="btn-sm btn-close-day"
+              onclick="closeDayAdmin()">
+        📊 ปิดวัน
+      </button>
       <button class="btn-sm" onclick="hideReport()">🔙 กลับ</button>
     </div>
   </div>
@@ -274,10 +279,15 @@ function logout() {
 }
 
 // ══ INIT ═══════════════════════════════════════════════
+let pauseRefresh = false;
 async function init() {
   await loadRestaurants();
   await loadAll();
-  refreshTimer = setInterval(loadAll, 10000);
+  refreshTimer = setInterval(() => {
+    if (!pauseRefresh) {
+      loadAll();
+    }
+  }, 10000);
 }
 
 async function loadRestaurants() {
@@ -481,7 +491,12 @@ function renderOrders() {
       // เงินสด ยอดเกิน 300 — รอมัดจำ
       else if (needDeposit && !depositPaid) {
         actions = `
-          <input class="deposit-input" id="deposit-note-${o.orderId}" placeholder="หมายเหตุ เช่น รับสลิปมัดจำ ฿${depositAmount} แล้ว">
+          <input
+            class="deposit-input"
+            id="deposit-note-${o.orderId}"
+            placeholder="หมายเหตุ เช่น รับสลิปมัดจำ ฿${depositAmount} แล้ว"
+            onfocus="pauseRefresh=true"
+            onblur="pauseRefresh=false">
           <button class="btn-action btn-deposit" onclick="confirmDepositAndOrder('${o.orderId}')">💸 รับมัดจำ ฿${depositAmount} + ยืนยันออร์เดอร์</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
       }
@@ -700,15 +715,64 @@ function buildReport() {
 
 function exportCSV() {
   const today = new Date().toDateString();
-  const todayOrders = allOrders.filter(o => new Date(o.CreateAT).toDateString() === today);
-  let csv = [["Order ID","Date","Restaurant","Subtotal","DeliveryFee","Total","Status","Payment"]];
+  const todayOrders =
+    allOrders.filter(
+      o => new Date(o.CreateAT).toDateString() === today
+    );
+  let csv = [[
+    "OrderID",
+    "Date",
+    "RestaurantID",
+    "Restaurant",
+    "RiderID",
+    "Subtotal",
+    "DeliveryFee",
+    "Total",
+    "GPPercent",
+    "GPAmount",
+    "RiderFee",
+    "DepositAmount",
+    "DepositPaid",
+    "PaymentType",
+    "PaymentStatus",
+    "PromoCode",
+    "PromoCost",
+    "Status",
+    "DeliveredAt"
+  ]];
   todayOrders.forEach(o => {
-    csv.push([o.orderId, o.CreateAT, restaurantsMap[o.restaurantId]||o.restaurantId, o.subtotal||0, o.deliveryFee||0, o.total||0, o.status, o.paymentType]);
+    csv.push([
+      o.orderId,
+      o.CreateAT,
+      o.restaurantId,
+      restaurantsMap[o.restaurantId] || o.restaurantId,
+      o.riderId || "",
+      o.subtotal || 0,
+      o.deliveryFee || 0,
+      o.total || 0,
+      o.gpPercent || 0,
+      o.gpAmount || 0,
+      o.riderFee || 0,
+      o.depositAmount || 0,
+      o.depositPaid || "",
+      o.paymentType || "",
+      o.paymentStatus || "",
+      o.promoCode || "",
+      o.promoCost || 0,
+      o.status || "",
+      o.deliveredAt || ""
+    ]);
   });
-  const blob = new Blob(["\uFEFF" + csv.map(r => r.join(",")).join("\n")], { type:"text/csv;charset=utf-8;" });
+  const blob = new Blob(
+    ["\uFEFF" + csv.map(r => r.join(",")).join("\n")],
+    { type:"text/csv;charset=utf-8;" }
+  );
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "Orders-" + new Date().toISOString().slice(0,10) + ".csv";
+  link.download =
+    "Orders-" +
+    new Date().toISOString().slice(0,10) +
+    ".csv";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -719,6 +783,27 @@ if (sessionStorage.getItem("admin_auth") === "1") {
   document.getElementById("dashboard").style.display = "block";
   init();
 }
+
+async function closeDayAdmin() {
+  const ok = confirm(
+    "ยืนยันปิดวัน ?\nระบบจะสรุปยอดทั้งหมดของวันนี้"
+  );
+  if (!ok) return;
+  try {
+    const res =
+      await apiGet(
+        "action=closeDay"
+      );
+    alert(
+      res.message ||
+      "ปิดวันสำเร็จ"
+    );
+  } catch(err) {
+    console.error(err);
+    alert("เกิดข้อผิดพลาด");
+  }
+}
+
 </script>
 </body>
 </html>

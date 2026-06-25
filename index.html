@@ -470,40 +470,43 @@ async function applyPromo() {
   btn.textContent = "ใช้โค้ด";
 }
 
-// ══ INIT ══════════════════════════════════════════════
 async function init() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-    if (liff.isInClient()) {
-      if (!liff.isLoggedIn()) { liff.login(); return; }
-      lineProfile = await liff.getProfile();
-    } else {
-      lineProfile = null;
-    }
-  } catch(e) {
-    lineProfile = null;
-  }
 
-  // เช็ค member จาก lineUserId
-  if (lineProfile) {
-    try {
-      console.time("getMember");
-      const res = await apiGet("action=getMember&lineUserId=" + lineProfile.userId);
-      console.timeEnd("getMember");
-      if (res.success) {
-        currentMember = res.data;
-        // อัปเดต lineUserId ถ้ายังไม่มี
-        await checkAndLoadShops();
+  console.log("STEP 1");
+
+  try {
+
+    console.log("STEP 2");
+    await liff.init({ liffId: LIFF_ID });
+
+    console.log("STEP 3");
+
+    if (liff.isInClient()) {
+
+      console.log("STEP 4");
+
+      if (!liff.isLoggedIn()) {
+
+        console.log("STEP 5");
+        liff.login();
         return;
       }
-    } catch(_) {}
-    // ไม่พบ member → ไปหน้า register
-    showRegisterPage();
-    return;
+
+      console.log("STEP 6");
+
+      lineProfile = await liff.getProfile();
+
+      console.log("PROFILE", lineProfile);
+    }
+
+  } catch(e) {
+
+    console.error("LIFF ERROR", e);
+
   }
 
-  // เปิดนอก Line → ไปหน้า register ให้กรอกเอง
-  showRegisterPage();
+  console.log("STEP 7");
+
 }
 
 function showRegisterPage() {

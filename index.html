@@ -943,6 +943,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     pendingOrderData = {
       memberId: currentMember.memberId,
       restaurantId: currentShop.restaurantId,
+
       items: items.map(e => ({
         menuId: e.menuId,
         name: e.name,
@@ -950,7 +951,6 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
         qty: e.qty,
         variant: e.variant
       })),
-
       address,
       note,
       lat: userLat,
@@ -963,28 +963,6 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
       depositAmount,
       deliveryFee: delivery
     };
-
-      address,
-      note,
-
-      lat: userLat,
-      lng: userLng,
-
-      paymentType: payment,
-
-      promoCode:
-        document.getElementById("promo-input")
-          ?.value.trim() || "",
-
-      subtotal,
-
-      needDeposit: needDeposit || wantsTransfer,
-
-      depositAmount,
-
-      deliveryFee: delivery
-    };
-
     const total =
       subtotal + delivery;
 

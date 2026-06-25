@@ -471,40 +471,31 @@ async function applyPromo() {
 }
 
 async function init() {
+
   console.log("STEP 1");
+
   try {
+
     await liff.init({ liffId: LIFF_ID });
+
     if (liff.isInClient()) {
+
       if (!liff.isLoggedIn()) {
         liff.login();
         return;
       }
+
       lineProfile = await liff.getProfile();
     }
+
   } catch(e) {
-    console.error("LIFF ERROR", e);
+    console.error(e);
   }
+
   console.log("STEP 7");
-  // โหลดสมาชิก
-  try {
-    if (lineProfile?.userId) {
-      const res = await apiGet(
-        "action=getMemberByLineUserId&lineUserId=" +
-        encodeURIComponent(lineProfile.userId)
-      );
-      if (res.success && res.data) {
-        currentMember = res.data;
-        await checkAndLoadShops();
-      } else {
-        showRegisterPage();
-      }
-    } else {
-      showRegisterPage();
-    }
-  } catch(err) {
-    console.error(err);
-    showRegisterPage();
-  }
+
+  checkAndLoadShops();
+
 }
 
 function showRegisterPage() {

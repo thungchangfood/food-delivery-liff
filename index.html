@@ -405,13 +405,21 @@ async function apiGet(params) {
   const r = await fetch(`${API}?${params}`);
   return r.json();
 }
-async function apiPost(body) {
+
+  async function apiPost(body) {
   const r = await fetch(API, {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify(body)
   });
-  return r.json();
+
+  const text = await r.text();
+
+  console.log("API RESPONSE:", text);
+
+  return JSON.parse(text);
 }
 
 // ══ PROMO ═════════════════════════════════════════════

@@ -661,9 +661,20 @@ async function confirmPayment(orderId) {
   const btn = event.target;
   btn.disabled = true; btn.style.opacity = "0.5";
   try {
-    const res = await apiPost({ action:"updatePayment", orderId, paymentStatus:"paid" });
-    if (!res.success) throw new Error(res.error);
-    showToast("💚 ยืนยันรับเงินแล้ว");
+    // ยืนยันรับเงิน
+    const pay = await apiPost({ action:"updatePayment", orderId, paymentStatus:"paid" });
+    if (!pay.success) throw new Error(pay.error);
+
+    // ถ้าสถานะยังเป็น NEW → ยืนยันออร์เดอร์ต่อเลย
+    const order = allOrders.find(o => o.orderId === orderId);
+    if (order && order.status === "NEW") {
+      const ord = await apiPost({ action:"adminConfirmOrder", orderId });
+      if (!ord.success) throw new Error(ord.error);
+      showToast("💚 รับสลิปและยืนยันออร์เดอร์แล้ว แจ้งร้านแล้ว");
+    } else {
+      showToast("💚 ยืนยันรับเงินแล้ว");
+    }
+
     await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);

@@ -452,25 +452,30 @@ function renderOrders() {
         <div class="pay-box-title">💚 ชำระเงินแล้ว</div>
         <div class="pay-box-desc">${isPromptpay ? "โอนพร้อมเพย์" : "เงินสด"} · ยืนยันรับเงินแล้ว ฿${total}</div>
       </div>`;
-    } else if (isCOD) {
+    } else if (isCash && depositAmount > 0 && !depositPaid) {
+      payBox = `<div class="pay-box unpaid">
+        <div class="pay-box-title">⚠️ รอยืนยันมัดจำ ฿${depositAmount}</div>
+        <div class="pay-box-desc">ลูกค้าต้องโอนมัดจำก่อน · ยังไม่ได้ยืนยัน</div>
+      </div>`;
+    } else if (isCash && depositAmount > 0 && depositPaid) {
       payBox = `<div class="pay-box cod">
-        <div class="pay-box-title">💵 เก็บเงินปลายทาง</div>
-        <div class="pay-box-desc">ไรเดอร์เก็บเงินสดจากลูกค้า ฿${total} เมื่อส่งถึง</div>
+        <div class="pay-box-title">💵 เก็บเงินปลายทาง ฿${remaining}</div>
+        <div class="pay-box-desc">รับมัดจำแล้ว ฿${depositAmount} · ไรเดอร์เก็บส่วนที่เหลือ ฿${remaining} เมื่อส่งถึง</div>
       </div>`;
     } else if (isPromptpay && !isPaid) {
       payBox = `<div class="pay-box unpaid">
         <div class="pay-box-title">🔴 รอตรวจสลิป</div>
         <div class="pay-box-desc">ลูกค้าเลือกโอนพร้อมเพย์ · ยังไม่ได้ยืนยันรับเงิน</div>
       </div>`;
-    } else if (isCash && depositAmount > 0 && !depositPaid) {
-      payBox = `<div class="pay-box unpaid">
-        <div class="pay-box-title">⚠️ รอยืนยันมัดจำ ฿${depositAmount}</div>
-        <div class="pay-box-desc">ลูกค้าต้องโอนมัดจำก่อน · ยังไม่ได้ยืนยัน</div>
-      </div>`;
     } else if (isCash) {
       payBox = `<div class="pay-box cod">
         <div class="pay-box-title">💵 เก็บเงินปลายทาง</div>
         <div class="pay-box-desc">เงินสด · ไรเดอร์เก็บ ฿${total} จากลูกค้า</div>
+      </div>`;
+    } else if (isCOD) {
+      payBox = `<div class="pay-box cod">
+        <div class="pay-box-title">💵 เก็บเงินปลายทาง</div>
+        <div class="pay-box-desc">ไรเดอร์เก็บเงินสดจากลูกค้า ฿${total} เมื่อส่งถึง</div>
       </div>`;
     }
 

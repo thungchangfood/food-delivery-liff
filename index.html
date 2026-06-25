@@ -471,42 +471,40 @@ async function applyPromo() {
 }
 
 async function init() {
-
   console.log("STEP 1");
-
   try {
-
-    console.log("STEP 2");
     await liff.init({ liffId: LIFF_ID });
-
-    console.log("STEP 3");
-
     if (liff.isInClient()) {
-
-      console.log("STEP 4");
-
       if (!liff.isLoggedIn()) {
-
-        console.log("STEP 5");
         liff.login();
         return;
       }
-
-      console.log("STEP 6");
-
       lineProfile = await liff.getProfile();
-
-      console.log("PROFILE", lineProfile);
     }
-
   } catch(e) {
-
     console.error("LIFF ERROR", e);
-
   }
-
   console.log("STEP 7");
-
+  // โหลดสมาชิก
+  try {
+    if (lineProfile?.userId) {
+      const res = await apiGet(
+        "action=getMemberByLineUserId&lineUserId=" +
+        encodeURIComponent(lineProfile.userId)
+      );
+      if (res.success && res.data) {
+        currentMember = res.data;
+        await checkAndLoadShops();
+      } else {
+        showRegisterPage();
+      }
+    } else {
+      showRegisterPage();
+    }
+  } catch(err) {
+    console.error(err);
+    showRegisterPage();
+  }
 }
 
 function showRegisterPage() {

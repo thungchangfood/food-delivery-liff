@@ -392,7 +392,9 @@ let currentMember = null;
 let userLat = null;
 let userLng = null;
 let trackTimer = null;
-
+let pendingOrderData = null;
+let countdownTimer = null;
+  
 // ══ GOOGLE DRIVE IMAGE HELPER ═════════════════════════
 function driveThumb(url, width = 300) {
   if (!url) return "";

@@ -713,7 +713,11 @@ function renderCart() {
   document.getElementById("cart-items").innerHTML = items.length
     ? items.map(({item,qty}) => `<div class="cart-item">
         <div class="cart-item-name">${item.menuName}</div>
-        <div class="cart-item-qty">×${qty}</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="removeItem('${item.menuId}'); renderCart();">−</button>
+          <div class="qty-num">${qty}</div>
+          <button class="qty-btn plus" onclick="addItem('${item.menuId}'); renderCart();">+</button>
+        </div>
         <div class="cart-item-price">฿${item.price*qty}</div>
       </div>`).join("")
     : `<div style="padding:20px;text-align:center;color:#aaa;">ยังไม่มีรายการ</div>`;

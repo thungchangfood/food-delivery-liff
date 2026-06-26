@@ -339,6 +339,9 @@ async function apiPost(body) {
   return JSON.parse(t);
 }
 
+// ── MENU CACHE ───────────────────────────────────────
+const menuCache = {};  // { restaurantId: [...menus] }
+
 // ── INIT ─────────────────────────────────────────────
 async function init() {
   try {
@@ -351,11 +354,57 @@ async function init() {
 
   if (lineProfile) {
     try {
-      const r = await apiGet("action=getMember&lineUserId=" + lineProfile.userId);
-      if (r.success) { currentMember = r.data; await checkAndLoadShops(); return; }
+      // ✅ ยิง getMember + getSystemStatus + getRestaurants พร้อมกันเลย
+      const [memberRes, statusRes, shopsRes] = await Promise.all([
+        apiGet("action=getMember&lineUserId=" + lineProfile.userId),
+        apiGet("action=getSystemStatus"),
+        apiGet("action=getRestaurants")
+      ]);
+
+      // เช็ค system status
+      if (statusRes.success) {
+        if (!statusRes.data.open) {
+          document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+          showPage("page-closed"); return;
+        }
+        bankAccount = statusRes.data.bankAccount || "";
+        bankName    = statusRes.data.bankName    || "";
+      }
+
+      // โหลดร้าน
+      allShops = shopsRes.data || [];
+      renderCategories(); renderShops(allShops);
+
+      // เช็ค member
+      if (memberRes.success) {
+        currentMember = memberRes.data;
+        showPage("page-shops");
+        prefetchMenus(); // โหลดเมนูทุกร้านไว้ล่วงหน้าแบบ background
+      } else {
+        showRegisterPage();
+      }
+      return;
     } catch(_) {}
   }
+
+  // fallback: โหลดทีละขั้นถ้า lineProfile ไม่มี
+  await checkAndLoadShops();
   showRegisterPage();
+}
+
+// ✅ Prefetch เมนูทุกร้านแบบ background หลังหน้าแสดงแล้ว
+async function prefetchMenus() {
+  const activeShops = allShops.filter(s => s.status === "active");
+  // ยิงทุกร้านพร้อมกัน แต่ไม่บล็อก UI
+  await Promise.allSettled(
+    activeShops.map(async s => {
+      if (menuCache[s.restaurantId]) return; // มีแล้วข้ามไป
+      try {
+        const r = await apiGet("action=getMenus&restaurantId=" + s.restaurantId);
+        if (r.success) menuCache[s.restaurantId] = r.data;
+      } catch(_) {}
+    })
+  );
 }
 
 function showRegisterPage() {
@@ -389,20 +438,22 @@ async function registerMember() {
 // ── SYSTEM + SHOPS ───────────────────────────────────
 async function checkAndLoadShops() {
   try {
-    const s = await apiGet("action=getSystemStatus");
-    if (s.success) {
-      if (!s.data.open) {
-        document.getElementById("closed-msg").textContent = s.data.reason || "กรุณาติดต่อแอดมินครับ";
+    // ✅ ยิง 2 API พร้อมกัน
+    const [statusRes, shopsRes] = await Promise.all([
+      apiGet("action=getSystemStatus"),
+      apiGet("action=getRestaurants")
+    ]);
+    if (statusRes.success) {
+      if (!statusRes.data.open) {
+        document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
         showPage("page-closed"); return;
       }
-      bankAccount = s.data.bankAccount || "";
-      bankName = s.data.bankName || "";
+      bankAccount = statusRes.data.bankAccount || "";
+      bankName    = statusRes.data.bankName    || "";
     }
-  } catch(_) {}
-  try {
-    const r = await apiGet("action=getRestaurants");
-    allShops = r.data || [];
+    allShops = shopsRes.data || [];
     renderCategories(); renderShops(allShops); showPage("page-shops");
+    prefetchMenus();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
@@ -455,13 +506,21 @@ async function openShop(restaurantId) {
     : `<div class="shop-hero-emoji">🍜</div>`;
   hero.innerHTML += `<div class="shop-hero-overlay"><div class="shop-hero-name">${shop.name}</div><div class="shop-hero-sub">ค่าจัดส่ง ฿${shop.deliveryFee}</div></div>`;
   showPage("page-menu");
-  document.getElementById("menu-list").innerHTML = `<div class="loading-wrap" style="min-height:200px;"><div class="spinner"></div></div>`;
-  try {
-    const r = await apiGet("action=getMenus&restaurantId=" + restaurantId);
-    if (!r.success) throw new Error(r.error);
-    currentMenus = r.data;
+
+  // ✅ ใช้ cache ถ้ามีแล้ว → แสดงทันที ไม่ต้องรอ
+  if (menuCache[restaurantId]) {
+    currentMenus = menuCache[restaurantId];
     renderMenus();
-  } catch(e) { showToast("โหลดเมนูไม่สำเร็จครับ"); }
+  } else {
+    document.getElementById("menu-list").innerHTML = `<div class="loading-wrap" style="min-height:200px;"><div class="spinner"></div></div>`;
+    try {
+      const r = await apiGet("action=getMenus&restaurantId=" + restaurantId);
+      if (!r.success) throw new Error(r.error);
+      menuCache[restaurantId] = r.data;
+      currentMenus = r.data;
+      renderMenus();
+    } catch(e) { showToast("โหลดเมนูไม่สำเร็จครับ"); }
+  }
 }
 
 // ✅ renderMenus — ฟังก์ชันที่หายไปในโค้ดเดิม

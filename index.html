@@ -306,7 +306,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       ❌ ยกเลิกออร์เดอร์
     </button>
     <div id="payment-info" style="display:none;" class="payment-info"></div>
-    <button class="btn-green" onclick="resetAndHome()">กลับหน้าหลัก</button>
+    <button class="btn-green" onclick="safeResetAndHome()">กลับหน้าหลัก</button>
   </div>
 </div>
 
@@ -768,6 +768,9 @@ async function submitOrderWithDeposit() {
   const address=document.getElementById("f-address").value.trim();
   const note=document.getElementById("f-note").value.trim();
   const payment=document.getElementById("f-payment").value;
+  // Fix: validate ก่อนส่งเหมือน submitOrder
+  if (!name||!phone||!address) { showToast("กรุณากรอกชื่อ เบอร์ และที่อยู่ให้ครบครับ"); showPage("page-cart"); return; }
+  if (!userLat||!userLng) { showToast("กรุณาปักหมุดตำแหน่งก่อนครับ"); showPage("page-cart"); return; }
   await doCreateOrder(name,phone,address,note,payment,Object.values(cart));
 }
 
@@ -915,7 +918,30 @@ function showToast(msg) {
   const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),2000);
 }
-function resetAndHome() { currentShop=null; currentMenus=[]; checkAndLoadShops(); }
+function resetAndHome() {
+  // Fix: ล้างสถานะให้หมดทุกครั้งกลับหน้าหลัก
+  currentShop=null; currentMenus=[];
+  userLat=null; userLng=null;
+  promoApplied=false;
+  document.getElementById("promo-input").value="";
+  document.getElementById("promo-msg").style.display="none";
+  document.getElementById("f-name").value="";
+  document.getElementById("f-phone").value="";
+  document.getElementById("f-address").value="";
+  document.getElementById("f-note").value="";
+  document.getElementById("loc-status").style.display="none";
+  document.getElementById("loc-map").style.display="none";
+  document.getElementById("loc-btn").innerHTML="📍 ปักหมุดตำแหน่งปัจจุบัน";
+  document.getElementById("loc-btn").style.background="white";
+  document.getElementById("loc-btn").style.borderColor="#06C755";
+  checkAndLoadShops();
+}
+// Fix: กด "กลับหน้าหลัก" จาก success page ให้หยุด countdown ก่อน
+function safeResetAndHome() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer=null; }
+  pendingOrderData=null;
+  resetAndHome();
+}
 
 async function copyBankAccount() {
   const a=document.getElementById("dep-bank-account").textContent.trim();

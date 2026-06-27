@@ -552,26 +552,6 @@ async function checkAndLoadShops() {
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
-function getMenuScrollHtml(restaurantId) {
-  const menus = menuCache[restaurantId];
-  if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
-  const list = menus.slice(0, 10);
-  return `<div class="weekly-menu-scroll">${list.map(m => {
-    const img = m.imageUrl
-      ? `<img src="${driveThumb(m.imageUrl,160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
-      : `🍜`;
-    return `<div class="weekly-menu-item" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
-      <div class="weekly-menu-item-img">${img}</div>
-      <div class="weekly-menu-item-name">${m.menuName}</div>
-      <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
-    </div>`;
-  }).join("")}</div>`;
-}
-
-async function openShopAndItem(restaurantId, menuId) {
-  await openShop(restaurantId);
-  openOptions(menuId);
-}
 // ── Weekly picks (5 ร้านแรก) ─────────────────────────
 function renderWeekly() {
   const sec = document.getElementById("weekly-section");
@@ -596,6 +576,27 @@ function renderWeekly() {
       ${getMenuScrollHtml(s.restaurantId)}
     </div>`;
   }).join("");
+}
+  
+function getMenuScrollHtml(restaurantId) {
+  const menus = menuCache[restaurantId];
+  if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
+  const list = menus.slice(0, 10);
+  return `<div class="weekly-menu-scroll">${list.map(m => {
+    const img = m.imageUrl
+      ? `<img src="${driveThumb(m.imageUrl,160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
+      : `🍜`;
+    return `<div class="weekly-menu-item" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
+      <div class="weekly-menu-item-img">${img}</div>
+      <div class="weekly-menu-item-name">${m.menuName}</div>
+      <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+async function openShopAndItem(restaurantId, menuId) {
+  await openShop(restaurantId);
+  openOptions(menuId);
 }
 
 function renderCategories() {

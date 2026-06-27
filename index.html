@@ -49,9 +49,6 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .cat-chip.active{background:#06C755;color:white;border-color:#06C755;}
 
 /* ── Weekly Picks (horizontal scroll) ── */
-.weekly-section{padding:14px 0 4px;}
-.weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
-.weekly-scroll{display:flex;flex-direction:column;gap:14px;padding:0 16px 14px;}
 .weekly-card{width:100%;background:white;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.10);position:relative;transition:.15s;display:flex;flex-direction:column;}
 .weekly-card:active{transform:scale(.98);}
 .weekly-badge{position:absolute;top:10px;right:10px;background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:4px 9px;border-radius:10px;z-index:2;}
@@ -551,6 +548,27 @@ async function checkAndLoadShops() {
     prefetchMenus();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
+  
+function getMenuScrollHtml(restaurantId) {
+  const menus = menuCache[restaurantId];
+  if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
+  const list = menus.slice(0, 10);
+  return `<div class="weekly-menu-scroll">${list.map(m => {
+    const img = m.imageUrl
+      ? `<img src="${driveThumb(m.imageUrl,160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
+      : `🍜`;
+    return `<div class="weekly-menu-item" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
+      <div class="weekly-menu-item-img">${img}</div>
+      <div class="weekly-menu-item-name">${m.menuName}</div>
+      <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
+    </div>`;
+  }).join("")}</div>`;
+}
+
+async function openShopAndItem(restaurantId, menuId) {
+  await openShop(restaurantId);
+  openOptions(menuId);
+}
 
 // ── Weekly picks (5 ร้านแรก) ─────────────────────────
 function renderWeekly() {
@@ -578,27 +596,6 @@ function renderWeekly() {
   }).join("");
 }
   
-function getMenuScrollHtml(restaurantId) {
-  const menus = menuCache[restaurantId];
-  if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
-  const list = menus.slice(0, 10);
-  return `<div class="weekly-menu-scroll">${list.map(m => {
-    const img = m.imageUrl
-      ? `<img src="${driveThumb(m.imageUrl,160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
-      : `🍜`;
-    return `<div class="weekly-menu-item" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
-      <div class="weekly-menu-item-img">${img}</div>
-      <div class="weekly-menu-item-name">${m.menuName}</div>
-      <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
-    </div>`;
-  }).join("")}</div>`;
-}
-
-async function openShopAndItem(restaurantId, menuId) {
-  await openShop(restaurantId);
-  openOptions(menuId);
-}
-
 function renderCategories() {
   const cats = ["ทั้งหมด", ...new Set(allShops.map(s => s.category).filter(Boolean))];
   document.getElementById("cat-scroll").innerHTML = cats.map((c, i) =>

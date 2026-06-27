@@ -51,30 +51,29 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 /* ── Weekly Picks (horizontal scroll) ── */
 .weekly-section{padding:14px 0 4px;}
 .weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
-.weekly-scroll{display:flex;gap:12px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;}
-.weekly-scroll::-webkit-scrollbar{display:none;}
-.weekly-card{flex-shrink:0;width:300px;height:120px;background:white;border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.10);position:relative;transition:.15s;display:flex;}
-.weekly-card:active{transform:scale(.97);}
-.weekly-card-img{flex-shrink:0;width:120px;height:120px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden;}
+.weekly-scroll{display:flex;flex-direction:column;gap:14px;padding:0 16px 14px;}
+.weekly-card{width:100%;height:148px;background:white;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.10);position:relative;transition:.15s;display:flex;}
+.weekly-card:active{transform:scale(.98);}
+.weekly-card-img{flex-shrink:0;width:148px;height:148px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden;}
 .weekly-card-img img{width:100%;height:100%;object-fit:cover;}
-.weekly-badge{position:absolute;top:8px;right:8px;background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;z-index:2;}
-.weekly-card-info{flex:1;min-width:0;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:5px;}
-.weekly-card-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.weekly-card-meta{font-size:12.5px;color:#888;display:flex;align-items:center;gap:4px;}
-.weekly-card-address{font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.weekly-badge{position:absolute;top:10px;right:10px;background:#F59E0B;color:white;font-size:12px;font-weight:700;padding:4px 10px;border-radius:11px;z-index:2;}
+.weekly-card-info{flex:1;min-width:0;padding:16px 16px;display:flex;flex-direction:column;justify-content:center;gap:7px;}
+.weekly-card-name{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.weekly-card-meta{font-size:13.5px;color:#888;display:flex;align-items:center;gap:4px;}
+.weekly-card-address{font-size:13px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* ── Shop grid ── */
 .section-title{padding:14px 16px 8px;font-size:15px;font-weight:700;}
 .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px;}
 .shop-card{background:white;border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.15s;}
 .shop-card:active{transform:scale(.97);}
-.shop-img{width:100%;height:120px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;}
-.shop-img img{width:100%;height:120px;object-fit:cover;}
-.shop-info{padding:10px 10px 12px;}
-.shop-name{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.shop-meta{font-size:12px;color:#888;}
-.shop-open{display:inline-block;margin-top:5px;background:#f0fdf4;color:#16a34a;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;}
-.shop-closed{display:inline-block;margin-top:5px;background:#fef2f2;color:#dc2626;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500;}
+.shop-img{width:100%;height:88px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;}
+.shop-img img{width:100%;height:88px;object-fit:cover;}
+.shop-info{padding:8px 8px 10px;}
+.shop-name{font-size:12.5px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.shop-meta{font-size:11px;color:#888;}
+.shop-open{display:inline-block;margin-top:4px;background:#f0fdf4;color:#16a34a;font-size:10px;padding:2px 7px;border-radius:9px;font-weight:500;}
+.shop-closed{display:inline-block;margin-top:4px;background:#fef2f2;color:#dc2626;font-size:10px;padding:2px 7px;border-radius:9px;font-weight:500;}
 .track-btn{margin:12px 16px 0;background:white;border:1.5px solid #06C755;color:#06C755;border-radius:12px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;}
 
 /* ── Menu page ── */

@@ -634,8 +634,17 @@ function filterShops() {
   const q = document.getElementById("search-input").value.toLowerCase();
   renderShops(allShops.filter(s => s.name.toLowerCase().includes(q)));
 }
+function getWeeklyPickIds() {
+  if (!weeklyPicksEnabled || weeklyPicksCount <= 0) return new Set();
+  return new Set(
+    allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount).map(s => s.restaurantId)
+  );
+}
+
 function renderShops(shops) {
   const grid = document.getElementById("shop-grid");
+  const weeklyIds = getWeeklyPickIds();
+  shops = shops.filter(s => !weeklyIds.has(s.restaurantId));
   if (!shops.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">ไม่พบร้านอาหาร</div>`; return; }
   grid.innerHTML = shops.map(s => {
     const img = s.imageUrl ? `<img src="${driveThumb(s.imageUrl,200)}" onerror="this.parentElement.innerHTML='🍜'" loading="lazy">` : `<span>🍜</span>`;

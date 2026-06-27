@@ -53,14 +53,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
 .weekly-scroll{display:flex;gap:12px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;}
 .weekly-scroll::-webkit-scrollbar{display:none;}
-.weekly-card{flex-shrink:0;width:160px;background:white;border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08);position:relative;transition:.15s;}
+.weekly-card{flex-shrink:0;width:300px;height:120px;background:white;border-radius:16px;overflow:hidden;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.10);position:relative;transition:.15s;display:flex;}
 .weekly-card:active{transform:scale(.97);}
-.weekly-card-img{width:160px;height:120px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:36px;overflow:hidden;}
+.weekly-card-img{flex-shrink:0;width:120px;height:120px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden;}
 .weekly-card-img img{width:100%;height:100%;object-fit:cover;}
-.weekly-badge{position:absolute;top:8px;left:8px;background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;}
-.weekly-card-info{padding:8px 10px 10px;}
-.weekly-card-name{font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.weekly-card-meta{font-size:11px;color:#888;}
+.weekly-badge{position:absolute;top:8px;right:8px;background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;z-index:2;}
+.weekly-card-info{flex:1;min-width:0;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:5px;}
+.weekly-card-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.weekly-card-meta{font-size:12.5px;color:#888;display:flex;align-items:center;gap:4px;}
+.weekly-card-address{font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* ── Shop grid ── */
 .section-title{padding:14px 16px 8px;font-size:15px;font-weight:700;}
@@ -541,9 +542,9 @@ async function checkAndLoadShops() {
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
-// ── Weekly picks (4 ร้านแรก) ─────────────────────────
+// ── Weekly picks (5 ร้านแรก) ─────────────────────────
 function renderWeekly() {
-  const picks = allShops.filter(s => s.status === "active").slice(0, 4);
+  const picks = allShops.filter(s => s.status === "active").slice(0, 5);
   const sec = document.getElementById("weekly-section");
   if (!picks.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
@@ -552,11 +553,12 @@ function renderWeekly() {
       ? `<img src="${driveThumb(s.imageUrl, 200)}" onerror="this.parentElement.innerHTML='🍜'" loading="lazy">`
       : `<span>🍜</span>`;
     return `<div class="weekly-card" onclick="openShop('${s.restaurantId}')">
-      <div class="weekly-card-img">${img}</div>
       <div class="weekly-badge">⭐ แนะนำ</div>
+      <div class="weekly-card-img">${img}</div>
       <div class="weekly-card-info">
         <div class="weekly-card-name">${s.name}</div>
-        <div class="weekly-card-meta">ค่าส่ง ฿${s.deliveryFee}</div>
+        <div class="weekly-card-meta">🛵 ค่าส่ง ฿${s.deliveryFee}</div>
+        <div class="weekly-card-address">📍 ${s.address || "ยังไม่ระบุที่อยู่"}</div>
       </div>
     </div>`;
   }).join("");

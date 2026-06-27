@@ -17,7 +17,6 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-sm:disabled{background:#666;cursor:not-allowed;opacity:.6;}
 .btn-close-day{background:#f59e0b;color:#fff;font-weight:700;}
 
-  /* System Toggle */
 .system-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #e8e8e8;}
 .system-bar.open{background:#f0fdf4;}
 .system-bar.closed{background:#fef2f2;}
@@ -30,7 +29,6 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .close-reason-input{border:1.5px solid #e0e0e0;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:200px;}
 .close-reason-input:focus{border-color:#EF4444;}
 
-/* Stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 20px;}
 .stat-card{background:white;border-radius:12px;padding:12px 14px;border:0.5px solid #e8e8e8;cursor:pointer;transition:.15s;}
 .stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
@@ -46,18 +44,15 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .stat-card.s-cancel .stat-num{color:#EF4444;}
 .stat-card.s-cancel.active-filter{border-color:#EF4444;}
 
-/* Filter */
 .filter-wrap{padding:0 20px 10px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;}
 .filter-wrap::-webkit-scrollbar{display:none;}
 .filter-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:13px;font-family:inherit;border:1.5px solid #e0e0e0;background:white;cursor:pointer;transition:.15s;font-weight:500;}
 .filter-chip.active{background:#1a1a1a;color:white;border-color:#1a1a1a;}
 
-/* Order card */
 .orders-wrap{padding:0 20px 20px;}
 .order-card{background:white;border-radius:14px;margin-bottom:10px;border:1px solid #e8e8e8;overflow:hidden;transition:.15s;}
 .order-card.urgent{border-color:#F59E0B;border-width:2px;}
 .order-card.urgent .order-head{background:#fffbeb;}
-
 .order-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:8px;}
 .order-head-left{flex:1;min-width:0;}
 .order-id{font-size:16px;font-weight:700;letter-spacing:.3px;}
@@ -70,22 +65,21 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .s-DELIVERING{background:#FEF3C7;color:#92400E;}
 .s-DONE{background:#DCFCE7;color:#166534;}
 .s-CANCEL{background:#FEE2E2;color:#991B1B;}
-
 .order-body{display:none;border-top:1px solid #f0f0f0;}
 .order-body.open{display:block;}
 
-/* Section ในออร์เดอร์ */
 .order-section{padding:12px 16px;border-bottom:1px solid #f5f5f5;}
 .order-section:last-child{border-bottom:none;}
 .section-label{font-size:11px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;}
-
-/* Info rows */
 .info-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:13px;}
 .info-row:last-child{margin-bottom:0;}
 .info-key{color:#888;width:72px;flex-shrink:0;padding-top:1px;}
 .info-val{flex:1;font-weight:500;line-height:1.4;}
 
-/* รายการอาหาร */
+/* Phone link */
+.phone-link{color:#3B82F6;text-decoration:none;font-weight:600;}
+.phone-link:hover{text-decoration:underline;}
+
 .items-list{background:#f9f9f9;border-radius:10px;padding:10px 12px;}
 .item-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0;border-bottom:.5px solid #efefef;}
 .item-row:last-child{border-bottom:none;}
@@ -93,14 +87,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .item-qty{color:#888;margin:0 8px;font-size:12px;}
 .item-price{font-weight:600;color:#1a1a1a;}
 
-/* ยอดเงิน */
 .money-box{background:#f9f9f9;border-radius:10px;padding:10px 12px;}
 .money-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:#555;}
 .money-row.total{font-size:16px;font-weight:700;color:#1a1a1a;padding-top:8px;margin-top:4px;border-top:1px solid #e0e0e0;}
 .money-row.collected{font-size:13px;color:#06C755;font-weight:600;}
 .money-row.remaining{font-size:14px;font-weight:700;color:#EF4444;}
 
-/* Payment status box */
 .pay-box{border-radius:10px;padding:10px 14px;font-size:13px;}
 .pay-box.paid{background:#f0fdf4;border:1px solid #86efac;}
 .pay-box.unpaid{background:#fffbeb;border:1px solid #fcd34d;}
@@ -110,11 +102,8 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .pay-box.unpaid .pay-box-title{color:#b45309;}
 .pay-box.cod .pay-box-title{color:#0369a1;}
 .pay-box-desc{font-size:12px;color:#666;line-height:1.5;}
-
-/* Map link */
 .map-link{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:#3B82F6;text-decoration:none;margin-top:4px;font-weight:500;}
 
-/* Action buttons */
 .action-section{padding:12px 16px;background:#fafafa;display:flex;flex-direction:column;gap:8px;}
 .btn-action{padding:10px 16px;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;border:none;cursor:pointer;transition:.15s;width:100%;text-align:center;}
 .btn-action:disabled{opacity:.4;cursor:not-allowed;}
@@ -126,18 +115,14 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-pay{background:#06C755;color:white;}
 .btn-row{display:flex;gap:8px;}
 .btn-row .btn-action{flex:1;}
-
-/* Deposit input */
 .deposit-input{width:100%;border:1.5px solid #fcd34d;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:#fffbeb;}
 .deposit-input:focus{border-color:#F59E0B;}
 
-/* Loading/Empty */
 .loading{text-align:center;padding:40px;color:#888;}
 .spinner{width:30px;height:30px;border:3px solid #e0e0e0;border-top-color:#1a1a1a;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:50px;color:#aaa;}
 
-/* Login */
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;}
 .login-card{background:white;border-radius:16px;padding:32px;width:300px;box-shadow:0 4px 24px rgba(0,0,0,.08);}
 .login-title{font-size:20px;font-weight:700;margin-bottom:20px;text-align:center;}
@@ -145,11 +130,9 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .login-input:focus{border-color:#1a1a1a;}
 .login-btn{width:100%;background:#1a1a1a;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;}
 
-/* Toast */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:white;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* Refresh bar */
 .refresh-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 20px;background:#e8e8e8;font-size:12px;color:#888;}
 .refresh-dot{width:8px;height:8px;border-radius:50%;background:#06C755;display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -162,7 +145,6 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen" class="login-wrap">
   <div class="login-card">
     <div class="login-title">🛵 TC Delivery Admin</div>
@@ -171,7 +153,6 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
   </div>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboard" style="display:none;">
 
   <div class="header">
@@ -232,10 +213,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     </div>
     <div style="margin-top:15px;display:flex;gap:8px;">
       <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-      <button class="btn-sm btn-close-day"
-              onclick="closeDayAdmin()">
-        📊 ปิดวัน
-      </button>
+      <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
       <button class="btn-sm" onclick="hideReport()">🔙 กลับ</button>
     </div>
   </div>
@@ -257,37 +235,33 @@ let prevNewCount = 0;
 let refreshTimer = null;
 let systemOpen = true;
 let restaurantsMap = {};
+let membersMap = {};      // memberId → { name, phone }
 
-// ══ LOGIN ══════════════════════════════════════════════
+// ── LOGIN ──────────────────────────────────────────────
 function doLogin() {
   const pass = document.getElementById("login-pass").value;
   if (pass === ADMIN_PASS) {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
-    sessionStorage.setItem("admin_auth","1");
+    sessionStorage.setItem("admin_auth", "1");
     init();
   } else {
     showToast("รหัสผ่านไม่ถูกต้องครับ");
     document.getElementById("login-pass").value = "";
   }
 }
-
 function logout() {
   sessionStorage.removeItem("admin_auth");
   clearInterval(refreshTimer);
   location.reload();
 }
 
-// ══ INIT ═══════════════════════════════════════════════
+// ── INIT ──────────────────────────────────────────────
 let pauseRefresh = false;
 async function init() {
-  await loadRestaurants();
+  await Promise.all([loadRestaurants(), loadMembers()]);
   await loadAll();
-  refreshTimer = setInterval(() => {
-    if (!pauseRefresh) {
-      loadAll();
-    }
-  }, 10000);
+  refreshTimer = setInterval(() => { if (!pauseRefresh) loadAll(); }, 10000);
 }
 
 async function loadRestaurants() {
@@ -299,39 +273,48 @@ async function loadRestaurants() {
   } catch(e) { console.error("loadRestaurants", e); }
 }
 
+async function loadMembers() {
+  try {
+    const res = await apiGet("action=getMembers");
+    const list = Array.isArray(res) ? res : (res.data || []);
+    membersMap = {};
+    list.forEach(m => {
+      const phone = String(m.phone || "").replace(/\D/g, "");
+      membersMap[m.memberId] = {
+        name: m.name || "",
+        phone: phone.startsWith("0") ? phone : (phone ? "0" + phone : "")
+      };
+    });
+  } catch(e) { console.error("loadMembers", e); }
+}
+
 async function loadAll() {
   await Promise.all([loadOrders(), loadSystemStatus()]);
 }
 
-// ══ API ════════════════════════════════════════════════
+// ── API ────────────────────────────────────────────────
 async function apiGet(params) {
   const r = await fetch(`${API}?${params}`);
   return r.json();
 }
-
 async function apiPost(body) {
   const r = await fetch(API, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
-
   const txt = await r.text();
   console.log("API RESPONSE:", txt);
-
   return JSON.parse(txt);
 }
 
-// ══ SYSTEM STATUS ══════════════════════════════════════
+// ── SYSTEM STATUS ──────────────────────────────────────
 async function loadSystemStatus() {
   try {
     const res = await apiGet("action=getSystemStatus");
     if (res.success) { systemOpen = res.data.open; updateSystemUI(systemOpen, res.data.reason); }
   } catch(_) {}
 }
-
 function updateSystemUI(isOpen, reason) {
   const bar = document.getElementById("system-bar");
   const txt = document.getElementById("system-status-text");
@@ -350,7 +333,6 @@ function updateSystemUI(isOpen, reason) {
     if (reason) input.value = reason;
   }
 }
-
 async function toggleSystem() {
   const btn = document.getElementById("btn-toggle");
   btn.disabled = true;
@@ -368,7 +350,7 @@ async function toggleSystem() {
   btn.disabled = false;
 }
 
-// ══ ORDERS ═════════════════════════════════════════════
+// ── ORDERS ─────────────────────────────────────────────
 async function loadOrders() {
   try {
     const res = await apiGet("action=getOrders");
@@ -445,6 +427,14 @@ function renderOrders() {
       : "";
     const isUrgent = o.status === "NEW";
 
+    // ── ข้อมูลสมาชิก ──────────────────────────────────
+    const member = membersMap[o.memberId] || null;
+    const memberName = member ? member.name : (o.memberId || "-");
+    const memberPhone = member ? member.phone : "";
+    const phoneDisplay = memberPhone
+      ? `<a class="phone-link" href="tel:${memberPhone}">${memberPhone} 📞</a>`
+      : "-";
+
     // ── Payment box ──────────────────────────────────────
     let payBox = "";
     if (isPaid) {
@@ -479,7 +469,7 @@ function renderOrders() {
       </div>`;
     }
 
-    // ── ยอดเงิน ─────────────────────────────────────────
+    // ── ยอดเงิน ──────────────────────────────────────────
     const moneyRows = `
       <div class="money-row"><span>ยอดอาหาร</span><span>฿${subtotal}</span></div>
       <div class="money-row"><span>ค่าจัดส่ง</span><span>฿${deliveryFee}</span></div>
@@ -489,37 +479,26 @@ function renderOrders() {
       <div class="money-row remaining"><span>ยังต้องเก็บปลายทาง</span><span>฿${remaining}</span></div>` : ""}
     `;
 
-    // ── ปุ่ม actions ─────────────────────────────────────
+    // ── ปุ่ม actions ──────────────────────────────────────
     let actions = "";
-
     if (o.status === "NEW") {
-      // พร้อมเพย์ — ต้องยืนยันสลิปก่อนถึงจะยืนยันออร์เดอร์ได้
       if (isPromptpay && !isPaid) {
         actions = `
           <button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>
           <button class="btn-action btn-confirm-disabled" disabled>✅ ยืนยันออร์เดอร์ (รอยืนยันสลิปก่อน)</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
-      }
-      // เงินสด ยอดเกิน 300 — รอมัดจำ
-      else if (needDeposit && !depositPaid) {
+      } else if (needDeposit && !depositPaid) {
         actions = `
-          <input
-            class="deposit-input"
-            id="deposit-note-${o.orderId}"
-            placeholder="หมายเหตุ เช่น รับสลิปมัดจำ ฿${depositAmount} แล้ว"
-            onfocus="pauseRefresh=true"
-            onblur="pauseRefresh=false">
+          <input class="deposit-input" id="deposit-note-${o.orderId}" placeholder="หมายเหตุ เช่น รับสลิปมัดจำ ฿${depositAmount} แล้ว"
+            onfocus="pauseRefresh=true" onblur="pauseRefresh=false">
           <button class="btn-action btn-deposit" onclick="confirmDepositAndOrder('${o.orderId}')">💸 รับมัดจำ ฿${depositAmount} + ยืนยันออร์เดอร์</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
-      }
-      // เงินสด ปกติ หรือ พร้อมเพย์ที่ยืนยันแล้ว
-      else {
+      } else {
         actions = `
           <button class="btn-action btn-confirm" onclick="confirmOrder('${o.orderId}')">✅ ยืนยันออร์เดอร์</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
       }
     } else if (o.status === "ASSIGNED" || o.status === "WAIT_RIDER") {
-      // ยังต้องยืนยันสลิปพร้อมเพย์อยู่
       if (isPromptpay && !isPaid) {
         actions = `
           <button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>
@@ -539,7 +518,6 @@ function renderOrders() {
 
     return `
     <div class="order-card ${isUrgent ? "urgent" : ""}" id="card-${o.orderId}">
-
       <div class="order-head" onclick="toggleCard('${o.orderId}')">
         <div class="order-head-left">
           <div class="order-id">#${o.orderId}</div>
@@ -553,7 +531,20 @@ function renderOrders() {
 
       <div class="order-body" id="body-${o.orderId}">
 
-        <!-- ร้าน + ไรเดอร์ -->
+        <!-- ข้อมูลลูกค้า -->
+        <div class="order-section">
+          <div class="section-label">ข้อมูลลูกค้า</div>
+          <div class="info-row">
+            <span class="info-key">ชื่อ</span>
+            <span class="info-val">${memberName}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">เบอร์</span>
+            <span class="info-val">${phoneDisplay}</span>
+          </div>
+        </div>
+
+        <!-- ข้อมูลออร์เดอร์ -->
         <div class="order-section">
           <div class="section-label">ข้อมูลออร์เดอร์</div>
           <div class="info-row">
@@ -614,7 +605,7 @@ function renderOrders() {
   });
 }
 
-// ══ ACTIONS ════════════════════════════════════════════
+// ── ACTIONS ────────────────────────────────────────────
 async function confirmOrder(orderId) {
   const btn = event.target;
   btn.disabled = true; btn.textContent = "กำลังยืนยัน..."; btn.style.opacity = "0.5";
@@ -666,11 +657,8 @@ async function confirmPayment(orderId) {
   const btn = event.target;
   btn.disabled = true; btn.style.opacity = "0.5";
   try {
-    // ยืนยันรับเงิน
     const pay = await apiPost({ action:"updatePayment", orderId, paymentStatus:"paid" });
     if (!pay.success) throw new Error(pay.error);
-
-    // ถ้าสถานะยังเป็น NEW → ยืนยันออร์เดอร์ต่อเลย
     const order = allOrders.find(o => o.orderId === orderId);
     if (order && order.status === "NEW") {
       const ord = await apiPost({ action:"adminConfirmOrder", orderId });
@@ -679,7 +667,6 @@ async function confirmPayment(orderId) {
     } else {
       showToast("💚 ยืนยันรับเงินแล้ว");
     }
-
     await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
@@ -687,24 +674,20 @@ async function confirmPayment(orderId) {
   }
 }
 
-// ══ HELPERS ════════════════════════════════════════════
+// ── HELPERS ────────────────────────────────────────────
 function toggleCard(orderId) {
   document.getElementById("body-" + orderId)?.classList.toggle("open");
 }
-
 function parseItems(str) {
   try { return JSON.parse(str) || []; } catch(_) { return []; }
 }
-
 function formatTime(d) {
   if (!d) return "-";
   return new Date(d).toLocaleString("th-TH", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
 }
-
 function showToast(msg) {
   const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
+  t.textContent = msg; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2500);
 }
 
@@ -714,13 +697,11 @@ function showReport() {
   document.getElementById("report-page").style.display = "block";
   buildReport();
 }
-
 function hideReport() {
   document.querySelector(".filter-wrap").style.display = "";
   document.getElementById("orders-wrap").style.display = "";
   document.getElementById("report-page").style.display = "none";
 }
-
 function buildReport() {
   const today = new Date().toDateString();
   const todayOrders = allOrders.filter(o => new Date(o.CreateAT).toDateString() === today);
@@ -738,67 +719,37 @@ function buildReport() {
 
 function exportCSV() {
   const today = new Date().toDateString();
-  const todayOrders =
-    allOrders.filter(
-      o => new Date(o.CreateAT).toDateString() === today
-    );
-  let csv = [[
-    "OrderID",
-    "Date",
-    "RestaurantID",
-    "Restaurant",
-    "RiderID",
-    "Subtotal",
-    "DeliveryFee",
-    "Total",
-    "GPPercent",
-    "GPAmount",
-    "RiderFee",
-    "DepositAmount",
-    "DepositPaid",
-    "PaymentType",
-    "PaymentStatus",
-    "PromoCode",
-    "PromoCost",
-    "Status",
-    "DeliveredAt"
-  ]];
+  const todayOrders = allOrders.filter(o => new Date(o.CreateAT).toDateString() === today);
+  let csv = [["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoCost","Status","DeliveredAt"]];
   todayOrders.forEach(o => {
+    const m = membersMap[o.memberId] || {};
     csv.push([
-      o.orderId,
-      o.CreateAT,
-      o.restaurantId,
-      restaurantsMap[o.restaurantId] || o.restaurantId,
+      o.orderId, o.CreateAT,
+      o.restaurantId, restaurantsMap[o.restaurantId] || o.restaurantId,
+      m.name || "", m.phone || "",
       o.riderId || "",
-      o.subtotal || 0,
-      o.deliveryFee || 0,
-      o.total || 0,
-      o.gpPercent || 0,
-      o.gpAmount || 0,
-      o.riderFee || 0,
-      o.depositAmount || 0,
-      o.depositPaid || "",
-      o.paymentType || "",
-      o.paymentStatus || "",
-      o.promoCode || "",
-      o.promoCost || 0,
-      o.status || "",
-      o.deliveredAt || ""
+      o.subtotal || 0, o.deliveryFee || 0, o.total || 0,
+      o.gpPercent || 0, o.gpAmount || 0, o.riderFee || 0,
+      o.depositAmount || 0, o.depositPaid || "",
+      o.paymentType || "", o.paymentStatus || "",
+      o.promoCode || "", o.promoCost || 0,
+      o.status || "", o.deliveredAt || ""
     ]);
   });
-  const blob = new Blob(
-    ["\uFEFF" + csv.map(r => r.join(",")).join("\n")],
-    { type:"text/csv;charset=utf-8;" }
-  );
+  const blob = new Blob(["\uFEFF" + csv.map(r => r.join(",")).join("\n")], { type:"text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download =
-    "Orders-" +
-    new Date().toISOString().slice(0,10) +
-    ".csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  link.download = "Orders-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+}
+
+async function closeDayAdmin() {
+  const ok = confirm("ยืนยันปิดวัน ?\nระบบจะสรุปยอดทั้งหมดของวันนี้");
+  if (!ok) return;
+  try {
+    const res = await apiGet("action=closeDay");
+    alert(res.message || "ปิดวันสำเร็จ");
+  } catch(err) { console.error(err); alert("เกิดข้อผิดพลาด"); }
 }
 
 if (sessionStorage.getItem("admin_auth") === "1") {
@@ -806,27 +757,6 @@ if (sessionStorage.getItem("admin_auth") === "1") {
   document.getElementById("dashboard").style.display = "block";
   init();
 }
-
-async function closeDayAdmin() {
-  const ok = confirm(
-    "ยืนยันปิดวัน ?\nระบบจะสรุปยอดทั้งหมดของวันนี้"
-  );
-  if (!ok) return;
-  try {
-    const res =
-      await apiGet(
-        "action=closeDay"
-      );
-    alert(
-      res.message ||
-      "ปิดวันสำเร็จ"
-    );
-  } catch(err) {
-    console.error(err);
-    alert("เกิดข้อผิดพลาด");
-  }
-}
-
 </script>
 </body>
 </html>

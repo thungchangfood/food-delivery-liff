@@ -146,6 +146,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .summary-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:#555;}
 .summary-total{display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:700;border-top:.5px solid #ececec;}
 .deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
+.free-delivery-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#1d4ed8;}
 
 /* ── Track page ── */
 .track-wrap{padding:16px;}
@@ -294,6 +295,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
         <input class="fi" id="f-note" placeholder="เช่น ไม่เผ็ด, ไม่ใส่ผัก">
       </div>
     </div>
+    <div id="free-delivery-notice" style="display:none;" class="free-delivery-notice"></div>
     <div class="cart-section">
       <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
       <div class="fg" style="display:flex;gap:8px;align-items:center;">
@@ -880,10 +882,12 @@ function goCart() {
   renderCart(); showPage("page-cart");
 }
 
+const FREE_DELIVERY_THRESHOLD = 160;
+
 function calcDelivery(subtotal) {
   if (promoApplied) return 0;
   let d = currentShop?.deliveryFee || 0;
-  if (subtotal >= 180) { d -= currentShop?.gpPlan === "gp25" ? 4 : 5; if (d < 0) d = 0; }
+  if (subtotal >= FREE_DELIVERY_THRESHOLD) { d -= currentShop?.gpPlan === "gp25" ? 4 : 5; if (d < 0) d = 0; }
   return d;
 }
 
@@ -915,6 +919,16 @@ function renderCart() {
       ? `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`
       : `฿${delivery}`;
   document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
+
+  const fdNotice = document.getElementById("free-delivery-notice");
+  if (!promoApplied && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
+    const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+    const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
+    fdNotice.style.display = "block";
+    fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+  } else {
+    fdNotice.style.display = "none";
+  }
 
   // ใส่ชื่อ/เบอร์จาก member (readonly)
   if (currentMember) {

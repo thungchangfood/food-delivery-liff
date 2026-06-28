@@ -48,7 +48,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .cat-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:13px;font-family:inherit;border:1.5px solid #e0e0e0;background:white;cursor:pointer;transition:.15s;}
 .cat-chip.active{background:#06C755;color:white;border-color:#06C755;}
 
-/* ── Weekly Picks (vertical scroll, horizontal menu inside each card) ── */
+/* ── Weekly Picks ── */
 .weekly-section{padding:14px 0 4px;}
 .weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
 .weekly-scroll{display:flex;flex-direction:column;gap:14px;padding:0 16px 14px;}
@@ -85,6 +85,13 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .shop-open{position:absolute;top:6px;right:6px;background:#16a34a;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
 .shop-closed{position:absolute;top:6px;right:6px;background:#dc2626;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
 .track-btn{margin:12px 16px 0;background:white;border:1.5px solid #06C755;color:#06C755;border-radius:12px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;}
+
+/* ── First Order Banner (หน้าร้าน) ── */
+.first-order-banner{margin:10px 16px 0;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.first-order-banner-icon{font-size:28px;flex-shrink:0;}
+.first-order-banner-text{flex:1;}
+.first-order-banner-title{font-size:14px;font-weight:700;color:#15803d;}
+.first-order-banner-sub{font-size:12px;color:#16a34a;margin-top:2px;}
 
 /* ── Menu page ── */
 .shop-hero{height:200px;background:#fff;position:relative;overflow:hidden;}
@@ -147,6 +154,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .summary-total{display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:700;border-top:.5px solid #ececec;}
 .deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
 .free-delivery-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#1d4ed8;}
+/* ✅ แบนเนอร์ออเดอร์แรกในหน้าตะกร้า */
+.first-order-notice{background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#15803d;font-weight:600;}
 
 /* ── Track page ── */
 .track-wrap{padding:16px;}
@@ -228,6 +237,16 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <div class="cart-btn" onclick="goCart()">🛒<div class="cart-badge" id="cart-badge" style="display:none">0</div></div>
   </div>
   <button class="track-btn" onclick="goTrack()">📍 ติดตามออร์เดอร์ของฉัน</button>
+
+  <!-- ✅ แบนเนอร์ออเดอร์แรกในหน้าร้าน -->
+  <div class="first-order-banner" id="first-order-shop-banner" style="display:none;">
+    <div class="first-order-banner-icon">🎉</div>
+    <div class="first-order-banner-text">
+      <div class="first-order-banner-title">ออเดอร์แรกส่งฟรี!</div>
+      <div class="first-order-banner-sub">ไม่มีขั้นต่ำ สั่งได้เลยครับ</div>
+    </div>
+  </div>
+
   <div class="search-wrap" style="margin-top:10px;">
     <input class="search-input" id="search-input" placeholder="🔍  ค้นหาร้านอาหาร..." oninput="filterShops()">
   </div>
@@ -295,7 +314,13 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
         <input class="fi" id="f-note" placeholder="เช่น ไม่เผ็ด, ไม่ใส่ผัก">
       </div>
     </div>
+
+    <!-- ✅ แบนเนอร์ออเดอร์แรกในหน้าตะกร้า (แสดงแทน free-delivery-notice) -->
+    <div id="first-order-notice" style="display:none;" class="first-order-notice">
+      🎉 ออเดอร์แรกของคุณ! <strong>ส่งฟรีทันที ไม่มีขั้นต่ำ</strong>
+    </div>
     <div id="free-delivery-notice" style="display:none;" class="free-delivery-notice"></div>
+
     <div class="cart-section">
       <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
       <div class="fg" style="display:flex;gap:8px;align-items:center;">
@@ -424,7 +449,7 @@ const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const LIFF_ID = "2009898131-0IpEQjEj";
 
 let allShops = [], currentShop = null, currentMenus = [];
-let cart = {};  // key: menuId_variant_optKey → { menuId, variant, name, price, qty, optLabel, basePrice }
+let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
 let trackTimer = null, countdownTimer = null, pendingOrderData = null;
@@ -432,11 +457,13 @@ let promoApplied = false;
 let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
+// ✅ ตัวแปรออเดอร์แรก
+let firstOrderFreeEnabled = true;
 
 // Sheet state
 let sheetMenu = null;
 let sheetQty = 1;
-let sheetSelections = {}; // { groupLabel: choiceLabel }
+let sheetSelections = {};
 
 // ── Drive thumbnail ──────────────────────────────────
 function driveThumb(url, w = 300) {
@@ -481,12 +508,17 @@ async function init() {
         bankName    = statusRes.data.bankName    || "";
         weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
         weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
+        // ✅ อ่าน flag ออเดอร์แรกจาก system status
+        firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
       }
       allShops = shopsRes.data || [];
       renderCategories(); renderShops(allShops); renderWeekly();
       if (memberRes.success) {
         currentMember = memberRes.data;
+        // ✅ คำนวณว่าเป็นออเดอร์แรกมั้ย
+        currentMember.isFirstOrder = firstOrderFreeEnabled && memberRes.data.firstOrderDone !== "true";
         showPage("page-shops");
+        renderFirstOrderBanner();
         prefetchWeeklyMenus();
         prefetchMenus();
       } else {
@@ -522,6 +554,13 @@ async function prefetchWeeklyMenus() {
   renderWeekly();
 }
 
+// ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน
+function renderFirstOrderBanner() {
+  const banner = document.getElementById("first-order-shop-banner");
+  if (!banner) return;
+  banner.style.display = (firstOrderFreeEnabled && currentMember?.isFirstOrder) ? "flex" : "none";
+}
+
 function showRegisterPage() {
   if (lineProfile) {
     document.getElementById("reg-name").value = lineProfile.displayName || "";
@@ -542,7 +581,7 @@ async function registerMember() {
   try {
     const r = await apiPost({ action:"createMember", name, phone, lineUserId: lineProfile?.userId || "" });
     if (!r.success) throw new Error(r.error);
-    currentMember = { memberId: r.data.memberId, name, phone };
+    currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: true };
     await checkAndLoadShops();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
@@ -566,15 +605,18 @@ async function checkAndLoadShops() {
       bankName    = statusRes.data.bankName    || "";
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
+      firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
     }
     allShops = shopsRes.data || [];
-    renderCategories(); renderShops(allShops); renderWeekly(); showPage("page-shops");
+    renderCategories(); renderShops(allShops); renderWeekly();
+    renderFirstOrderBanner();
+    showPage("page-shops");
     prefetchWeeklyMenus();
     prefetchMenus();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
-// ── Weekly picks (ร้านแนะนำ — เลื่อนลงแนวตั้ง, แต่ละการ์ดเลื่อนเมนูแนวนอน) ──
+// ── Weekly picks ──────────────────────────────────────
 function getMenuScrollHtml(restaurantId) {
   const menus = menuCache[restaurantId];
   if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
@@ -742,10 +784,7 @@ function renderMenus() {
 
 // ── OPTIONS SHEET ────────────────────────────────────
 function parseOptions(m) {
-  // รองรับ field "options" ที่เป็น JSON string หรือ array
-  // format: [{"label":"เส้น","choices":["เส้นใหญ่","เส้นเล็ก"]},...]
   if (!m.options) {
-    // fallback: ถ้ามี priceSpecial → สร้าง option ขนาดอัตโนมัติ
     if (m.priceSpecial && Number(m.priceSpecial) > 0) {
       return [{
         label: "ขนาด",
@@ -765,14 +804,12 @@ function openOptions(menuId) {
   if (!m) return;
   const opts = parseOptions(m);
   if (!opts.length) {
-    // ไม่มี options → เพิ่มตะกร้าเลย
     addDirectToCart(m);
     return;
   }
   sheetMenu = m;
   sheetQty = 1;
   sheetSelections = {};
-  // default เลือกตัวแรกของแต่ละ group
   opts.forEach(g => { if (g.choices && g.choices.length) sheetSelections[g.label] = g.choices[0]; });
   renderSheet();
   document.getElementById("sheet-overlay").classList.add("show");
@@ -834,7 +871,6 @@ function addFromSheet() {
   if (!sheetMenu) return;
   const opts = parseOptions(sheetMenu);
   const price = calcSheetPrice();
-  // สร้าง optLabel จาก selections
   const optParts = opts.map(g => sheetSelections[g.label]).filter(Boolean);
   const optLabel = optParts.join(" / ");
   const optKey = optParts.join("_").replace(/\s/g, "") || "default";
@@ -884,7 +920,9 @@ function goCart() {
 
 const FREE_DELIVERY_THRESHOLD = 160;
 
+// ✅ คำนวณค่าส่ง — ออเดอร์แรกฟรีเสมอ
 function calcDelivery(subtotal) {
+  if (firstOrderFreeEnabled && currentMember?.isFirstOrder) return 0;
   if (promoApplied) return 0;
   let d = currentShop?.deliveryFee || 0;
   if (subtotal >= FREE_DELIVERY_THRESHOLD) { d -= currentShop?.gpPlan === "gp25" ? 4 : 5; if (d < 0) d = 0; }
@@ -909,28 +947,44 @@ function renderCart() {
     : `<div style="padding:20px;text-align:center;color:#aaa;">ยังไม่มีรายการ</div>`;
 
   const subtotal = entries.reduce((s, e) => s + e.price * e.qty, 0);
+  const isFirst = firstOrderFreeEnabled && currentMember?.isFirstOrder;
   const origDel = currentShop?.deliveryFee || 0;
   const delivery = calcDelivery(subtotal);
 
   document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
-  document.getElementById("s-delivery").innerHTML = promoApplied
-    ? `<span style="color:#06C755;font-weight:bold;">฿0 (โค้ดส่งฟรี 🎉)</span>`
-    : delivery < origDel
-      ? `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`
-      : `฿${delivery}`;
-  document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
 
-  const fdNotice = document.getElementById("free-delivery-notice");
-  if (!promoApplied && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
-    const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
-    const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
-    fdNotice.style.display = "block";
-    fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+  // ✅ แสดงค่าส่ง
+  if (isFirst) {
+    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! 🎉</span>`;
+  } else if (promoApplied) {
+    document.getElementById("s-delivery").innerHTML = `<span style="color:#06C755;font-weight:bold;">฿0 (โค้ดส่งฟรี 🎉)</span>`;
+  } else if (delivery < origDel) {
+    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`;
   } else {
-    fdNotice.style.display = "none";
+    document.getElementById("s-delivery").textContent = `฿${delivery}`;
   }
 
-  // ใส่ชื่อ/เบอร์จาก member (readonly)
+  document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
+
+  // ✅ แบนเนอร์ออเดอร์แรกในตะกร้า (แสดงแทน threshold notice)
+  const firstOrderNotice = document.getElementById("first-order-notice");
+  const fdNotice = document.getElementById("free-delivery-notice");
+
+  if (isFirst) {
+    firstOrderNotice.style.display = "block";
+    fdNotice.style.display = "none";
+  } else {
+    firstOrderNotice.style.display = "none";
+    if (!promoApplied && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
+      const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+      const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
+      fdNotice.style.display = "block";
+      fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+    } else {
+      fdNotice.style.display = "none";
+    }
+  }
+
   if (currentMember) {
     document.getElementById("f-name").value = currentMember.name || "";
     document.getElementById("f-phone").value = formatPhone(currentMember.phone || "");
@@ -1121,6 +1175,11 @@ async function startCountdown(sec) {
         if (!r.success) throw new Error(r.error);
         const { orderId, total, needDeposit, depositAmount } = r.data;
         orderIdEl.textContent = `รหัสออร์เดอร์: ${orderId}`;
+
+        // ✅ อัปเดต flag หลัง order สำเร็จ
+        if (currentMember) currentMember.isFirstOrder = false;
+        renderFirstOrderBanner();
+
         const pi = document.getElementById("payment-info");
         if (needDeposit) {
           pi.style.display = "block";
@@ -1144,6 +1203,8 @@ async function startCountdown(sec) {
 function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
+  // ✅ คืน isFirstOrder เพราะยกเลิกก่อนส่ง API
+  if (currentMember) currentMember.isFirstOrder = true;
   showToast("ยกเลิกออร์เดอร์แล้วครับ");
   resetAndHome();
 }

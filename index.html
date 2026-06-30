@@ -290,11 +290,11 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       <div class="cart-section-title">📍 ที่อยู่จัดส่ง</div>
       <div class="fg">
         <label class="fl">ชื่อผู้รับ</label>
-        <input class="fi" id="f-name" readonly>
+        <input class="fi" id="f-name" readonly onclick="showEditInfoNotice()">
       </div>
       <div class="fg">
         <label class="fl">เบอร์โทร</label>
-        <input class="fi" id="f-phone" readonly>
+        <input class="fi" id="f-phone" readonly onclick="showEditInfoNotice()">
       </div>
       <div class="fg">
         <label class="fl">ที่อยู่จัดส่ง *</label>
@@ -1240,7 +1240,10 @@ async function loadTrackOrders() {
     renderTrack(r.data.filter(o => o.status !== "DONE" && o.status !== "CANCEL"), r.data);
   } catch(_) { document.getElementById("track-wrap").innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;">โหลดไม่สำเร็จครับ</div>`; }
 }
+let trackOrdersCache = []; // ✅ เก็บออเดอร์ทั้งหมดไว้ใช้ตอนกดดูรายละเอียดในประวัติ
+
 function renderTrack(active, all) {
+  trackOrdersCache = all;
   const steps = ["NEW","ASSIGNED","PICKED","DELIVERING","DONE"];
   const emoji = {NEW:"⏳",ASSIGNED:"✅",PICKED:"👨‍🍳",DELIVERING:"🛵",DONE:"✅",CANCEL:"❌"};
   const th = {NEW:"รอยืนยัน",ASSIGNED:"ยืนยันแล้ว",PICKED:"กำลังปรุง",DELIVERING:"กำลังส่ง",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
@@ -1272,7 +1275,19 @@ function renderTrack(active, all) {
   const hist = all.filter(o => o.status==="DONE"||o.status==="CANCEL").slice(0,5);
   if (hist.length) {
     html += `<div style="font-size:14px;font-weight:700;margin:16px 0 10px;">📋 ประวัติ</div>`;
-    hist.forEach(o => { html += `<div class="track-card" style="opacity:.7;"><div class="track-order-id">${emoji[o.status]} ${o.orderId}</div><div class="track-restaurant">${th[o.status]} · ฿${o.total}</div>${o.cancelReason?`<div style="font-size:12px;color:#EF4444;margin-top:4px;">สาเหตุ: ${o.cancelReason}</div>`:""}</div>`; });
+    hist.forEach(o => {
+      html += `<div class="track-card" style="opacity:.85;cursor:pointer;" onclick="toggleHistDetail('${o.orderId}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="track-order-id">${emoji[o.status]} ${o.orderId}</div>
+            <div class="track-restaurant">${th[o.status]} · ฿${o.total}</div>
+          </div>
+          <span style="color:#bbb;font-size:18px;" id="hist-arrow-${o.orderId}">›</span>
+        </div>
+        ${o.cancelReason?`<div style="font-size:12px;color:#EF4444;margin-top:4px;">สาเหตุ: ${o.cancelReason}</div>`:""}
+        <div id="hist-detail-${o.orderId}" style="display:none;margin-top:10px;"></div>
+      </div>`;
+    });
   }
   if (!active.length && !hist.length) html = `<div style="text-align:center;padding:60px 20px;color:#aaa;"><div style="font-size:48px;margin-bottom:12px;">📋</div>ยังไม่มีออร์เดอร์ครับ</div>`;
   document.getElementById("track-wrap").innerHTML = html;
@@ -1292,6 +1307,36 @@ function updateCartUI() {
   const cnt = document.getElementById("cart-count-btn"); if(cnt) cnt.textContent = total;
 }
 function parseItems(str) { try{return JSON.parse(str)||[];}catch(_){return[];} }
+// ✅ กดที่การ์ดประวัติออเดอร์ เพื่อดู/ซ่อนรายการเมนูที่สั่งไป
+function toggleHistDetail(orderId) {
+  const detailEl = document.getElementById("hist-detail-" + orderId);
+  const arrowEl = document.getElementById("hist-arrow-" + orderId);
+  if (!detailEl) return;
+  const isOpen = detailEl.style.display === "block";
+  if (isOpen) {
+    detailEl.style.display = "none";
+    if (arrowEl) arrowEl.textContent = "›";
+    return;
+  }
+  const order = trackOrdersCache.find(o => o.orderId === orderId);
+  if (!order) return;
+  const its = parseItems(order.Items);
+  detailEl.innerHTML = `
+    <div class="track-items">
+      ${its.length
+        ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
+        : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
+      <div class="track-total"><span>รวม</span><span>฿${order.total}</span></div>
+    </div>`;
+  detailEl.style.display = "block";
+  if (arrowEl) arrowEl.textContent = "⌄";
+}
+
+// ✅ แจ้งลูกค้าว่าแก้ชื่อ/เบอร์เองในแอปไม่ได้ ต้องติดต่อแอดมิน
+function showEditInfoNotice() {
+  showToast("หากต้องการแก้ไขชื่อหรือเบอร์ กรุณาติดต่อแอดมินครับ");
+}
+
 function showToast(msg) {
   const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2000);

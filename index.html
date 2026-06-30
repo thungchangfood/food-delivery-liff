@@ -130,6 +130,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .sheet-price{font-size:15px;color:#06C755;font-weight:700;}
 .sheet-section{padding:10px 16px;}
 .sheet-section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.sheet-optional-tag{text-transform:none;font-weight:500;color:#bbb;letter-spacing:0;}
 .option-chips{display:flex;flex-wrap:wrap;gap:8px;}
 .option-chip{padding:7px 14px;border-radius:20px;border:1.5px solid #e0e0e0;background:white;font-size:13px;font-family:inherit;cursor:pointer;transition:.15s;font-weight:500;}
 .option-chip.selected{background:#06C755;color:white;border-color:#06C755;}
@@ -792,6 +793,7 @@ function parseOptions(m) {
     if (m.priceSpecial && Number(m.priceSpecial) > 0) {
       return [{
         label: "ขนาด",
+        required: true,
         choices: ["ธรรมดา", "พิเศษ"],
         priceExtra: { "พิเศษ": Number(m.priceSpecial) - Number(m.price) }
       }];
@@ -814,7 +816,11 @@ function openOptions(menuId) {
   sheetMenu = m;
   sheetQty = 1;
   sheetSelections = {};
-  opts.forEach(g => { if (g.choices && g.choices.length) sheetSelections[g.label] = g.choices[0]; });
+  // ✅ บังคับเลือก (required) จะมีค่าเริ่มต้นเป็นตัวเลือกแรกเสมอ
+  // ตัวเลือกไม่บังคับ (optional) จะเริ่มต้นแบบ "ไม่เลือก" จนกว่าจะกดเอง
+  opts.forEach(g => {
+    if (g.required && g.choices && g.choices.length) sheetSelections[g.label] = g.choices[0];
+  });
   renderSheet();
   document.getElementById("sheet-overlay").classList.add("show");
   document.getElementById("options-sheet").classList.add("show");
@@ -828,12 +834,12 @@ function renderSheet() {
 
   document.getElementById("sheet-options-body").innerHTML = opts.map(g => `
     <div class="sheet-section">
-      <div class="sheet-section-label">${g.label}</div>
+      <div class="sheet-section-label">${g.label}${!g.required ? ' <span class="sheet-optional-tag">(ไม่เลือกได้)</span>' : ''}</div>
       <div class="option-chips">
         ${g.choices.map(c => {
           const extra = g.priceExtra && g.priceExtra[c] ? g.priceExtra[c] : 0;
           const sel = sheetSelections[g.label] === c;
-          return `<div class="option-chip ${sel?"selected":""}" onclick="selectOption('${g.label}','${c}')">
+          return `<div class="option-chip ${sel?"selected":""}" onclick="selectOption('${g.label}','${c}',${g.required ? "true" : "false"})">
             ${c}${extra > 0 ? `<span class="option-chip-extra"> +฿${extra}</span>` : ""}
           </div>`;
         }).join("")}
@@ -843,8 +849,13 @@ function renderSheet() {
   updateSheetPrice();
 }
 
-function selectOption(groupLabel, choice) {
-  sheetSelections[groupLabel] = choice;
+function selectOption(groupLabel, choice, required) {
+  if (!required && sheetSelections[groupLabel] === choice) {
+    // ✅ ตัวเลือกไม่บังคับ: กดซ้ำตัวที่เลือกอยู่ = ยกเลิกการเลือก (ไม่ใส่)
+    delete sheetSelections[groupLabel];
+  } else {
+    sheetSelections[groupLabel] = choice;
+  }
   renderSheet();
 }
 
@@ -874,6 +885,10 @@ function updateSheetPrice() {
 function addFromSheet() {
   if (!sheetMenu) return;
   const opts = parseOptions(sheetMenu);
+  // ✅ เช็คว่ากลุ่มที่บังคับเลือกถูกเลือกครบหรือยัง
+  const missing = opts.find(g => g.required && !sheetSelections[g.label]);
+  if (missing) { showToast(`กรุณาเลือก${missing.label}ก่อนครับ`); return; }
+
   const price = calcSheetPrice();
   const optParts = opts.map(g => sheetSelections[g.label]).filter(Boolean);
   const optLabel = optParts.join(" / ");

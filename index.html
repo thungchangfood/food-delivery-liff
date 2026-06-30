@@ -154,7 +154,6 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .summary-total{display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:700;border-top:.5px solid #ececec;}
 .deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
 .free-delivery-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#1d4ed8;}
-/* ✅ แบนเนอร์ออเดอร์แรกในหน้าตะกร้า */
 .first-order-notice{background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#15803d;font-weight:600;}
 
 /* ── Track page ── */
@@ -238,7 +237,6 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   </div>
   <button class="track-btn" onclick="goTrack()">📍 ติดตามออร์เดอร์ของฉัน</button>
 
-  <!-- ✅ แบนเนอร์ออเดอร์แรกในหน้าร้าน -->
   <div class="first-order-banner" id="first-order-shop-banner" style="display:none;">
     <div class="first-order-banner-icon">🎉</div>
     <div class="first-order-banner-text">
@@ -252,7 +250,6 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   </div>
   <div class="cat-scroll" id="cat-scroll"></div>
 
-  <!-- Weekly picks -->
   <div class="weekly-section" id="weekly-section">
     <div class="weekly-title">⭐ แนะนำประจำสัปดาห์</div>
     <div class="weekly-scroll" id="weekly-scroll"></div>
@@ -315,7 +312,6 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       </div>
     </div>
 
-    <!-- ✅ แบนเนอร์ออเดอร์แรกในหน้าตะกร้า (แสดงแทน free-delivery-notice) -->
     <div id="first-order-notice" style="display:none;" class="first-order-notice">
       🎉 ออเดอร์แรกของคุณ! <strong>ส่งฟรีทันที ไม่มีขั้นต่ำ</strong>
     </div>
@@ -457,7 +453,6 @@ let promoApplied = false;
 let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
-// ✅ ตัวแปรออเดอร์แรก
 let firstOrderFreeEnabled = true;
 
 // Sheet state
@@ -481,6 +476,15 @@ async function apiPost(body) {
 
 // ── Menu Cache ───────────────────────────────────────
 const menuCache = {};
+
+// ── ตรวจสอบว่าใช้สิทธิ์ส่งฟรีออเดอร์แรกไปแล้วหรือยัง ──
+// รองรับค่าจาก Google Sheets ที่อาจเป็น string "true", boolean true, หรือ number 1
+function checkIsFirstOrder(memberData) {
+  if (!firstOrderFreeEnabled) return false;
+  const fod = memberData.firstOrderDone;
+  const alreadyUsed = fod === "true" || fod === true || fod === 1 || fod === "1" || fod === "TRUE";
+  return !alreadyUsed;
+}
 
 // ── INIT ─────────────────────────────────────────────
 async function init() {
@@ -508,15 +512,14 @@ async function init() {
         bankName    = statusRes.data.bankName    || "";
         weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
         weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
-        // ✅ อ่าน flag ออเดอร์แรกจาก system status
         firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
       }
       allShops = shopsRes.data || [];
       renderCategories(); renderShops(allShops); renderWeekly();
       if (memberRes.success) {
         currentMember = memberRes.data;
-        // ✅ คำนวณว่าเป็นออเดอร์แรกมั้ย
-        currentMember.isFirstOrder = firstOrderFreeEnabled && memberRes.data.firstOrderDone !== "true";
+        // ✅ เช็คจากข้อมูลจริงที่บันทึกไว้ใน Sheet (memberRes.data.firstOrderDone)
+        currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
         showPage("page-shops");
         renderFirstOrderBanner();
         prefetchWeeklyMenus();
@@ -554,7 +557,7 @@ async function prefetchWeeklyMenus() {
   renderWeekly();
 }
 
-// ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน
+// ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน — เฉพาะลูกค้าใหม่ที่ยังไม่เคยสั่ง
 function renderFirstOrderBanner() {
   const banner = document.getElementById("first-order-shop-banner");
   if (!banner) return;
@@ -581,7 +584,8 @@ async function registerMember() {
   try {
     const r = await apiPost({ action:"createMember", name, phone, lineUserId: lineProfile?.userId || "" });
     if (!r.success) throw new Error(r.error);
-    currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: true };
+    // สมาชิกใหม่ทั้งหมด = ยังไม่เคยสั่ง = isFirstOrder true เสมอ (ยกเว้นปิดฟีเจอร์)
+    currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: firstOrderFreeEnabled };
     await checkAndLoadShops();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
@@ -920,7 +924,6 @@ function goCart() {
 
 const FREE_DELIVERY_THRESHOLD = 160;
 
-// ✅ คำนวณค่าส่ง — ออเดอร์แรกฟรีเสมอ
 function calcDelivery(subtotal) {
   if (firstOrderFreeEnabled && currentMember?.isFirstOrder) return 0;
   if (promoApplied) return 0;
@@ -953,7 +956,6 @@ function renderCart() {
 
   document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
 
-  // ✅ แสดงค่าส่ง
   if (isFirst) {
     document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! 🎉</span>`;
   } else if (promoApplied) {
@@ -966,7 +968,6 @@ function renderCart() {
 
   document.getElementById("s-total").textContent = `฿${subtotal + delivery}`;
 
-  // ✅ แบนเนอร์ออเดอร์แรกในตะกร้า (แสดงแทน threshold notice)
   const firstOrderNotice = document.getElementById("first-order-notice");
   const fdNotice = document.getElementById("free-delivery-notice");
 
@@ -1176,7 +1177,8 @@ async function startCountdown(sec) {
         const { orderId, total, needDeposit, depositAmount } = r.data;
         orderIdEl.textContent = `รหัสออร์เดอร์: ${orderId}`;
 
-        // ✅ อัปเดต flag หลัง order สำเร็จ
+        // ✅ ออเดอร์นี้ยิงสำเร็จแล้ว — ปิดสิทธิ์ส่งฟรีฝั่ง client ทันที
+        // (ฝั่ง server จะบันทึก firstOrderDone=true ลง Sheet ให้ตอนนี้แล้วด้วย)
         if (currentMember) currentMember.isFirstOrder = false;
         renderFirstOrderBanner();
 
@@ -1203,8 +1205,8 @@ async function startCountdown(sec) {
 function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
-  // ✅ คืน isFirstOrder เพราะยกเลิกก่อนส่ง API
-  if (currentMember) currentMember.isFirstOrder = true;
+  // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้ คืนค่าเดิม
+  if (currentMember) currentMember.isFirstOrder = firstOrderFreeEnabled;
   showToast("ยกเลิกออร์เดอร์แล้วครับ");
   resetAndHome();
 }

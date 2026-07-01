@@ -461,10 +461,17 @@ async function init() {
       if (memberRes.success) {
         currentMember = memberRes.data;
         currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
-        showPage("page-shops");
         renderFirstOrderBanner();
         prefetchWeeklyMenus();
         prefetchMenus();
+        // ── เช็ค ?page=track จาก Rich Menu ──
+        const urlPage = new URLSearchParams(window.location.search).get("page");
+        if (urlPage === "track") {
+          showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
+          goTrack();
+        } else {
+          showPage("page-shops");
+        }
       } else {
         showRegisterPage();
       }

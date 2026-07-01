@@ -13,11 +13,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;}
 .spinner{width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#06C755;border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Header ── */
 .header{background:#06C755;color:white;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
 .header-back{font-size:22px;cursor:pointer;padding:2px 6px;}
 .header-title{font-size:17px;font-weight:700;flex:1;}
 .cart-btn{position:relative;cursor:pointer;padding:4px;font-size:20px;}
 .cart-badge{position:absolute;top:-4px;right:-4px;background:#FF3B30;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+/* ── Register ── */
 .register-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
 .register-card{background:white;border-radius:16px;padding:28px;width:100%;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,.08);}
 .register-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 12px;display:block;border:3px solid #06C755;}
@@ -29,16 +33,22 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .btn-green{width:100%;background:#06C755;color:white;border:none;border-radius:14px;padding:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;}
 .btn-green:active{transform:scale(.98);}
 .btn-green:disabled{background:#ccc;cursor:not-allowed;}
+
+/* ── Closed ── */
 .closed-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;}
 .closed-icon{font-size:64px;margin-bottom:16px;}
 .closed-title{font-size:20px;font-weight:700;margin-bottom:8px;}
 .closed-msg{font-size:15px;color:#888;line-height:1.6;}
+
+/* ── Shop page ── */
 .search-wrap{background:white;padding:10px 16px;border-bottom:.5px solid #ececec;}
 .search-input{width:100%;background:#f5f5f5;border:none;border-radius:20px;padding:10px 16px;font-size:14px;font-family:inherit;outline:none;}
 .cat-scroll{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;background:white;border-bottom:.5px solid #ececec;}
 .cat-scroll::-webkit-scrollbar{display:none;}
 .cat-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:13px;font-family:inherit;border:1.5px solid #e0e0e0;background:white;cursor:pointer;transition:.15s;}
 .cat-chip.active{background:#06C755;color:white;border-color:#06C755;}
+
+/* ── Weekly Picks ── */
 .weekly-section{padding:14px 0 4px;}
 .weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
 .weekly-scroll{display:flex;flex-direction:column;gap:14px;padding:0 16px 14px;}
@@ -57,10 +67,17 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .weekly-menu-item{flex-shrink:0;width:84px;cursor:pointer;}
 .weekly-menu-item:active{transform:scale(.95);}
 .weekly-menu-item-img{width:84px;height:84px;border-radius:12px;overflow:hidden;background:#f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:24px;}
+/* ── เมนูแนะนำ ── */
+.weekly-menu-item.featured .weekly-menu-item-img{width:100px;height:100px;border-radius:14px;box-shadow:0 3px 10px rgba(6,199,85,.25);border:2px solid #06C755;}
+.weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:#1a1a1a;}
+.weekly-menu-item.featured .weekly-menu-item-price{font-size:12px;}
+.featured-badge{display:inline-block;background:#06C755;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;margin-bottom:3px;}
 .weekly-menu-item-img img{width:100%;height:100%;object-fit:cover;}
 .weekly-menu-item-name{font-size:11px;color:#555;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;}
 .weekly-menu-item-price{font-size:11px;color:#06C755;font-weight:700;text-align:center;margin-top:1px;}
 .weekly-menu-empty{padding:0 16px 14px;font-size:12px;color:#bbb;}
+
+/* ── Shop grid ── */
 .section-title{padding:14px 16px 8px;font-size:15px;font-weight:700;}
 .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px;}
 .shop-card{background:white;border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.15s;}
@@ -73,11 +90,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .shop-open{position:absolute;top:6px;right:6px;background:#16a34a;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
 .shop-closed{position:absolute;top:6px;right:6px;background:#dc2626;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
 .track-btn{margin:12px 16px 0;background:white;border:1.5px solid #06C755;color:#06C755;border-radius:12px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;}
+
+/* ── First Order Banner (หน้าร้าน) ── */
 .first-order-banner{margin:10px 16px 0;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
 .first-order-banner-icon{font-size:28px;flex-shrink:0;}
 .first-order-banner-text{flex:1;}
 .first-order-banner-title{font-size:14px;font-weight:700;color:#15803d;}
 .first-order-banner-sub{font-size:12px;color:#16a34a;margin-top:2px;}
+
+/* ── Menu page ── */
 .shop-hero{height:200px;background:#fff;position:relative;overflow:hidden;}
 .shop-hero img{width:100%;height:100%;object-fit:contain;padding:4px;background:#fff;}
 .shop-hero-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:64px;}
@@ -85,6 +106,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .shop-hero-name{color:white;font-size:20px;font-weight:700;}
 .shop-hero-address{color:rgba(255,255,255,.85);font-size:12px;margin-top:3px;display:flex;align-items:flex-start;gap:4px;line-height:1.4;}
 .shop-hero-sub{color:rgba(255,255,255,.8);font-size:13px;margin-top:2px;}
+
+/* ── Menu items ── */
 .menu-cat-title{padding:12px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;background:#f5f5f5;}
 .menu-item{display:flex;gap:0;background:white;border-bottom:.5px solid #f0f0f0;cursor:pointer;transition:.1s;}
 .menu-item:active{background:#f9f9f9;}
@@ -100,6 +123,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .qty-btn{width:30px;height:30px;border-radius:50%;border:2px solid #06C755;background:white;color:#06C755;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .qty-btn.plus{background:#06C755;color:white;}
 .qty-num{font-size:15px;font-weight:700;min-width:22px;text-align:center;}
+
+/* ── Options Bottom Sheet ── */
 .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:.25s;}
 .sheet-overlay.show{opacity:1;pointer-events:all;}
 .sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:white;border-radius:20px 20px 0 0;z-index:201;transition:.3s cubic-bezier(.32,.72,0,1);max-height:90vh;overflow-y:auto;}
@@ -118,6 +143,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .sheet-qty{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:.5px solid #f0f0f0;}
 .sheet-qty-label{font-size:14px;font-weight:600;}
 .sheet-add-btn{margin:12px 16px 24px;padding:14px;background:#06C755;color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;width:calc(100% - 32px);}
+
+/* ── Cart page ── */
 .cart-section{background:white;margin-bottom:10px;}
 .cart-section-title{padding:14px 16px 8px;font-size:14px;font-weight:700;border-bottom:.5px solid #f0f0f0;}
 .cart-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:.5px solid #f5f5f5;}
@@ -134,6 +161,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
 .free-delivery-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#1d4ed8;}
 .first-order-notice{background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#15803d;font-weight:600;}
+
+/* ── Track page ── */
 .track-wrap{padding:16px;}
 .track-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
 .track-order-id{font-size:16px;font-weight:700;margin-bottom:4px;}
@@ -151,13 +180,19 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .track-item-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
 .track-total{display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding-top:8px;border-top:.5px solid #e8e8e8;margin-top:4px;}
 .rider-info{background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:10px;}
+
+/* ── Deposit page ── */
 .dep-wrap{padding:16px;padding-bottom:100px;}
+
+/* ── Success page ── */
 .success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:32px;text-align:center;}
 .success-icon{font-size:72px;margin-bottom:16px;}
 .success-title{font-size:22px;font-weight:700;margin-bottom:8px;}
 .success-sub{font-size:15px;color:#888;line-height:1.6;margin-bottom:20px;}
 .order-id-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 24px;font-size:16px;font-weight:600;color:#15803d;margin-bottom:16px;}
 .payment-info{background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:14px 20px;font-size:14px;line-height:1.8;margin-bottom:16px;text-align:left;width:100%;}
+
+/* ── Shared ── */
 .bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;background:white;border-top:.5px solid #ececec;z-index:99;}
 .pb-80{padding-bottom:80px;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:white;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;}
@@ -165,22 +200,22 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 </style>
 </head>
 <body>
+
+<!-- LOADING -->
 <div class="page active" id="page-loading">
   <div class="loading-wrap">
     <div class="spinner"></div>
     <div style="font-size:14px;color:#888;">กำลังโหลด...</div>
   </div>
 </div>
+
+<!-- REGISTER -->
 <div class="page" id="page-register">
   <div class="register-wrap">
     <div class="register-card">
       <img id="reg-avatar" class="register-avatar" src="" style="display:none;">
       <div class="register-title">ยินดีต้อนรับ! 🎉</div>
       <div class="register-sub">กรอกข้อมูลเพื่อเริ่มสั่งอาหารครับ</div>
-      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400e;line-height:1.6;">
-        ⚠️ <strong>กรุณาตรวจสอบชื่อและเบอร์โทรให้ถูกต้อง</strong><br>
-        หากต้องการแก้ไข กรุณาแจ้งแอดมินครับ
-      </div>
       <label class="form-label">ชื่อ-นามสกุล *</label>
       <input class="form-input" id="reg-name" placeholder="ชื่อ-นามสกุล">
       <label class="form-label">เบอร์โทรศัพท์ *</label>
@@ -189,6 +224,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
   </div>
 </div>
+
+<!-- CLOSED -->
 <div class="page" id="page-closed">
   <div class="closed-wrap">
     <div class="closed-icon">🔴</div>
@@ -197,6 +234,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <button class="btn-green" style="margin-top:24px;max-width:240px;" onclick="checkAndLoadShops()">รีเฟรช</button>
   </div>
 </div>
+
+<!-- SHOPS -->
 <div class="page" id="page-shops">
   <div class="header">
     <div class="header-title">🛵 สั่งอาหาร</div>
@@ -226,6 +265,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <div class="shop-grid" id="shop-grid"></div>
   <div style="height:20px;"></div>
 </div>
+
+<!-- MENU -->
 <div class="page" id="page-menu">
   <div class="header">
     <div class="header-back" onclick="showPage('page-shops')">←</div>
@@ -238,6 +279,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <button class="btn-green" onclick="goCart()">ดูตะกร้า (<span id="cart-count-btn">0</span> รายการ) →</button>
   </div>
 </div>
+
+<!-- CART -->
 <div class="page" id="page-cart">
   <div class="header">
     <div class="header-back" onclick="showPage('page-menu')">←</div>
@@ -309,6 +352,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <button class="btn-green" id="order-btn" onclick="submitOrder()">สั่งอาหาร</button>
   </div>
 </div>
+
+<!-- TRACK -->
 <div class="page" id="page-track">
   <div class="header">
     <div class="header-back" onclick="showPage('page-shops')">←</div>
@@ -318,6 +363,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <div class="loading-wrap" style="min-height:60vh;"><div class="spinner"></div></div>
   </div>
 </div>
+
+<!-- DEPOSIT -->
 <div class="page" id="page-deposit">
   <div class="header">
     <div class="header-back" onclick="showPage('page-cart')">←</div>
@@ -355,6 +402,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <button class="btn-green" onclick="submitOrderWithDeposit()">✅ ยืนยันสั่งอาหาร</button>
   </div>
 </div>
+
+<!-- SUCCESS -->
 <div class="page" id="page-success">
   <div class="success-wrap">
     <div class="success-icon">✅</div>
@@ -374,6 +423,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <button class="btn-green" onclick="safeResetAndHome()">กลับหน้าหลัก</button>
   </div>
 </div>
+
+<!-- OPTIONS SHEET -->
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
 <div class="sheet" id="options-sheet">
   <div class="sheet-handle"></div>
@@ -392,7 +443,9 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   </div>
   <button class="sheet-add-btn" id="sheet-add-btn" onclick="addFromSheet()">เพิ่มในตะกร้า — ฿0</button>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script>
 const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const LIFF_ID = "2009898131-0IpEQjEj";
@@ -408,24 +461,30 @@ let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
 let firstOrderFreeEnabled = true;
 
+// Sheet state
 let sheetMenu = null;
 let sheetQty = 1;
 let sheetSelections = {};
 
+// ── Drive thumbnail ──────────────────────────────────
 function driveThumb(url, w = 300) {
   if (!url) return "";
   let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w${w}` : url;
 }
 
+// ── API ──────────────────────────────────────────────
 async function apiGet(p) { return (await fetch(`${API}?${p}`)).json(); }
 async function apiPost(body) {
   const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
   return JSON.parse(t);
 }
 
+// ── Menu Cache ───────────────────────────────────────
 const menuCache = {};
 
+// ── ตรวจสอบว่าใช้สิทธิ์ส่งฟรีออเดอร์แรกไปแล้วหรือยัง ──
+// รองรับค่าจาก Google Sheets ที่อาจเป็น string "true", boolean true, หรือ number 1
 function checkIsFirstOrder(memberData) {
   if (!firstOrderFreeEnabled) return false;
   const fod = memberData.firstOrderDone;
@@ -433,6 +492,7 @@ function checkIsFirstOrder(memberData) {
   return !alreadyUsed;
 }
 
+// ── INIT ─────────────────────────────────────────────
 async function init() {
   try {
     await liff.init({ liffId: LIFF_ID });
@@ -464,18 +524,12 @@ async function init() {
       renderCategories(); renderShops(allShops); renderWeekly();
       if (memberRes.success) {
         currentMember = memberRes.data;
+        // ✅ เช็คจากข้อมูลจริงที่บันทึกไว้ใน Sheet (memberRes.data.firstOrderDone)
         currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
+        showPage("page-shops");
         renderFirstOrderBanner();
         prefetchWeeklyMenus();
         prefetchMenus();
-        // ── เช็ค ?page=track จาก Rich Menu ──
-        const urlPage = new URLSearchParams(window.location.search).get("page");
-        if (urlPage === "track") {
-          showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
-          goTrack();
-        } else {
-          showPage("page-shops");
-        }
       } else {
         showRegisterPage();
       }
@@ -509,6 +563,7 @@ async function prefetchWeeklyMenus() {
   renderWeekly();
 }
 
+// ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน — เฉพาะลูกค้าใหม่ที่ยังไม่เคยสั่ง
 function renderFirstOrderBanner() {
   const banner = document.getElementById("first-order-shop-banner");
   if (!banner) return;
@@ -535,6 +590,7 @@ async function registerMember() {
   try {
     const r = await apiPost({ action:"createMember", name, phone, lineUserId: lineProfile?.userId || "" });
     if (!r.success) throw new Error(r.error);
+    // สมาชิกใหม่ทั้งหมด = ยังไม่เคยสั่ง = isFirstOrder true เสมอ (ยกเว้นปิดฟีเจอร์)
     currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: firstOrderFreeEnabled };
     await checkAndLoadShops();
   } catch(e) {
@@ -543,6 +599,7 @@ async function registerMember() {
   }
 }
 
+// ── SYSTEM + SHOPS ───────────────────────────────────
 async function checkAndLoadShops() {
   try {
     const [statusRes, shopsRes] = await Promise.all([
@@ -569,16 +626,41 @@ async function checkAndLoadShops() {
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
+// ── Weekly picks ──────────────────────────────────────
+// ── เช็คว่าร้านเปิดอยู่หรือเปล่า (รองรับ open/close ใน sheet) ─────
+// open / close เป็น string "HH:MM" เช่น "09:00", "21:00"
+// ถ้าไม่มี field นี้ → ใช้ status === "active" เหมือนเดิม
+function isShopOpen(shop) {
+  if (shop.status !== "active") return false;
+  const open = String(shop.open || "").trim();
+  const close = String(shop.close || "").trim();
+  if (!open || !close) return true; // ไม่ได้ตั้งเวลา = เปิดตลอด
+  const now = new Date();
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const openMin = oh * 60 + om;
+  const closeMin = ch * 60 + cm;
+  if (closeMin > openMin) return nowMin >= openMin && nowMin < closeMin;
+  // ข้ามเที่ยงคืน เช่น 20:00 - 02:00
+  return nowMin >= openMin || nowMin < closeMin;
+}
+
 function getMenuScrollHtml(restaurantId) {
   const menus = menuCache[restaurantId];
   if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
-  const list = menus.slice(0, 10);
+  // ✅ เมนูแนะนำ (featured) ขึ้นก่อน, ที่เหลือตามปกติ
+  const featured = menus.filter(m => m.featured === true || m.featured === "true" || m.featured === "TRUE" || m.featured === 1);
+  const others = menus.filter(m => !featured.includes(m));
+  const list = [...featured, ...others].slice(0, 10);
   return `<div class="weekly-menu-scroll">${list.map(m => {
+    const isFeatured = featured.includes(m);
     const img = m.imageUrl
-      ? `<img src="${driveThumb(m.imageUrl,160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
+      ? `<img src="${driveThumb(m.imageUrl, isFeatured ? 200 : 160)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
       : `🍜`;
-    return `<div class="weekly-menu-item" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
+    return `<div class="weekly-menu-item${isFeatured ? " featured" : ""}" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
       <div class="weekly-menu-item-img">${img}</div>
+      ${isFeatured ? `<div class="featured-badge">⭐ แนะนำ</div>` : ""}
       <div class="weekly-menu-item-name">${m.menuName}</div>
       <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
     </div>`;
@@ -597,16 +679,17 @@ function renderWeekly() {
   if (!picks.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
   document.getElementById("weekly-scroll").innerHTML = picks.map(s => {
+    const open = isShopOpen(s);
     const logo = s.imageUrl
       ? `<img src="${driveThumb(s.imageUrl, 150)}" onerror="this.parentElement.innerHTML='🍜'" loading="lazy">`
       : `<span>🍜</span>`;
-    return `<div class="weekly-card" onclick="openShop('${s.restaurantId}')">
+    return `<div class="weekly-card" onclick="openShop('${s.restaurantId}')" style="${!open ? "opacity:.7;" : ""}">
       <div class="weekly-badge">⭐ แนะนำ</div>
       <div class="weekly-card-header">
         <div class="weekly-card-logo">${logo}</div>
         <div class="weekly-card-info">
           <div class="weekly-card-name">${s.name}</div>
-          <div class="weekly-card-meta">🛵 ค่าส่ง ฿${s.deliveryFee}</div>
+          <div class="weekly-card-meta">🛵 ค่าส่ง ฿${s.deliveryFee} · <span style="color:${open?"#16a34a":"#dc2626"};font-weight:700;">${open?"เปิดอยู่":"ปิดแล้ว"}</span></div>
           <div class="weekly-card-address">📍 ${s.address || "ยังไม่ระบุที่อยู่"}</div>
         </div>
       </div>
@@ -644,7 +727,8 @@ function renderShops(shops) {
   if (!shops.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">ไม่พบร้านอาหาร</div>`; return; }
   grid.innerHTML = shops.map(s => {
     const img = s.imageUrl ? `<img src="${driveThumb(s.imageUrl,200)}" onerror="this.parentElement.innerHTML='🍜'" loading="lazy">` : `<span>🍜</span>`;
-    const open = s.status === "active";
+    // ✅ ใช้ isShopOpen แทน s.status === "active"
+    const open = isShopOpen(s);
     return `<div class="shop-card" onclick="openShop('${s.restaurantId}')">
       <div class="shop-img">
         ${img}
@@ -658,10 +742,12 @@ function renderShops(shops) {
   }).join("");
 }
 
+// ── MENU ─────────────────────────────────────────────
 async function openShop(restaurantId) {
   const shop = allShops.find(s => s.restaurantId === restaurantId);
   if (!shop) return;
   if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); return; }
+  if (!isShopOpen(shop)) { showToast(`ร้านนี้ปิดแล้วครับ${shop.close ? " (ปิด "+shop.close+")" : ""}`); return; }
   if (Object.keys(cart).length && currentShop?.restaurantId !== restaurantId) {
     if (!confirm(`ตะกร้ามีรายการจากร้าน "${currentShop.name}" อยู่แล้ว\nต้องการเปลี่ยนร้านไหมครับ?`)) return;
     cart = {}; updateCartUI();
@@ -733,6 +819,7 @@ function renderMenus() {
   ).join("");
 }
 
+// ── OPTIONS SHEET ────────────────────────────────────
 function parseOptions(m) {
   if (!m.options) {
     if (m.priceSpecial && Number(m.priceSpecial) > 0) {
@@ -761,6 +848,8 @@ function openOptions(menuId) {
   sheetMenu = m;
   sheetQty = 1;
   sheetSelections = {};
+  // ✅ บังคับเลือก (required) จะมีค่าเริ่มต้นเป็นตัวเลือกแรกเสมอ
+  // ตัวเลือกไม่บังคับ (optional) จะเริ่มต้นแบบ "ไม่เลือก" จนกว่าจะกดเอง
   opts.forEach(g => {
     if (g.required && g.choices && g.choices.length) sheetSelections[g.label] = g.choices[0];
   });
@@ -794,6 +883,7 @@ function renderSheet() {
 
 function selectOption(groupLabel, choice, required) {
   if (!required && sheetSelections[groupLabel] === choice) {
+    // ✅ ตัวเลือกไม่บังคับ: กดซ้ำตัวที่เลือกอยู่ = ยกเลิกการเลือก (ไม่ใส่)
     delete sheetSelections[groupLabel];
   } else {
     sheetSelections[groupLabel] = choice;
@@ -827,6 +917,7 @@ function updateSheetPrice() {
 function addFromSheet() {
   if (!sheetMenu) return;
   const opts = parseOptions(sheetMenu);
+  // ✅ เช็คว่ากลุ่มที่บังคับเลือกถูกเลือกครบหรือยัง
   const missing = opts.find(g => g.required && !sheetSelections[g.label]);
   if (missing) { showToast(`กรุณาเลือก${missing.label}ก่อนครับ`); return; }
 
@@ -872,6 +963,7 @@ function removeOneFromMenu(menuId) {
   renderMenus();
 }
 
+// ── CART PAGE ────────────────────────────────────────
 function goCart() {
   if (!Object.keys(cart).length) { showToast("ตะกร้าว่างอยู่ครับ"); return; }
   renderCart(); showPage("page-cart");
@@ -978,6 +1070,7 @@ function updateDepositNotice() {
   } else { notice.style.display = "none"; }
 }
 
+// ── PROMO ────────────────────────────────────────────
 async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();
   const msg = document.getElementById("promo-msg");
@@ -995,6 +1088,7 @@ async function applyPromo() {
   btn.disabled=false; btn.textContent="ใช้โค้ด";
 }
 
+// ── LOCATION ─────────────────────────────────────────
 async function getLocation() {
   const btn=document.getElementById("loc-btn"), status=document.getElementById("loc-status");
   const mapDiv=document.getElementById("loc-map"), mapFrame=document.getElementById("map-frame");
@@ -1025,6 +1119,7 @@ async function getLocation() {
   btn.disabled=false;
 }
 
+// ── SUBMIT ───────────────────────────────────────────
 async function submitOrder() {
   const name = document.getElementById("f-name").value.trim();
   const phone = document.getElementById("f-phone").value.trim();
@@ -1129,6 +1224,8 @@ async function startCountdown(sec) {
         const { orderId, total, needDeposit, depositAmount } = r.data;
         orderIdEl.textContent = `รหัสออเดอร์: ${orderId}`;
 
+        // ✅ ออเดอร์นี้ยิงสำเร็จแล้ว — ปิดสิทธิ์ส่งฟรีฝั่ง client ทันที
+        // (ฝั่ง server จะบันทึก firstOrderDone=true ลง Sheet ให้ตอนนี้แล้วด้วย)
         if (currentMember) currentMember.isFirstOrder = false;
         renderFirstOrderBanner();
 
@@ -1155,11 +1252,13 @@ async function startCountdown(sec) {
 function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
+  // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้ คืนค่าเดิม
   if (currentMember) currentMember.isFirstOrder = firstOrderFreeEnabled;
   showToast("ยกเลิกออเดอร์แล้วครับ");
   resetAndHome();
 }
 
+// ── TRACK ────────────────────────────────────────────
 async function goTrack() {
   showPage("page-track"); await loadTrackOrders();
   if (trackTimer) clearInterval(trackTimer);
@@ -1173,23 +1272,11 @@ async function loadTrackOrders() {
     renderTrack(r.data.filter(o => o.status !== "DONE" && o.status !== "CANCEL"), r.data);
   } catch(_) { document.getElementById("track-wrap").innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;">โหลดไม่สำเร็จครับ</div>`; }
 }
-
-function getRestaurantName(restaurantId) {
-  const shop = allShops.find(s => s.restaurantId === restaurantId);
-  return shop ? shop.name : restaurantId;
-}
-
-function renderOrderDetailHtml(o) {
-  const its = parseItems(o.Items);
-  return `<div class="track-items">
-      ${its.length
-        ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
-        : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
-      <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
-    </div>`;
-}
+let trackOrdersCache = []; // ✅ เก็บออเดอร์ทั้งหมดไว้ใช้ตอนกดดูรายละเอียดในประวัติ
+let trackOpenIds = new Set(); // ✅ จำว่าการ์ดไหนถูกเปิดดูรายละเอียดอยู่ จะได้ไม่หายตอน refresh อัตโนมัติ
 
 function renderTrack(active, all) {
+  trackOrdersCache = all;
   const steps = ["NEW","ASSIGNED","PICKED","DELIVERING","DONE"];
   const emoji = {NEW:"⏳",ASSIGNED:"✅",PICKED:"👨‍🍳",DELIVERING:"🛵",DONE:"✅",CANCEL:"❌"};
   const th = {NEW:"รอยืนยัน",ASSIGNED:"ยืนยันแล้ว",PICKED:"กำลังปรุง",DELIVERING:"กำลังส่ง",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
@@ -1198,10 +1285,10 @@ function renderTrack(active, all) {
   if (active.length) {
     html += `<div style="font-size:14px;font-weight:700;margin-bottom:10px;">📦 กำลังดำเนินการ</div>`;
     active.forEach(o => {
-      const step = steps.indexOf(o.status);
+      const its = parseItems(o.Items), step = steps.indexOf(o.status);
       html += `<div class="track-card">
         <div class="track-order-id">${emoji[o.status]} ${o.orderId}</div>
-        <div class="track-restaurant">${getRestaurantName(o.restaurantId)}</div>
+        <div class="track-restaurant">ร้าน: ${o.restaurantId}</div>
         <div class="progress-wrap">${steps.map((s,i) => {
           const done=i<step, act=i===step;
           return `${i>0?`<div class="progress-line ${done?"done":""}"></div>`:""}
@@ -1210,7 +1297,10 @@ function renderTrack(active, all) {
               <div class="progress-label ${act?"active":""}">${lbl[i]}</div>
             </div>`;
         }).join("")}</div>
-        ${renderOrderDetailHtml(o)}
+        <div class="track-items">
+          ${its.map(i=>`<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")}
+          <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
+        </div>
         ${o.status==="DELIVERING"?`<div class="rider-info">🛵 ไรเดอร์กำลังมาส่งครับ!</div>`:""}
       </div>`;
     });
@@ -1219,11 +1309,26 @@ function renderTrack(active, all) {
   if (hist.length) {
     html += `<div style="font-size:14px;font-weight:700;margin:16px 0 10px;">📋 ประวัติ</div>`;
     hist.forEach(o => {
-      html += `<div class="track-card">
-        <div class="track-order-id">${emoji[o.status]} ${o.orderId}</div>
-        <div class="track-restaurant">${getRestaurantName(o.restaurantId)} · ${th[o.status]}</div>
-        ${o.cancelReason?`<div style="font-size:12px;color:#EF4444;margin-bottom:8px;">สาเหตุ: ${o.cancelReason}</div>`:""}
-        ${renderOrderDetailHtml(o)}
+      const isOpen = trackOpenIds.has(o.orderId);
+      const its = parseItems(o.Items);
+      const detailHtml = isOpen
+        ? `<div class="track-items">
+            ${its.length
+              ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
+              : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
+            <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
+          </div>`
+        : "";
+      html += `<div class="track-card" style="opacity:.85;cursor:pointer;" onclick="toggleHistDetail('${o.orderId}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div class="track-order-id">${emoji[o.status]} ${o.orderId}</div>
+            <div class="track-restaurant">${th[o.status]} · ฿${o.total}</div>
+          </div>
+          <span style="color:#bbb;font-size:18px;" id="hist-arrow-${o.orderId}">${isOpen ? "⌄" : "›"}</span>
+        </div>
+        ${o.cancelReason?`<div style="font-size:12px;color:#EF4444;margin-top:4px;">สาเหตุ: ${o.cancelReason}</div>`:""}
+        <div id="hist-detail-${o.orderId}" style="display:${isOpen ? "block" : "none"};margin-top:10px;">${detailHtml}</div>
       </div>`;
     });
   }
@@ -1231,6 +1336,7 @@ function renderTrack(active, all) {
   document.getElementById("track-wrap").innerHTML = html;
 }
 
+// ── HELPERS ──────────────────────────────────────────
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -1244,7 +1350,34 @@ function updateCartUI() {
   const cnt = document.getElementById("cart-count-btn"); if(cnt) cnt.textContent = total;
 }
 function parseItems(str) { try{return JSON.parse(str)||[];}catch(_){return[];} }
+// ✅ กดที่การ์ดประวัติออเดอร์ เพื่อดู/ซ่อนรายการเมนูที่สั่งไป
+function toggleHistDetail(orderId) {
+  const detailEl = document.getElementById("hist-detail-" + orderId);
+  const arrowEl = document.getElementById("hist-arrow-" + orderId);
+  if (!detailEl) return;
+  const isOpen = trackOpenIds.has(orderId);
+  if (isOpen) {
+    trackOpenIds.delete(orderId);
+    detailEl.style.display = "none";
+    if (arrowEl) arrowEl.textContent = "›";
+    return;
+  }
+  trackOpenIds.add(orderId);
+  const order = trackOrdersCache.find(o => o.orderId === orderId);
+  if (!order) return;
+  const its = parseItems(order.Items);
+  detailEl.innerHTML = `
+    <div class="track-items">
+      ${its.length
+        ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
+        : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
+      <div class="track-total"><span>รวม</span><span>฿${order.total}</span></div>
+    </div>`;
+  detailEl.style.display = "block";
+  if (arrowEl) arrowEl.textContent = "⌄";
+}
 
+// ✅ แจ้งลูกค้าว่าแก้ชื่อ/เบอร์เองในแอปไม่ได้ ต้องติดต่อแอดมิน
 function showEditInfoNotice() {
   showToast("หากต้องการแก้ไขชื่อหรือเบอร์ กรุณาติดต่อแอดมินครับ");
 }

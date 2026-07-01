@@ -67,6 +67,16 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .weekly-menu-item{flex-shrink:0;width:84px;cursor:pointer;}
 .weekly-menu-item:active{transform:scale(.95);}
 .weekly-menu-item-img{width:84px;height:84px;border-radius:12px;overflow:hidden;background:#f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:24px;}
+/* ── เมนูแนะนำรวม (featured section) ── */
+.featured-card{flex-shrink:0;width:130px;background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);cursor:pointer;transition:.15s;}
+.featured-card:active{transform:scale(.96);}
+.featured-card-img{width:130px;height:110px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
+.featured-card-img img{width:100%;height:100%;object-fit:cover;}
+.featured-card-info{padding:8px 10px 10px;}
+.featured-card-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.featured-card-shop{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.featured-card-price{font-size:13px;font-weight:700;color:#06C755;margin-top:4px;}
+#featured-scroll::-webkit-scrollbar{display:none;}
 /* ── เมนูแนะนำ ── */
 .weekly-menu-item.featured .weekly-menu-item-img{width:100px;height:100px;border-radius:14px;box-shadow:0 3px 10px rgba(6,199,85,.25);border:2px solid #06C755;}
 .weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:#1a1a1a;}
@@ -255,6 +265,12 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <input class="search-input" id="search-input" placeholder="🔍  ค้นหาร้านอาหาร..." oninput="filterShops()">
   </div>
   <div class="cat-scroll" id="cat-scroll"></div>
+
+  <!-- ✅ เมนูแนะนำจากทุกร้านรวมกัน -->
+  <div id="featured-section" style="display:none;">
+    <div class="weekly-title" style="padding-top:14px;">🔥 เมนูแนะนำ</div>
+    <div id="featured-scroll" style="display:flex;gap:12px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;"></div>
+  </div>
 
   <div class="weekly-section" id="weekly-section">
     <div class="weekly-title">⭐ แนะนำประจำสัปดาห์</div>
@@ -549,6 +565,8 @@ async function prefetchMenus() {
       if (r.success) menuCache[s.restaurantId] = r.data;
     } catch(_) {}
   }));
+  // ✅ render เมนูแนะนำรวมหลังโหลดทุกร้านเสร็จ
+  renderFeaturedMenus();
 }
 
 async function prefetchWeeklyMenus() {
@@ -561,6 +579,8 @@ async function prefetchWeeklyMenus() {
     } catch(_) {}
   }));
   renderWeekly();
+  // ✅ render เมนูแนะนำเร็วขึ้นจาก weekly shops ก่อน (ไม่ต้องรอทุกร้าน)
+  renderFeaturedMenus();
 }
 
 // ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน — เฉพาะลูกค้าใหม่ที่ยังไม่เคยสั่ง
@@ -630,6 +650,41 @@ async function checkAndLoadShops() {
 // ── เช็คว่าร้านเปิดอยู่หรือเปล่า (รองรับ open/close ใน sheet) ─────
 // open / close เป็น string "HH:MM" เช่น "09:00", "21:00"
 // ถ้าไม่มี field นี้ → ใช้ status === "active" เหมือนเดิม
+// ── เมนูแนะนำจากทุกร้านรวมกัน ─────────────────────────
+function renderFeaturedMenus() {
+  const sec = document.getElementById("featured-section");
+  const scroll = document.getElementById("featured-scroll");
+  if (!sec || !scroll) return;
+
+  // รวบรวมเมนู featured จากทุกร้านที่โหลดแล้ว
+  const featured = [];
+  allShops.forEach(s => {
+    const menus = menuCache[s.restaurantId];
+    if (!menus) return;
+    menus.forEach(m => {
+      const isFeatured = m.featured === true || m.featured === "true" || m.featured === "TRUE" || m.featured === 1 || m.featured === "1";
+      if (isFeatured) featured.push({ ...m, shopName: s.name, restaurantId: s.restaurantId });
+    });
+  });
+
+  if (!featured.length) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+
+  scroll.innerHTML = featured.map(m => {
+    const img = m.imageUrl
+      ? `<img src="${driveThumb(m.imageUrl, 200)}" loading="lazy" onerror="this.parentElement.innerHTML='🍜'">`
+      : `🍜`;
+    return `<div class="featured-card" onclick="openShopAndItem('${m.restaurantId}','${m.menuId}')">
+      <div class="featured-card-img">${img}</div>
+      <div class="featured-card-info">
+        <div class="featured-card-name">${m.menuName}</div>
+        <div class="featured-card-shop">🏪 ${m.shopName}</div>
+        <div class="featured-card-price">฿${Number(m.price)}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function isShopOpen(shop) {
   if (shop.status !== "active") return false;
   const open = String(shop.open || "").trim();

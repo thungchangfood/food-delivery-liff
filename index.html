@@ -512,10 +512,19 @@ function checkIsFirstOrder(memberData) {
 async function init() {
   try {
     await liff.init({ liffId: LIFF_ID });
-    if (liff.isInClient()) {
-      if (!liff.isLoggedIn()) { liff.login(); return; }
-      lineProfile = await liff.getProfile();
+    // ── บังคับเปิดใน LINE เท่านั้น ──
+    if (!liff.isInClient()) {
+      document.getElementById("page-loading").innerHTML = `
+        <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
+          <div style="font-size:56px;margin-bottom:16px;">🔒</div>
+          <div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">เปิดใน LINE เท่านั้น</div>
+          <div style="font-size:14px;color:#888;line-height:1.7;">ระบบสั่งอาหารต้องเข้าใช้งาน<br>ผ่านแอป LINE เท่านั้นครับ</div>
+        </div>`;
+      return;
     }
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    lineProfile = await liff.getProfile();
+
   } catch(e) { console.error("LIFF:", e); }
 
   if (lineProfile) {
@@ -540,12 +549,18 @@ async function init() {
       renderCategories(); renderShops(allShops); renderWeekly();
       if (memberRes.success) {
         currentMember = memberRes.data;
-        // ✅ เช็คจากข้อมูลจริงที่บันทึกไว้ใน Sheet (memberRes.data.firstOrderDone)
         currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
-        showPage("page-shops");
         renderFirstOrderBanner();
         prefetchWeeklyMenus();
         prefetchMenus();
+        // ── เช็ค ?page=track จาก Rich Menu ──
+        const urlPage = new URLSearchParams(window.location.search).get("page");
+        if (urlPage === "track") {
+          showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
+          goTrack();
+        } else {
+          showPage("page-shops");
+        }
       } else {
         showRegisterPage();
       }

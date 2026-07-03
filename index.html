@@ -1389,14 +1389,7 @@ function renderTrack(active, all) {
     hist.forEach(o => {
       const isOpen = trackOpenIds.has(o.orderId);
       const its = parseItems(o.Items);
-      const detailHtml = isOpen
-        ? `<div class="track-items">
-            ${its.length
-              ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
-              : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
-            <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
-          </div>`
-        : "";
+      const detailHtml = isOpen ? buildHistDetailHtml(o) : "";
       html += `<div class="track-card" style="opacity:.85;cursor:pointer;" onclick="toggleHistDetail('${o.orderId}')">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>

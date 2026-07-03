@@ -557,8 +557,7 @@ async function init() {
         currentMember = memberRes.data;
         currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
         renderFirstOrderBanner();
-        prefetchWeeklyMenus();
-        prefetchMenus();
+        prefetchAllMenus();
         // ── เช็ค ?page=track จาก Rich Menu ──
         const urlPage = new URLSearchParams(window.location.search).get("page");
         if (urlPage === "track") {
@@ -577,30 +576,17 @@ async function init() {
   showRegisterPage();
 }
 
-async function prefetchMenus() {
-  const active = allShops.filter(s => s.status === "active");
-  await Promise.allSettled(active.map(async s => {
-    if (menuCache[s.restaurantId]) return;
-    try {
-      const r = await apiGet("action=getMenus&restaurantId=" + s.restaurantId);
-      if (r.success) menuCache[s.restaurantId] = r.data;
-    } catch(_) {}
-  }));
-  // ✅ render เมนูแนะนำรวมหลังโหลดทุกร้านเสร็จ
-  renderFeaturedMenus();
-}
-
-async function prefetchWeeklyMenus() {
-  const picks = allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount);
-  await Promise.allSettled(picks.map(async s => {
-    if (menuCache[s.restaurantId]) return;
-    try {
-      const r = await apiGet("action=getMenus&restaurantId=" + s.restaurantId);
-      if (r.success) menuCache[s.restaurantId] = r.data;
-    } catch(_) {}
-  }));
+async function prefetchAllMenus() {
+  try {
+    const r = await apiGet("action=getAllMenus");
+    if (r.success) {
+      r.data.forEach(item => {
+        if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
+        menuCache[item.restaurantId].push(item);
+      });
+    }
+  } catch(_) {}
   renderWeekly();
-  // ✅ render เมนูแนะนำเร็วขึ้นจาก weekly shops ก่อน (ไม่ต้องรอทุกร้าน)
   renderFeaturedMenus();
 }
 
@@ -663,8 +649,8 @@ async function checkAndLoadShops() {
     renderCategories(); renderShops(allShops); renderWeekly();
     renderFirstOrderBanner();
     showPage("page-shops");
-    prefetchWeeklyMenus();
-    prefetchMenus();
+    showPage("page-shops");
+    prefetchAllMenus();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 

@@ -480,7 +480,8 @@ let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
 let firstOrderFreeEnabled = true;
-
+let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
+  
 // Sheet state
 let sheetMenu = null;
 let sheetQty = 1;
@@ -548,6 +549,7 @@ async function init() {
         weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
         weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
         firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+        retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       }
       allShops = shopsRes.data || [];
       renderCategories(); renderShops(allShops); renderWeekly();
@@ -655,6 +657,7 @@ async function checkAndLoadShops() {
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
     }
     allShops = shopsRes.data || [];
     renderCategories(); renderShops(allShops); renderWeekly();
@@ -1382,6 +1385,7 @@ function renderTrack(active, all) {
   const hist = all.filter(o => o.status==="DONE"||o.status==="CANCEL").slice(0,5);
   if (hist.length) {
     html += `<div style="font-size:14px;font-weight:700;margin:16px 0 10px;">📋 ประวัติ</div>`;
+    html += `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#92400e;line-height:1.6;">${retentionNoticeText}</div>`;
     hist.forEach(o => {
       const isOpen = trackOpenIds.has(o.orderId);
       const its = parseItems(o.Items);
@@ -1424,7 +1428,40 @@ function updateCartUI() {
   const cnt = document.getElementById("cart-count-btn"); if(cnt) cnt.textContent = total;
 }
 function parseItems(str) { try{return JSON.parse(str)||[];}catch(_){return[];} }
-// ✅ กดที่การ์ดประวัติออเดอร์ เพื่อดู/ซ่อนรายการเมนูที่สั่งไป
+
+function getShopName(restaurantId) {
+  const shop = allShops.find(s => s.restaurantId === restaurantId);
+  return shop ? shop.name : restaurantId;
+}
+function paymentLabel(type) {
+  return type === "cash" ? "💵 เงินสด (ชำระปลายทาง)" : "💸 พร้อมเพย์ / โอนเงิน";
+}
+function formatOrderDate(dateStr) {
+  if (!dateStr) return "-";
+  try {
+    return new Date(dateStr).toLocaleString("th-TH", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  } catch(_) { return "-"; }
+}
+function buildHistDetailHtml(order) {
+  const its = parseItems(order.Items);
+  return `
+    <div style="background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#888;"><span>🏪 ร้าน</span><span style="color:#1a1a1a;font-weight:600;text-align:right;">${getShopName(order.restaurantId)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#888;"><span>🕐 วันที่สั่ง</span><span style="color:#1a1a1a;">${formatOrderDate(order.CreateAT)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#888;"><span>💰 ชำระเงิน</span><span style="color:#1a1a1a;">${paymentLabel(order.paymentType)}</span></div>
+      ${order.address ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#888;"><span>📍 ที่อยู่</span><span style="color:#1a1a1a;text-align:right;max-width:65%;">${order.address}</span></div>` : ""}
+      ${order.note ? `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:#888;"><span>📝 หมายเหตุ</span><span style="color:#1a1a1a;text-align:right;max-width:65%;">${order.note}</span></div>` : ""}
+    </div>
+    <div class="track-items">
+      ${its.length
+        ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
+        : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
+      <div class="track-item-row" style="color:#888;"><span>ค่าจัดส่ง</span><span>฿${order.deliveryFee||0}</span></div>
+      <div class="track-total"><span>รวม</span><span>฿${order.total}</span></div>
+    </div>`;
+}
+
+// ✅ กดที่การ์ดประวัติออเดอ
 function toggleHistDetail(orderId) {
   const detailEl = document.getElementById("hist-detail-" + orderId);
   const arrowEl = document.getElementById("hist-arrow-" + orderId);
@@ -1439,14 +1476,7 @@ function toggleHistDetail(orderId) {
   trackOpenIds.add(orderId);
   const order = trackOrdersCache.find(o => o.orderId === orderId);
   if (!order) return;
-  const its = parseItems(order.Items);
-  detailEl.innerHTML = `
-    <div class="track-items">
-      ${its.length
-        ? its.map(i => `<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")
-        : `<div style="font-size:12px;color:#aaa;">ไม่มีข้อมูลรายการ</div>`}
-      <div class="track-total"><span>รวม</span><span>฿${order.total}</span></div>
-    </div>`;
+  detailEl.innerHTML = buildHistDetailHtml(order);
   detailEl.style.display = "block";
   if (arrowEl) arrowEl.textContent = "⌄";
 }

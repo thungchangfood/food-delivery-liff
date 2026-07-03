@@ -79,6 +79,12 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .featured-card-shop{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .featured-card-price{font-size:13px;font-weight:700;color:#06C755;margin-top:4px;}
 #featured-scroll::-webkit-scrollbar{display:none;}
+.skeleton-card{flex-shrink:0;width:130px;background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);}
+.skeleton-img{width:130px;height:110px;background:#e8e8e8;}
+.skeleton-line{height:10px;background:#e8e8e8;border-radius:4px;margin:8px 10px;}
+.skeleton-line.short{width:60%;}
+.skeleton-img,.skeleton-line{animation:skeleton-pulse 1.2s ease-in-out infinite;}
+@keyframes skeleton-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 /* ── เมนูแนะนำ ── */
 .weekly-menu-item.featured .weekly-menu-item-img{border:2px solid #06C755;box-shadow:0 2px 8px rgba(6,199,85,.2);}
 .weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:#1a1a1a;}
@@ -273,14 +279,20 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <div class="cat-scroll" id="cat-scroll"></div>
 
   <!-- ✅ เมนูแนะนำจากทุกร้านรวมกัน -->
-  <div id="featured-section" style="display:none;">
+  <div id="featured-section">
     <div class="weekly-title" style="padding-top:14px;">🔥 เมนูแนะนำ</div>
-    <div id="featured-scroll" style="display:flex;gap:12px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;"></div>
+    <div id="featured-scroll" style="display:flex;gap:12px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none;">
+      <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+    </div>
   </div>
 
   <div class="weekly-section" id="weekly-section">
     <div class="weekly-title">⭐ แนะนำประจำสัปดาห์</div>
-    <div class="weekly-scroll" id="weekly-scroll"></div>
+    <div class="weekly-scroll" id="weekly-scroll">
+      <div class="skeleton-card" style="width:100%;height:220px;"><div class="skeleton-img" style="width:100%;height:220px;"></div></div>
+    </div>
   </div>
 
   <div class="section-title">ร้านทั้งหมด</div>
@@ -482,6 +494,7 @@ let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
 let firstOrderFreeEnabled = true;
+let menusLoaded = false;
 let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
   
 // Sheet state
@@ -588,6 +601,7 @@ async function prefetchAllMenus() {
       });
     }
   } catch(_) {}
+  menusLoaded = true;
   renderWeekly();
   renderFeaturedMenus();
 }
@@ -677,10 +691,14 @@ function renderFeaturedMenus() {
     });
   });
 
-  if (!featured.length) { sec.style.display = "none"; return; }
+  // ถ้ายังไม่มีเมนูแนะนำเลย (โหลดเสร็จแล้วแต่ไม่มีข้อมูลจริงๆ) ค่อยซ่อน
+  if (!featured.length) {
+    if (menusLoaded) sec.style.display = "none";
+    return;
+  }
   sec.style.display = "block";
 
-  scroll.innerHTML = featured.map(m => {
+  scroll.innerHTML = featured.slice(0, 10).map(m => {
     const img = m.imageUrl
       ? `<img src="${driveThumb(m.imageUrl, 200)}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='🍜'">`
       : `🍜`;

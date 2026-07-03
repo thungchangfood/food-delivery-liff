@@ -1473,7 +1473,7 @@ function toggleHistDetail(orderId) {
     return;
   }
   trackOpenIds.add(orderId);
-  const order = trackOrdersCache.find(o => o.orderId === orderId);
+  const order = trackOrdersCache.find(o => String(o.orderId) === String(orderId));
   if (!order) return;
   detailEl.innerHTML = buildHistDetailHtml(order);
   detailEl.style.display = "block";

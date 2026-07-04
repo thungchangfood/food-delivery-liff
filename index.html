@@ -90,6 +90,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:#1a1a1a;}
 .weekly-menu-item.featured .weekly-menu-item-price{font-size:12px;}
 .featured-badge{display:inline-block;background:#06C755;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;margin-bottom:3px;}
+.discount-badge{display:inline-block;background:#EF4444;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:5px;vertical-align:middle;}
 .weekly-menu-item-img img{width:100%;height:100%;object-fit:cover;}
 .weekly-menu-item-name{font-size:11px;color:#555;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;}
 .weekly-menu-item-price{font-size:11px;color:#06C755;font-weight:700;text-align:center;margin-top:1px;}
@@ -729,8 +730,9 @@ function renderFeaturedMenus() {
       : `🍜`;
     const effPrice = getEffectivePrice(m);
     const hasDiscount = effPrice < Number(m.price);
+    const pct = hasDiscount ? Math.round((1 - effPrice/Number(m.price))*100) : 0;
     const priceLine = hasDiscount
-      ? `<span style="text-decoration:line-through;color:#bbb;font-size:11px;margin-right:4px;">฿${Number(m.price)}</span><span class="featured-card-price">฿${effPrice}</span>`
+      ? `<div><span style="text-decoration:line-through;color:#bbb;font-size:11px;">฿${Number(m.price)}</span> <span class="featured-card-price">฿${effPrice}</span><span class="discount-badge">-${pct}%</span></div>`
       : `<span class="featured-card-price">฿${effPrice}</span>`;
     return `<div class="featured-card" onclick="openShopAndItem('${m.restaurantId}','${m.menuId}')">
       <div class="featured-card-img">${img}</div>
@@ -773,8 +775,9 @@ function getMenuScrollHtml(restaurantId) {
       : `🍜`;
     const effPrice = getEffectivePrice(m);
     const hasDiscount = effPrice < Number(m.price);
+    const pct = hasDiscount ? Math.round((1 - effPrice/Number(m.price))*100) : 0;
     const priceLine = hasDiscount
-      ? `<div><span style="text-decoration:line-through;color:#bbb;font-size:9px;">฿${Number(m.price)}</span> <span class="weekly-menu-item-price">฿${effPrice}</span></div>`
+      ? `<div><span style="text-decoration:line-through;color:#bbb;font-size:9px;">฿${Number(m.price)}</span> <span class="weekly-menu-item-price">฿${effPrice}</span><span class="discount-badge" style="font-size:8px;padding:1px 4px;">-${pct}%</span></div>`
       : `<div class="weekly-menu-item-price">฿${effPrice}</div>`;
     return `<div class="weekly-menu-item${isFeatured ? " featured" : ""}" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
       <div class="weekly-menu-item-img">${img}</div>
@@ -925,8 +928,9 @@ function renderMenus() {
 
       const effPrice = getEffectivePrice(m);
       const hasDiscount = effPrice < Number(m.price);
+      const pct = hasDiscount ? Math.round((1 - effPrice/Number(m.price))*100) : 0;
       const priceHtml = hasDiscount
-        ? `<span style="text-decoration:line-through;color:#bbb;font-size:12px;margin-right:5px;">฿${Number(m.price)}</span><span class="menu-item-price">฿${effPrice}</span>`
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:12px;margin-right:5px;">฿${Number(m.price)}</span><span class="menu-item-price">฿${effPrice}</span><span class="discount-badge">-${pct}%</span>`
         : `<span class="menu-item-price">฿${effPrice}</span>`;
       return `<div class="menu-item" onclick="openOptions('${m.menuId}')">
         <div class="menu-item-img-wrap">${imgHtml}</div>

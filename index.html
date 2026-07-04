@@ -502,6 +502,12 @@ let sheetMenu = null;
 let sheetQty = 1;
 let sheetSelections = {};
 
+function getEffectivePrice(m) {
+  const discount = Number(m.priceDiscount);
+  const original = Number(m.price);
+  return (discount > 0 && discount < original) ? discount : original;
+}
+
 // ── Drive thumbnail ──────────────────────────────────
 function driveThumb(url, w = 300) {
   if (!url) return "";
@@ -547,48 +553,68 @@ async function init() {
 
   } catch(e) { console.error("LIFF:", e); }
 
-  if (lineProfile) {
-    try {
-      const [memberRes, statusRes, shopsRes] = await Promise.all([
-        apiGet("action=getMember&lineUserId=" + lineProfile.userId),
-        apiGet("action=getSystemStatus"),
-        apiGet("action=getRestaurants")
-      ]);
-      if (statusRes.success) {
-        if (!statusRes.data.open) {
-          document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
-          showPage("page-closed"); return;
-        }
-        bankAccount = statusRes.data.bankAccount || "";
-        bankName    = statusRes.data.bankName    || "";
-        weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
-        weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
-        firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
-        retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
-      }
-      allShops = shopsRes.data || [];
-      renderCategories(); renderShops(allShops); renderWeekly();
-      if (memberRes.success) {
-        currentMember = memberRes.data;
-        currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
-        renderFirstOrderBanner();
-        prefetchAllMenus();
-        // ── เช็ค ?page=track จาก Rich Menu ──
-        const urlPage = new URLSearchParams(window.location.search).get("page");
-        if (urlPage === "track") {
-          showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
-          goTrack();
-        } else {
-          showPage("page-shops");
-        }
-      } else {
-        showRegisterPage();
-      }
-      return;
-    } catch(_) {}
+  if (!lineProfile) {
+    await checkAndLoadShops();
+    showRegisterPage();
+    return;
   }
-  await checkAndLoadShops();
-  showRegisterPage();
+  await loadInitialData(false);
+}
+
+// ✅ แยกออกมาเป็นฟังก์ชันเดี่ยว เพื่อลองโหลดใหม่อัตโนมัติเวลาเน็ตสะดุด
+async function loadInitialData(isRetry) {
+  try {
+    const [memberRes, statusRes, shopsRes] = await Promise.all([
+      apiGet("action=getMember&lineUserId=" + lineProfile.userId),
+      apiGet("action=getSystemStatus"),
+      apiGet("action=getRestaurants")
+    ]);
+    if (statusRes.success) {
+      if (!statusRes.data.open) {
+        document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+        showPage("page-closed"); return;
+      }
+      bankAccount = statusRes.data.bankAccount || "";
+      bankName    = statusRes.data.bankName    || "";
+      weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
+      weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
+      firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+    }
+    allShops = shopsRes.data || [];
+    renderCategories(); renderShops(allShops);
+    if (memberRes.success) {
+      currentMember = memberRes.data;
+      currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
+      renderFirstOrderBanner();
+      prefetchAllMenus();
+      // ── เช็ค ?page=track จาก Rich Menu ──
+      const urlPage = new URLSearchParams(window.location.search).get("page");
+      if (urlPage === "track") {
+        showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
+        goTrack();
+      } else {
+        showPage("page-shops");
+      }
+    } else {
+      showRegisterPage();
+    }
+  } catch(e) {
+    console.error("loadInitialData:", e);
+    if (!isRetry) {
+      // เน็ตอาจสะดุดชั่วคราว ลองใหม่แบบเงียบๆ อีกครั้งก่อน
+      setTimeout(() => loadInitialData(true), 1200);
+    } else {
+      document.getElementById("page-loading").innerHTML = `
+        <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
+          <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">โหลดข้อมูลไม่สำเร็จ</div>
+          <div style="font-size:13px;color:#888;margin-bottom:20px;">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่ครับ</div>
+          <button class="btn-green" style="max-width:200px;" onclick="location.reload()">ลองใหม่</button>
+        </div>`;
+      showPage("page-loading");
+    }
+  }
 }
 
 async function prefetchAllMenus() {
@@ -662,9 +688,8 @@ async function checkAndLoadShops() {
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
     }
     allShops = shopsRes.data || [];
-    renderCategories(); renderShops(allShops); renderWeekly();
+    renderCategories(); renderShops(allShops);
     renderFirstOrderBanner();
-    showPage("page-shops");
     showPage("page-shops");
     prefetchAllMenus();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
@@ -702,12 +727,17 @@ function renderFeaturedMenus() {
     const img = m.imageUrl
       ? `<img src="${driveThumb(m.imageUrl, 200)}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='🍜'">`
       : `🍜`;
+    const effPrice = getEffectivePrice(m);
+    const hasDiscount = effPrice < Number(m.price);
+    const priceLine = hasDiscount
+      ? `<span style="text-decoration:line-through;color:#bbb;font-size:11px;margin-right:4px;">฿${Number(m.price)}</span><span class="featured-card-price">฿${effPrice}</span>`
+      : `<span class="featured-card-price">฿${effPrice}</span>`;
     return `<div class="featured-card" onclick="openShopAndItem('${m.restaurantId}','${m.menuId}')">
       <div class="featured-card-img">${img}</div>
       <div class="featured-card-info">
         <div class="featured-card-name">${m.menuName}</div>
         <div class="featured-card-shop">🏪 ${m.shopName}</div>
-        <div class="featured-card-price">฿${Number(m.price)}</div>
+        ${priceLine}
       </div>
     </div>`;
   }).join("");
@@ -741,11 +771,16 @@ function getMenuScrollHtml(restaurantId) {
     const img = m.imageUrl
       ? `<img src="${driveThumb(m.imageUrl, isFeatured ? 200 : 160)}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='🍜'">`
       : `🍜`;
+    const effPrice = getEffectivePrice(m);
+    const hasDiscount = effPrice < Number(m.price);
+    const priceLine = hasDiscount
+      ? `<div><span style="text-decoration:line-through;color:#bbb;font-size:9px;">฿${Number(m.price)}</span> <span class="weekly-menu-item-price">฿${effPrice}</span></div>`
+      : `<div class="weekly-menu-item-price">฿${effPrice}</div>`;
     return `<div class="weekly-menu-item${isFeatured ? " featured" : ""}" onclick="event.stopPropagation();openShopAndItem('${restaurantId}','${m.menuId}')">
       <div class="weekly-menu-item-img">${img}</div>
       ${isFeatured ? `<div class="featured-badge">⭐ แนะนำ</div>` : ""}
       <div class="weekly-menu-item-name">${m.menuName}</div>
-      <div class="weekly-menu-item-price">฿${Number(m.price)}</div>
+      ${priceLine}
     </div>`;
   }).join("")}</div>`;
 }
@@ -830,7 +865,11 @@ async function openShop(restaurantId) {
   const shop = allShops.find(s => s.restaurantId === restaurantId);
   if (!shop) return;
   if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); return; }
-  if (!isShopOpen(shop)) { showToast(`ร้านนี้ปิดแล้วครับ${shop.close ? " (ปิด "+shop.close+")" : ""}`); return; }
+  if (!isShopOpen(shop)) {
+    const timeText = (shop.open && shop.close) ? ` (เปิด ${shop.open} - ปิด ${shop.close})` : (shop.close ? ` (ปิด ${shop.close})` : "");
+    showToast(`ร้านนี้ปิดแล้วครับ${timeText}`);
+    return;
+  }
   if (Object.keys(cart).length && currentShop?.restaurantId !== restaurantId) {
     if (!confirm(`ตะกร้ามีรายการจากร้าน "${currentShop.name}" อยู่แล้ว\nต้องการเปลี่ยนร้านไหมครับ?`)) return;
     cart = {}; updateCartUI();
@@ -884,7 +923,11 @@ function renderMenus() {
            </div>`
         : `<button class="btn-add" onclick="event.stopPropagation();openOptions('${m.menuId}')">+</button>`;
 
-      const basePrice = Number(m.price);
+      const effPrice = getEffectivePrice(m);
+      const hasDiscount = effPrice < Number(m.price);
+      const priceHtml = hasDiscount
+        ? `<span style="text-decoration:line-through;color:#bbb;font-size:12px;margin-right:5px;">฿${Number(m.price)}</span><span class="menu-item-price">฿${effPrice}</span>`
+        : `<span class="menu-item-price">฿${effPrice}</span>`;
       return `<div class="menu-item" onclick="openOptions('${m.menuId}')">
         <div class="menu-item-img-wrap">${imgHtml}</div>
         <div class="menu-item-body">
@@ -893,7 +936,7 @@ function renderMenus() {
             ${m.description ? `<div class="menu-item-desc">${m.description}</div>` : ""}
           </div>
           <div class="menu-item-footer">
-            <div class="menu-item-price">฿${basePrice}</div>
+            <div>${priceHtml}</div>
             ${addCtrl}
           </div>
         </div>
@@ -983,7 +1026,7 @@ function sheetQtyChange(delta) {
 function calcSheetPrice() {
   if (!sheetMenu) return 0;
   const opts = parseOptions(sheetMenu);
-  let price = Number(sheetMenu.price);
+  let price = getEffectivePrice(sheetMenu);
   opts.forEach(g => {
     const sel = sheetSelections[g.label];
     if (sel && g.priceExtra && g.priceExtra[sel]) price += g.priceExtra[sel];
@@ -1027,7 +1070,7 @@ function closeSheet() {
 
 function addDirectToCart(m) {
   const key = `${m.menuId}_default`;
-  if (!cart[key]) cart[key] = { menuId: m.menuId, variant: "default", name: m.menuName, price: Number(m.price), qty: 0 };
+  if (!cart[key]) cart[key] = { menuId: m.menuId, variant: "default", name: m.menuName, price: getEffectivePrice(m), qty: 0 };
   cart[key].qty++;
   showToast(`เพิ่ม ${m.menuName}`);
   renderMenus();
@@ -1371,7 +1414,7 @@ function renderTrack(active, all) {
       const its = parseItems(o.Items), step = steps.indexOf(o.status);
       html += `<div class="track-card">
         <div class="track-order-id">${emoji[o.status]} ${o.orderId}</div>
-        <div class="track-restaurant">ร้าน: ${o.restaurantId}</div>
+        <div class="track-restaurant">ร้าน: ${getShopName(o.restaurantId)}</div>
         <div class="progress-wrap">${steps.map((s,i) => {
           const done=i<step, act=i===step;
           return `${i>0?`<div class="progress-line ${done?"done":""}"></div>`:""}

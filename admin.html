@@ -229,6 +229,32 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const ADMIN_PASS = "admin1234";
 
+// ✅ ใช้คำนวณย้อนกลับว่าค่าส่งเดิมของร้าน (ก่อนหักส่วนลด) ควรเป็นเท่าไหร่
+const GP_PLANS = {
+  gp25: { deliveryFee: 9,  gpPercent: 25 },
+  gp21: { deliveryFee: 14, gpPercent: 21 },
+  gp16: { deliveryFee: 19, gpPercent: 16 },
+};
+const DEFAULT_DELIVERY_FEE = 19;
+
+function getDeliveryNote(o) {
+  const plan = GP_PLANS[o.gpPlan];
+  const originalFee = plan ? plan.deliveryFee : DEFAULT_DELIVERY_FEE;
+  const actualFee = Number(o.deliveryFee || 0);
+  const promoCost = Number(o.promoCost || 0);
+
+  if (o.promoCode && promoCost > 0) {
+    return `🎟 ใช้โค้ด ${o.promoCode} (ส่งฟรี)`;
+  }
+  if (actualFee === 0 && originalFee > 0) {
+    return `🎉 ออเดอร์แรกลูกค้าใหม่ (ส่งฟรี)`;
+  }
+  if (actualFee < originalFee) {
+    return `🛵 ยอดครบ ฿160 ลดค่าส่ง ฿${originalFee - actualFee} (เหลือ ฿${actualFee})`;
+  }
+  return `ค่าส่งปกติ ฿${actualFee}`;
+}
+
 let allOrders = [];
 let currentFilter = "all";
 let prevNewCount = 0;
@@ -236,6 +262,7 @@ let refreshTimer = null;
 let systemOpen = true;
 let restaurantsMap = {};
 let membersMap = {};      // memberId → { name, phone }
+let processingOrders = new Set(); // ✅ เก็บ orderId ที่กำลังกดปุ่ม action อยู่ กันกดซ้ำตอน auto-refresh มาทับ
 
 // ── LOGIN ──────────────────────────────────────────────
 function doLogin() {
@@ -481,7 +508,9 @@ function renderOrders() {
 
     // ── ปุ่ม actions ──────────────────────────────────────
     let actions = "";
-    if (o.status === "NEW") {
+    if (processingOrders.has(String(o.orderId))) {
+      actions = `<div style="text-align:center;color:#888;padding:8px;font-weight:600;">⏳ กำลังดำเนินการ...</div>`;
+    } else if (o.status === "NEW") {
       if (isPromptpay && !isPaid) {
         actions = `
           <button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>
@@ -583,6 +612,14 @@ function renderOrders() {
           <div class="section-label">ยอดเงิน</div>
           <div class="money-box">${moneyRows}</div>
         </div>
+        
+        <!-- ส่วนลด/โปรโมชั่น -->
+        <div class="order-section">
+          <div class="section-label">🎟 ส่วนลดค่าจัดส่ง</div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;font-size:13px;color:#1d4ed8;font-weight:600;">
+            ${getDeliveryNote(o)}
+          </div>
+        </div>
 
         <!-- การชำระเงิน -->
         <div class="order-section">
@@ -607,55 +644,62 @@ function renderOrders() {
 
 // ── ACTIONS ────────────────────────────────────────────
 async function confirmOrder(orderId) {
-  const btn = event.target;
-  btn.disabled = true; btn.textContent = "กำลังยืนยัน..."; btn.style.opacity = "0.5";
+  if (processingOrders.has(orderId)) return; // กันกดซ้ำ
+  processingOrders.add(orderId);
+  renderOrders();
   try {
     const res = await apiPost({ action:"adminConfirmOrder", orderId });
     if (!res.success) throw new Error(res.error);
-    showToast("✅ ยืนยันออร์เดอร์แล้ว แจ้งร้านแล้ว");
-    await loadOrders();
+    showToast(res.data?.alreadyConfirmed ? "ออร์เดอร์นี้ถูกยืนยันไปแล้วครับ" : "✅ ยืนยันออร์เดอร์แล้ว แจ้งร้านแล้ว");
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
-    btn.disabled = false; btn.textContent = "✅ ยืนยันออร์เดอร์"; btn.style.opacity = "1";
+  } finally {
+    processingOrders.delete(orderId);
+    await loadOrders();
   }
 }
 
 async function cancelOrder(orderId) {
   const reason = prompt("ระบุสาเหตุยกเลิก:", "");
   if (reason === null) return;
-  const btn = event.target;
-  btn.disabled = true; btn.style.opacity = "0.5";
+  if (processingOrders.has(orderId)) return;
+  processingOrders.add(orderId);
+  renderOrders();
   try {
     const res = await apiPost({ action:"updateOrderStatus", orderId, status:"CANCEL", cancelReason: reason || "ยกเลิกโดยแอดมิน" });
     if (!res.success) throw new Error(res.error);
     showToast("ยกเลิกออร์เดอร์แล้วครับ");
-    await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
-    btn.disabled = false; btn.style.opacity = "1";
+  } finally {
+    processingOrders.delete(orderId);
+    await loadOrders();
   }
 }
 
 async function confirmDepositAndOrder(orderId) {
+  if (processingOrders.has(orderId)) return;
   const note = document.getElementById("deposit-note-" + orderId)?.value || "";
-  const btn = event.target;
-  btn.disabled = true; btn.style.opacity = "0.5";
+  processingOrders.add(orderId);
+  renderOrders();
   try {
     const dep = await apiPost({ action:"confirmDeposit", orderId, note });
     if (!dep.success) throw new Error(dep.error);
     const ord = await apiPost({ action:"adminConfirmOrder", orderId });
     if (!ord.success) throw new Error(ord.error);
     showToast("✅ รับมัดจำและยืนยันออร์เดอร์แล้ว");
-    await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
-    btn.disabled = false; btn.style.opacity = "1";
+  } finally {
+    processingOrders.delete(orderId);
+    await loadOrders();
   }
 }
 
 async function confirmPayment(orderId) {
-  const btn = event.target;
-  btn.disabled = true; btn.style.opacity = "0.5";
+  if (processingOrders.has(orderId)) return;
+  processingOrders.add(orderId);
+  renderOrders();
   try {
     const pay = await apiPost({ action:"updatePayment", orderId, paymentStatus:"paid" });
     if (!pay.success) throw new Error(pay.error);
@@ -667,10 +711,11 @@ async function confirmPayment(orderId) {
     } else {
       showToast("💚 ยืนยันรับเงินแล้ว");
     }
-    await loadOrders();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
-    btn.disabled = false; btn.style.opacity = "1";
+  } finally {
+    processingOrders.delete(orderId);
+    await loadOrders();
   }
 }
 

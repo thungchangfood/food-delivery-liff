@@ -1461,7 +1461,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     address, note,
     lat: userLat, lng: userLng,
     paymentType: payment,
-    promoCode: document.getElementById("promo-input")?.value.trim() || "",
+    promoCode: promoApplied ? (document.getElementById("promo-input")?.value.trim() || "") : "",
     promoType: promoApplied ? (promoInfo?.promoType || "free_delivery") : "",
     promoValue: promoApplied ? Number(promoInfo?.value || 0) : 0,
     subtotal,

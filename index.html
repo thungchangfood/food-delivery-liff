@@ -1306,7 +1306,7 @@ function updateDepositNotice() {
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     notice.style.display = "block";
-    notice.innerHTML = `⚠️ <strong>ชำระผ่านพร้อมเพย์</strong> ต้องโอนเต็มจำนวน <strong>฿${total}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
+    notice.innerHTML = `⚠️ <strong>ชำระผ่านพร้อมเพย์</strong> จำนวน <strong>฿${total}</strong> ในหน้าถัดไป<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
   } else {
     notice.style.display = "none";
   }
@@ -1421,12 +1421,12 @@ async function submitOrder() {
     document.getElementById("dep-bank-account").textContent=bankAccount||"-";
     document.getElementById("dep-bank-name").textContent=bankName||"-";
     if (needDeposit) {
-      document.getElementById("dep-title").textContent="💸 ต้องโอนมัดจำก่อน";
-      document.getElementById("dep-desc").textContent="ยอดสั่งเกิน ฿300 ต้องโอนมัดจำ 50% ก่อนครับ อีกครึ่งชำระเมื่อได้รับสินค้า";
+      document.getElementById("dep-title").textContent="💸 กรุณาชำระ50%ของค่าอาหารก่อนครับ";
+      document.getElementById("dep-desc").textContent="เนื่องจากยอดสั่งเกิน ฿300 ชำระมัดจำ 50% ของค่าอาหารก่อนครับ สว่นที่เหลือชำระเมื่อได้รับสินค้าแล้วครับ";
       document.getElementById("dep-amount-label").textContent="ยอดมัดจำ";
     } else {
-      document.getElementById("dep-title").textContent="💸 กรุณาโอนเงินก่อน";
-      document.getElementById("dep-desc").textContent="กรุณาโอนเงินเต็มจำนวนตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์";
+      document.getElementById("dep-title").textContent="💸 กรุณาชำระเงิน";
+      document.getElementById("dep-desc").textContent="กรุณาโอนเงินตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์";
       document.getElementById("dep-amount-label").textContent="ยอดที่ต้องโอน";
     }
     showPage("page-deposit"); return;

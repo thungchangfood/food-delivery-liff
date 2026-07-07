@@ -1309,7 +1309,8 @@ async function applyPromo() {
   btn.disabled=true; btn.textContent="กำลังเช็ค...";
   msg.style.display="block"; msg.style.color="#888"; msg.textContent="กำลังตรวจสอบโค้ด...";
   try {
-    const r = await apiGet("action=checkPromo&code=" + encodeURIComponent(code));
+    const memberId = currentMember?.memberId || "";
+    const r = await apiGet("action=checkPromo&code=" + encodeURIComponent(code) + "&memberId=" + encodeURIComponent(memberId));
     promoApplied = r.success;
     promoInfo = r.success ? r.data : null;
     msg.style.color = r.success ? "#06C755" : "#EF4444";

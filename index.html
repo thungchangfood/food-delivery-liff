@@ -633,6 +633,8 @@ async function prefetchAllMenus() {
   try {
     const r = await apiGet("action=getAllMenus");
     if (r.success) {
+      // ✅ เคลียร์ cache เก่าก่อนโหลดใหม่ ป้องกันเมนูซ้ำเวลาโหลดซ้ำหลายรอบ
+      Object.keys(menuCache).forEach(k => delete menuCache[k]);
       r.data.forEach(item => {
         if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
         menuCache[item.restaurantId].push(item);

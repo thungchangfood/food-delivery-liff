@@ -831,7 +831,12 @@ async function closeDayAdmin() {
   if (!ok) return;
   try {
     const res = await apiGet("action=closeDay");
-    alert(res.message || "ปิดวันสำเร็จ");
+    if (!res.success) {
+      alert("❌ " + (res.error || "ปิดวันไม่สำเร็จ"));
+      return;
+    }
+    alert("✅ " + (res.data?.message || "ปิดวันสำเร็จ"));
+    await loadOrders();
   } catch(err) { console.error(err); alert("เกิดข้อผิดพลาด"); }
 }
 

@@ -160,6 +160,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div class="header-right">
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
       <button class="btn-sm" onclick="showReport()">📊 รายงาน</button>
+      <button class="btn-sm" onclick="showRiderSettle()">💰 เคลียร์ไรเดอร์</button>
       <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
       <button class="btn-sm" onclick="logout()">ออก</button>
     </div>
@@ -217,7 +218,16 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <button class="btn-sm" onclick="hideReport()">🔙 กลับ</button>
     </div>
   </div>
-
+  
+  <div id="rider-settle-page" style="display:none;padding:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <input type="date" id="settle-date" class="close-reason-input" style="width:160px;" onchange="loadRiderSettlement()">
+      <button class="btn-sm" onclick="loadRiderSettlement()">🔄 โหลด</button>
+      <button class="btn-sm" onclick="hideRiderSettle()">🔙 กลับ</button>
+    </div>
+    <div id="rider-settle-list"></div>
+  </div>
+  
   <div class="orders-wrap" id="orders-wrap">
     <div class="loading"><div class="spinner"></div>กำลังโหลด...</div>
   </div>
@@ -739,6 +749,7 @@ function showToast(msg) {
 function showReport() {
   document.querySelector(".filter-wrap").style.display = "none";
   document.getElementById("orders-wrap").style.display = "none";
+  document.getElementById("rider-settle-page").style.display = "none";
   document.getElementById("report-page").style.display = "block";
   buildReport();
 }
@@ -746,6 +757,7 @@ function hideReport() {
   document.querySelector(".filter-wrap").style.display = "";
   document.getElementById("orders-wrap").style.display = "";
   document.getElementById("report-page").style.display = "none";
+  document.getElementById("rider-settle-page").style.display = "none";
 }
 function buildReport() {
   const today = new Date().toDateString();
@@ -797,6 +809,71 @@ async function closeDayAdmin() {
   } catch(err) { console.error(err); alert("เกิดข้อผิดพลาด"); }
 }
 
+function showRiderSettle() {
+  document.querySelector(".filter-wrap").style.display = "none";
+  document.getElementById("orders-wrap").style.display = "none";
+  document.getElementById("report-page").style.display = "none";
+  document.getElementById("rider-settle-page").style.display = "block";
+  const dateInput = document.getElementById("settle-date");
+  if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0,10);
+  loadRiderSettlement();
+}
+function hideRiderSettle() {
+  document.querySelector(".filter-wrap").style.display = "";
+  document.getElementById("orders-wrap").style.display = "";
+  document.getElementById("rider-settle-page").style.display = "none";
+}
+
+async function loadRiderSettlement() {
+  const date = document.getElementById("settle-date").value;
+  const list = document.getElementById("rider-settle-list");
+  list.innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>`;
+  try {
+    const res = await apiGet("action=getRiderSettlement&date=" + date);
+    if (!res.success) throw new Error(res.error);
+    renderRiderSettlement(res.data);
+  } catch(e) { list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`; }
+}
+
+function renderRiderSettlement(data) {
+  const list = document.getElementById("rider-settle-list");
+  if (!data.riders.length) { list.innerHTML = `<div class="empty">ไม่มีออเดอร์ที่ต้องเคลียร์ในวันนี้</div>`; return; }
+  list.innerHTML = data.riders.map(r => `
+    <div class="order-card" style="margin-bottom:14px;">
+      <div class="order-head" style="cursor:default;">
+        <div class="order-head-left">
+          <div class="order-id">🛵 ${r.name}</div>
+          <div class="order-meta">${r.orders.length} ออเดอร์ · คืนค่าอาหาร ฿${r.totalFoodReimburse} + ค่ารอบ ฿${r.totalRiderFee}</div>
+        </div>
+        <div class="order-status s-DONE" style="font-size:15px;">รวม ฿${r.totalDue}</div>
+      </div>
+      <div class="order-body open">
+        <div class="order-section">
+          <div class="items-list">
+            ${r.orders.map(o => `
+              <div class="item-row">
+                <span class="item-name">#${o.orderId} (อาหาร ฿${o.subtotal}${o.foodDiscount>0?`, ลด ฿${o.foodDiscount}`:""}${o.depositAmount>0?`, มัดจำ ฿${o.depositAmount}`:""})</span>
+                <span class="item-price">฿${o.totalDue}</span>
+              </div>`).join("")}
+          </div>
+        </div>
+        <div class="action-section">
+          <button class="btn-action btn-pay" onclick='confirmRiderSettledBtn("${r.riderId}", ${JSON.stringify(r.orders.map(o=>o.orderId))})'>✅ ยืนยันจ่ายไรเดอร์แล้ว ฿${r.totalDue}</button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+async function confirmRiderSettledBtn(riderId, orderIds) {
+  if (!confirm(`ยืนยันว่าจ่ายเงินให้ไรเดอร์ครบแล้ว ${orderIds.length} ออเดอร์?`)) return;
+  try {
+    const res = await apiPost({ action:"confirmRiderSettled", orderIds });
+    if (!res.success) throw new Error(res.error);
+    showToast("✅ เคลียร์ยอดไรเดอร์แล้ว");
+    loadRiderSettlement();
+  } catch(e) { showToast("เกิดข้อผิดพลาด: " + e.message); }
+}
+  
 if (sessionStorage.getItem("admin_auth") === "1") {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";

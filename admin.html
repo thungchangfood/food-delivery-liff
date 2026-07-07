@@ -247,6 +247,25 @@ const GP_PLANS = {
 };
 const DEFAULT_DELIVERY_FEE = 19;
 
+function getPromoNote(o) {
+  if (!o.promoCode) return null;
+  const type = o.promoType || "free_delivery";
+  const value = Number(o.promoValue || 0);
+  const promoCost = Number(o.promoCost || 0);
+  const foodDiscount = Number(o.foodDiscount || 0);
+  const typeText = {
+    free_delivery: "ส่งฟรี",
+    delivery_percent: `ลดค่าส่ง ${value}%`,
+    delivery_fixed: `ลดค่าส่ง ฿${value}`,
+    food_percent: `ลดค่าอาหาร ${value}%`,
+    food_fixed: `ลดค่าอาหาร ฿${value}`
+  }[type] || "ใช้โค้ด";
+  let costText = "";
+  if (promoCost > 0) costText += `ลดค่าส่งจริง ฿${promoCost}`;
+  if (foodDiscount > 0) costText += (costText ? " · " : "") + `ลดค่าอาหารจริง ฿${foodDiscount}`;
+  return `🎟 โค้ด "${o.promoCode}" (${typeText})${costText ? " — " + costText : ""}`;
+}
+
 function getDeliveryNote(o) {
   const plan = GP_PLANS[o.gpPlan];
   const originalFee = plan ? plan.deliveryFee : DEFAULT_DELIVERY_FEE;
@@ -630,6 +649,13 @@ function renderOrders() {
             ${getDeliveryNote(o)}
           </div>
         </div>
+        ${getPromoNote(o) ? `
+        <div class="order-section">
+          <div class="section-label">🎟 โค้ดโปรโมชั่นที่ลูกค้าใช้</div>
+          <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:10px;padding:10px 12px;font-size:13px;color:#7e22ce;font-weight:600;">
+            ${getPromoNote(o)}
+          </div>
+        </div>` : ""}
 
         <!-- การชำระเงิน -->
         <div class="order-section">

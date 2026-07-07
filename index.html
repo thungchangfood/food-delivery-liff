@@ -1291,13 +1291,25 @@ function formatPhone(p) {
 function updateDepositNotice() {
   const entries = Object.values(cart);
   const subtotal = entries.reduce((s, e) => s + e.price * e.qty, 0);
+  const foodDiscount = calcFoodDiscount(subtotal);
+  const netSubtotal = subtotal - foodDiscount;
   const payment = document.getElementById("f-payment")?.value;
   const notice = document.getElementById("deposit-notice");
   if (!notice) return;
-  if (subtotal > 300 && payment !== "cash") {
+
+  if (payment === "cash" && netSubtotal > 300) {
+    // เงินสด ยอดเกิน 300 → มัดจำ 50% ก่อน
     notice.style.display = "block";
-    notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿300</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(subtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
-  } else { notice.style.display = "none"; }
+    notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿300</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
+  } else if (payment !== "cash") {
+    // พร้อมเพย์/โอนเงิน → ต้องโอนเต็มจำนวนก่อนเสมอ ไม่ว่ายอดเท่าไหร่
+    const delivery = calcDelivery(subtotal);
+    const total = netSubtotal + delivery;
+    notice.style.display = "block";
+    notice.innerHTML = `⚠️ <strong>ชำระผ่านพร้อมเพย์</strong> ต้องโอนเต็มจำนวน <strong>฿${total}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
+  } else {
+    notice.style.display = "none";
+  }
 }
 
 // ── PROMO ────────────────────────────────────────────
@@ -1438,8 +1450,8 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
   const foodDiscount = calcFoodDiscount(subtotal);
   const netSubtotal = subtotal - foodDiscount;
   const delivery = calcDelivery(subtotal);
-  const needDeposit = netSubtotal > 300;
-  const wantsTransfer = !needDeposit && payment !== "cash";
+  const needDeposit = netSubtotal > 300 && payment === "cash";
+  const wantsTransfer = payment !== "cash";
   const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? netSubtotal+delivery : 0);
 
   pendingOrderData = {

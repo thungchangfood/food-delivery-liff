@@ -161,6 +161,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
       <button class="btn-sm" onclick="showReport()">📊 รายงาน</button>
       <button class="btn-sm" onclick="showRiderSettle()">💰 เคลียร์ไรเดอร์</button>
+      <button class="btn-sm" onclick="showGpSettle()">🧾 เก็บ GP ร้านค้า</button>
       <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
       <button class="btn-sm" onclick="logout()">ออก</button>
     </div>
@@ -226,6 +227,19 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <button class="btn-sm" onclick="hideRiderSettle()">🔙 กลับ</button>
     </div>
     <div id="rider-settle-list"></div>
+  </div>
+
+  <div id="gp-settle-page" style="display:none;padding:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;">
+      <span>ถึง</span>
+      <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;">
+      <button class="btn-sm" onclick="setGpRange(1)">รอบ 1-15</button>
+      <button class="btn-sm" onclick="setGpRange(16)">รอบ 16-สิ้นเดือน</button>
+      <button class="btn-sm" onclick="loadGpSettlement()">🔄 โหลด</button>
+      <button class="btn-sm" onclick="hideGpSettle()">🔙 กลับ</button>
+    </div>
+    <div id="gp-settle-list"></div>
   </div>
   
   <div class="orders-wrap" id="orders-wrap">
@@ -776,6 +790,7 @@ function showReport() {
   document.querySelector(".filter-wrap").style.display = "none";
   document.getElementById("orders-wrap").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "none";
+  document.getElementById("gp-settle-page").style.display = "none";
   document.getElementById("report-page").style.display = "block";
   buildReport();
 }
@@ -844,6 +859,7 @@ function showRiderSettle() {
   document.querySelector(".filter-wrap").style.display = "none";
   document.getElementById("orders-wrap").style.display = "none";
   document.getElementById("report-page").style.display = "none";
+  document.getElementById("gp-settle-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "block";
   const dateInput = document.getElementById("settle-date");
   if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0,10);
@@ -904,7 +920,76 @@ async function confirmRiderSettledBtn(riderId, orderIds) {
     loadRiderSettlement();
   } catch(e) { showToast("เกิดข้อผิดพลาด: " + e.message); }
 }
-  
+
+function showGpSettle() {
+  document.querySelector(".filter-wrap").style.display = "none";
+  document.getElementById("orders-wrap").style.display = "none";
+  document.getElementById("report-page").style.display = "none";
+  document.getElementById("rider-settle-page").style.display = "none";
+  document.getElementById("gp-settle-page").style.display = "block";
+  if (!document.getElementById("gp-start-date").value) setGpRange(16);
+  loadGpSettlement();
+}
+function hideGpSettle() {
+  document.querySelector(".filter-wrap").style.display = "";
+  document.getElementById("orders-wrap").style.display = "";
+  document.getElementById("gp-settle-page").style.display = "none";
+}
+function setGpRange(startDay) {
+  const now = new Date();
+  let start, end;
+  if (startDay === 1) {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth(), 15);
+  } else {
+    start = new Date(now.getFullYear(), now.getMonth(), 16);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  }
+  document.getElementById("gp-start-date").value = start.toISOString().slice(0,10);
+  document.getElementById("gp-end-date").value = end.toISOString().slice(0,10);
+}
+async function loadGpSettlement() {
+  const start = document.getElementById("gp-start-date").value;
+  const end = document.getElementById("gp-end-date").value;
+  if (!start || !end) { showToast("กรุณาเลือกช่วงวันที่ก่อนครับ"); return; }
+  const list = document.getElementById("gp-settle-list");
+  list.innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>`;
+  try {
+    const res = await apiGet("action=getRestaurantGpSettlement&startDate=" + start + "&endDate=" + end);
+    if (!res.success) throw new Error(res.error);
+    renderGpSettlement(res.data);
+  } catch(e) { list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`; }
+}
+function renderGpSettlement(data) {
+  const list = document.getElementById("gp-settle-list");
+  if (!data.restaurants.length) { list.innerHTML = `<div class="empty">ไม่มีออเดอร์ในช่วงวันที่นี้</div>`; return; }
+  const grandTotalGp = data.restaurants.reduce((s,r) => s + r.totalGp, 0);
+  list.innerHTML = `
+    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:600;color:#92400e;">
+      📅 รอบ ${data.startDate} ถึง ${data.endDate} · ยอด GP รวมทุกร้าน ฿${grandTotalGp.toLocaleString()}
+    </div>` +
+    data.restaurants.map(r => `
+    <div class="order-card" style="margin-bottom:12px;">
+      <div class="order-head" style="cursor:default;">
+        <div class="order-head-left">
+          <div class="order-id">🏪 ${r.name}</div>
+          <div class="order-meta">${r.orderCount} ออเดอร์ · ยอดอาหารรวม ฿${r.totalSubtotal.toLocaleString()}</div>
+        </div>
+        <div class="order-status s-DONE" style="font-size:15px;">เก็บ GP ฿${r.totalGp.toLocaleString()}</div>
+      </div>
+      <div class="order-body open">
+        <div class="order-section">
+          <div class="money-box">
+            <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
+            ${r.totalFoodDiscount > 0 ? `<div class="money-row"><span>ส่วนลดค่าอาหาร (โปรระบบออกให้)</span><span>-฿${r.totalFoodDiscount.toLocaleString()}</span></div>` : ""}
+            <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
+            <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
 if (sessionStorage.getItem("admin_auth") === "1") {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";

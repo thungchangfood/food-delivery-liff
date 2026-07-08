@@ -224,6 +224,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
       <input type="date" id="settle-date" class="close-reason-input" style="width:160px;" onchange="loadRiderSettlement()">
       <button class="btn-sm" onclick="loadRiderSettlement()">🔄 โหลด</button>
+      <button class="btn-sm" style="background:#1a1a1a;" onclick="exportRiderPrint()">📄 Export เอกสาร</button>
       <button class="btn-sm" onclick="hideRiderSettle()">🔙 กลับ</button>
     </div>
     <div id="rider-settle-list"></div>
@@ -234,9 +235,10 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;">
       <span>ถึง</span>
       <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;">
-      <button class="btn-sm" onclick="setGpRange(1)">รอบ 1-15</button>
-      <button class="btn-sm" onclick="setGpRange(16)">รอบ 16-สิ้นเดือน</button>
+      <button class="btn-sm" onclick="setGpRange(1)">🧾 รอบเก็บ GP วันที่ 1</button>
+      <button class="btn-sm" onclick="setGpRange(16)">🧾 รอบเก็บ GP วันที่ 16</button>
       <button class="btn-sm" onclick="loadGpSettlement()">🔄 โหลด</button>
+      <button class="btn-sm" style="background:#1a1a1a;" onclick="exportGpPrint()">📄 Export เอกสาร</button>
       <button class="btn-sm" onclick="hideGpSettle()">🔙 กลับ</button>
     </div>
     <div id="gp-settle-list"></div>
@@ -306,6 +308,8 @@ let systemOpen = true;
 let restaurantsMap = {};
 let membersMap = {};      // memberId → { name, phone }
 let processingOrders = new Set(); // ✅ เก็บ orderId ที่กำลังกดปุ่ม action อยู่ กันกดซ้ำตอน auto-refresh มาทับ
+let lastGpData = null;
+let lastRiderData = null;
 
 // ── LOGIN ──────────────────────────────────────────────
 function doLogin() {
@@ -878,6 +882,7 @@ async function loadRiderSettlement() {
   try {
     const res = await apiGet("action=getRiderSettlement&date=" + date);
     if (!res.success) throw new Error(res.error);
+    lastRiderData = res.data;
     renderRiderSettlement(res.data);
   } catch(e) { list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`; }
 }
@@ -935,15 +940,17 @@ function hideGpSettle() {
   document.getElementById("orders-wrap").style.display = "";
   document.getElementById("gp-settle-page").style.display = "none";
 }
-function setGpRange(startDay) {
+function setGpRange(collectDay) {
   const now = new Date();
   let start, end;
-  if (startDay === 1) {
+  if (collectDay === 1) {
+    // เก็บวันที่ 1 ของเดือนนี้ = ยอดตั้งแต่ 16 เดือนก่อน ถึง สิ้นเดือนก่อน
+    start = new Date(now.getFullYear(), now.getMonth() - 1, 16);
+    end = new Date(now.getFullYear(), now.getMonth(), 0); // วันสุดท้ายของเดือนก่อน
+  } else {
+    // เก็บวันที่ 16 ของเดือนนี้ = ยอดตั้งแต่ 1-15 เดือนนี้
     start = new Date(now.getFullYear(), now.getMonth(), 1);
     end = new Date(now.getFullYear(), now.getMonth(), 15);
-  } else {
-    start = new Date(now.getFullYear(), now.getMonth(), 16);
-    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   }
   document.getElementById("gp-start-date").value = start.toISOString().slice(0,10);
   document.getElementById("gp-end-date").value = end.toISOString().slice(0,10);
@@ -957,6 +964,7 @@ async function loadGpSettlement() {
   try {
     const res = await apiGet("action=getRestaurantGpSettlement&startDate=" + start + "&endDate=" + end);
     if (!res.success) throw new Error(res.error);
+    lastGpData = res.data;
     renderGpSettlement(res.data);
   } catch(e) { list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`; }
 }
@@ -988,6 +996,141 @@ function renderGpSettlement(data) {
         </div>
       </div>
     </div>`).join("");
+}
+
+function openPrintDocument(title, bodyHtml) {
+  const win = window.open("", "_blank");
+  if (!win) { showToast("เบราว์เซอร์บล็อกป๊อปอัพ กรุณาอนุญาตแล้วลองใหม่ครับ"); return; }
+  win.document.write(`
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  *{box-sizing:border-box;}
+  body{font-family:'Sarabun','TH Sarabun New',sans-serif;color:#1a1a1a;font-size:14px;line-height:1.6;}
+  .doc-header{text-align:center;margin-bottom:20px;border-bottom:2px solid #1a1a1a;padding-bottom:14px;}
+  .doc-title{font-size:20px;font-weight:700;}
+  .doc-sub{font-size:13px;color:#555;margin-top:4px;}
+  table{width:100%;border-collapse:collapse;margin-top:14px;}
+  th,td{border:1px solid #ccc;padding:8px 10px;font-size:13px;text-align:left;}
+  th{background:#f0f0f0;font-weight:700;}
+  td.num, th.num{text-align:right;}
+  tr.total-row td{font-weight:700;background:#f9fafb;border-top:2px solid #1a1a1a;}
+  .doc-footer{margin-top:40px;display:flex;justify-content:space-between;font-size:13px;}
+  .sign-box{width:220px;text-align:center;}
+  .sign-line{border-top:1px solid #888;margin-top:50px;padding-top:6px;}
+  .print-meta{font-size:12px;color:#999;margin-top:24px;text-align:right;}
+  @media print { .no-print{display:none;} }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <div class="doc-title">${title}</div>
+    <div class="doc-sub">ทุ่งช้างอิ่มอร่อย Delivery</div>
+  </div>
+  ${bodyHtml}
+  <div class="print-meta">พิมพ์เอกสารเมื่อ ${new Date().toLocaleString("th-TH")}</div>
+  <div class="no-print" style="text-align:center;margin-top:24px;">
+    <button onclick="window.print()" style="padding:10px 24px;font-size:14px;font-family:inherit;cursor:pointer;">🖨 พิมพ์ / บันทึกเป็น PDF</button>
+  </div>
+</body>
+</html>`);
+  win.document.close();
+}
+
+function exportGpPrint() {
+  if (!lastGpData || !lastGpData.restaurants || !lastGpData.restaurants.length) {
+    showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน");
+    return;
+  }
+  const d = lastGpData;
+  const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
+  const grandDiscount = d.restaurants.reduce((s,r)=>s+r.totalFoodDiscount,0);
+  const grandGp = d.restaurants.reduce((s,r)=>s+r.totalGp,0);
+  const rows = d.restaurants.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td class="num">${r.orderCount}</td>
+      <td class="num">฿${r.totalSubtotal.toLocaleString()}</td>
+      <td class="num">${r.totalFoodDiscount>0 ? "-฿"+r.totalFoodDiscount.toLocaleString() : "-"}</td>
+      <td class="num">฿${r.totalGp.toLocaleString()}</td>
+      <td style="height:40px;"></td>
+    </tr>`).join("");
+  const body = `
+    <div style="margin-bottom:10px;font-size:14px;">
+      <strong>รอบเก็บ GP:</strong> ${d.startDate} ถึง ${d.endDate}
+    </div>
+    <table>
+      <thead><tr>
+        <th>ร้านอาหาร</th><th class="num">จำนวนออเดอร์</th><th class="num">ยอดอาหารรวม</th>
+        <th class="num">ส่วนลดอาหาร</th><th class="num">ยอด GP ที่เก็บ</th><th>ลายเซ็นรับทราบ</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td>รวมทั้งหมด</td>
+          <td class="num">${d.restaurants.reduce((s,r)=>s+r.orderCount,0)}</td>
+          <td class="num">฿${grandSubtotal.toLocaleString()}</td>
+          <td class="num">${grandDiscount>0 ? "-฿"+grandDiscount.toLocaleString() : "-"}</td>
+          <td class="num">฿${grandGp.toLocaleString()}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="doc-footer">
+      <div class="sign-box"><div class="sign-line">ผู้จัดเก็บเงิน</div></div>
+      <div class="sign-box"><div class="sign-line">ผู้ตรวจสอบ</div></div>
+    </div>`;
+  openPrintDocument("ใบสรุปยอด GP ร้านค้า", body);
+}
+
+function exportRiderPrint() {
+  if (!lastRiderData || !lastRiderData.riders || !lastRiderData.riders.length) {
+    showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน");
+    return;
+  }
+  const d = lastRiderData;
+  const grandFood = d.riders.reduce((s,r)=>s+r.totalFoodReimburse,0);
+  const grandFee = d.riders.reduce((s,r)=>s+r.totalRiderFee,0);
+  const grandDue = d.riders.reduce((s,r)=>s+r.totalDue,0);
+  const rows = d.riders.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td class="num">${r.orders.length}</td>
+      <td class="num">฿${r.totalFoodReimburse.toLocaleString()}</td>
+      <td class="num">฿${r.totalRiderFee.toLocaleString()}</td>
+      <td class="num">฿${r.totalDue.toLocaleString()}</td>
+      <td style="height:40px;"></td>
+    </tr>`).join("");
+  const body = `
+    <div style="margin-bottom:10px;font-size:14px;">
+      <strong>วันที่เคลียร์ยอด:</strong> ${d.date}
+    </div>
+    <table>
+      <thead><tr>
+        <th>ไรเดอร์</th><th class="num">จำนวนงาน</th><th class="num">คืนค่าอาหาร</th>
+        <th class="num">ค่ารอบ</th><th class="num">รวมจ่าย</th><th>ลายเซ็นรับเงิน</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td>รวมทั้งหมด</td>
+          <td class="num">${d.riders.reduce((s,r)=>s+r.orders.length,0)}</td>
+          <td class="num">฿${grandFood.toLocaleString()}</td>
+          <td class="num">฿${grandFee.toLocaleString()}</td>
+          <td class="num">฿${grandDue.toLocaleString()}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="doc-footer">
+      <div class="sign-box"><div class="sign-line">ผู้จ่ายเงิน</div></div>
+      <div class="sign-box"><div class="sign-line">ผู้ตรวจสอบ</div></div>
+    </div>`;
+  openPrintDocument("ใบสรุปจ่ายเงินไรเดอร์", body);
 }
 
 if (sessionStorage.getItem("admin_auth") === "1") {

@@ -527,6 +527,7 @@ function renderOrders() {
     const total = Number(o.total || 0);
     const depositAmount = Number(o.depositAmount || 0);
     const remaining = total - depositAmount;
+    const foodDiscount = Number(o.foodDiscount || 0); // ✅ ส่วนลดค่าอาหารจากโค้ดโปรโมชั่น
     const isCash = o.paymentType === "cash";
     const isPromptpay = o.paymentType === "promptpay";
     const needDeposit = subtotal > 300 && isCash;
@@ -582,7 +583,7 @@ function renderOrders() {
 
     // ── ยอดเงิน ──────────────────────────────────────────
     const moneyRows = `
-      <div class="money-row"><span>ยอดอาหาร</span><span>฿${subtotal}</span></div>
+      <div class="money-row"><span>ยอดอาหาร</span><span>${foodDiscount > 0 ? `฿${subtotal} - ส่วนลด ฿${foodDiscount}` : `฿${subtotal}`}</span></div>
       <div class="money-row"><span>ค่าจัดส่ง</span><span>฿${deliveryFee}</span></div>
       <div class="money-row total"><span>รวมทั้งหมด</span><span>฿${total}</span></div>
       ${depositAmount > 0 ? `

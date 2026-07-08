@@ -989,7 +989,7 @@ function renderGpSettlement(data) {
         <div class="order-section">
           <div class="money-box">
             <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
-            ${r.totalFoodDiscount > 0 ? `<div class="money-row"><span>ส่วนลดค่าอาหาร (โปรระบบออกให้)</span><span>-฿${r.totalFoodDiscount.toLocaleString()}</span></div>` : ""}
+            ${r.totalMenuDiscount > 0 ? `<div class="money-row"><span>ส่วนลดเมนู (ร้านลดเอง)</span><span>-฿${r.totalMenuDiscount.toLocaleString()}</span></div>` : ""}
             <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
             <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
           </div>
@@ -1047,15 +1047,15 @@ function exportGpPrint() {
     return;
   }
   const d = lastGpData;
-  const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
-  const grandDiscount = d.restaurants.reduce((s,r)=>s+r.totalFoodDiscount,0);
+const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
+  const grandMenuDiscount = d.restaurants.reduce((s,r)=>s+r.totalMenuDiscount,0);
   const grandGp = d.restaurants.reduce((s,r)=>s+r.totalGp,0);
   const rows = d.restaurants.map(r => `
     <tr>
       <td>${r.name}</td>
       <td class="num">${r.orderCount}</td>
       <td class="num">฿${r.totalSubtotal.toLocaleString()}</td>
-      <td class="num">${r.totalFoodDiscount>0 ? "-฿"+r.totalFoodDiscount.toLocaleString() : "-"}</td>
+      <td class="num">${r.totalMenuDiscount>0 ? "-฿"+r.totalMenuDiscount.toLocaleString() : "-"}</td>
       <td class="num">฿${r.totalGp.toLocaleString()}</td>
       <td style="height:40px;"></td>
     </tr>`).join("");
@@ -1066,7 +1066,7 @@ function exportGpPrint() {
     <table>
       <thead><tr>
         <th>ร้านอาหาร</th><th class="num">จำนวนออเดอร์</th><th class="num">ยอดอาหารรวม</th>
-        <th class="num">ส่วนลดอาหาร</th><th class="num">ยอด GP ที่เก็บ</th><th>ลายเซ็นรับทราบ</th>
+        <th class="num">ส่วนลดเมนู</th><th class="num">ยอด GP ที่เก็บ</th><th>ลายเซ็นรับทราบ</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
@@ -1074,7 +1074,7 @@ function exportGpPrint() {
           <td>รวมทั้งหมด</td>
           <td class="num">${d.restaurants.reduce((s,r)=>s+r.orderCount,0)}</td>
           <td class="num">฿${grandSubtotal.toLocaleString()}</td>
-          <td class="num">${grandDiscount>0 ? "-฿"+grandDiscount.toLocaleString() : "-"}</td>
+          <td class="num">${grandMenuDiscount>0 ? "-฿"+grandMenuDiscount.toLocaleString() : "-"}</td>
           <td class="num">฿${grandGp.toLocaleString()}</td>
           <td></td>
         </tr>

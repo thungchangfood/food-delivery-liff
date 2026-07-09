@@ -1251,8 +1251,9 @@ function renderCart() {
     }
 
     firstOrderNotice.style.display = "none";
+    const isSelfDeliveryCart = currentShop?.gpPlan === "gp_self";
     const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
-    if (!promoIsDeliveryType && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
+    if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
       const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
       const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
       fdNotice.style.display = "block";
@@ -1297,9 +1298,10 @@ function updateDepositNotice() {
   const payment = document.getElementById("f-payment")?.value;
   const notice = document.getElementById("deposit-notice");
   if (!notice) return;
+  const isSelfDelivery = currentShop?.gpPlan === "gp_self";
 
-  if (payment === "cash" && netSubtotal > 300) {
-    // เงินสด ยอดเกิน 300 → มัดจำ 50% ก่อน
+  if (payment === "cash" && netSubtotal > 300 && !isSelfDelivery) {
+    // เงินสด ยอดเกิน 300 → มัดจำ 50% ก่อน (ยกเว้นร้านจัดส่งเอง)
     notice.style.display = "block";
     notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿300</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
   } else if (payment !== "cash") {

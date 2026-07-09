@@ -520,6 +520,11 @@ function getEffectivePrice(m) {
   return (discount > 0 && discount < original) ? discount : original;
 }
 
+// ✅ ร้าน gp_self = ร้านจัดส่งเอง ไม่มีค่าส่งในแอป
+function isSelfDeliveryShop() {
+  return currentShop?.gpPlan === "gp_self";
+}
+
 // ── Drive thumbnail ──────────────────────────────────
 function driveThumb(url, w = 300) {
   if (!url) return "";
@@ -874,7 +879,7 @@ function renderWeekly() {
         <div class="weekly-card-logo">${logo}</div>
         <div class="weekly-card-info">
           <div class="weekly-card-name">${s.name}</div>
-          <div class="weekly-card-meta">🛵 ค่าส่ง ฿${s.deliveryFee} · <span style="color:${statusColor};font-weight:700;">${st.label}</span></div>
+          <div class="weekly-card-meta">${s.gpPlan === "gp_self" ? "🛵 ร้านจัดส่งเอง" : "🛵 ค่าส่ง ฿" + s.deliveryFee} · <span style="color:${statusColor};font-weight:700;">${st.label}</span></div>
           <div class="weekly-card-address">📍 ${s.address || "ยังไม่ระบุที่อยู่"}</div>
         </div>
       </div>
@@ -922,7 +927,7 @@ function renderShops(shops) {
       </div>
       <div class="shop-info">
         <div class="shop-name">${s.name}</div>
-        <div class="shop-meta">ค่าส่ง ฿${s.deliveryFee}</div>
+        <div class="shop-meta">${s.gpPlan === "gp_self" ? "🛵 ร้านจัดส่งเอง" : "ค่าส่ง ฿" + s.deliveryFee}</div>
       </div>
     </div>`;
   }).join("");
@@ -949,7 +954,8 @@ async function openShop(restaurantId) {
     ? `<img src="${driveThumb(shop.imageUrl,800)}" onerror="this.innerHTML='<div class=shop-hero-emoji>🍜</div>'">`
     : `<div class="shop-hero-emoji">🍜</div>`;
   const addressHtml = shop.address ? `<div class="shop-hero-address">📍 <span>${shop.address}</span></div>` : "";
-  hero.innerHTML += `<div class="shop-hero-overlay"><div class="shop-hero-name">${shop.name}</div>${addressHtml}<div class="shop-hero-sub">ค่าจัดส่ง ฿${shop.deliveryFee}</div></div>`;
+  const deliverySubText = shop.gpPlan === "gp_self" ? "🛵 ร้านจัดส่งเอง" : "ค่าจัดส่ง ฿" + shop.deliveryFee;
+  hero.innerHTML += `<div class="shop-hero-overlay"><div class="shop-hero-name">${shop.name}</div>${addressHtml}<div class="shop-hero-sub">${deliverySubText}</div></div>`;
   renderShopHoursBar(shop);
   showPage("page-menu");
 
@@ -1234,25 +1240,28 @@ function renderCart() {
     foodDiscRow.style.display = "none";
   }
 
-  if (isFirst) {
-    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! 🎉</span>`;
-  } else if (promoApplied && (promoInfo?.promoType || "free_delivery") === "free_delivery") {
-    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! (โค้ดส่งฟรี) 🎉</span>`;
-  } else if (delivery < origDel) {
-    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`;
-  } else {
-    document.getElementById("s-delivery").textContent = `฿${delivery}`;
-  }
-
-  document.getElementById("s-total").textContent = `฿${subtotal - foodDiscount + delivery}`;
-
   const firstOrderNotice = document.getElementById("first-order-notice");
   const fdNotice = document.getElementById("free-delivery-notice");
 
-  if (isFirst) {
+  if (isSelfDeliveryShop()) {
+    // ✅ ร้านจัดส่งเอง — ไม่มีค่าส่งในแอป ร้านไปคิดเงินลูกค้าหน้างานเอง
+    document.getElementById("s-delivery").innerHTML = `<span style="color:#888;font-weight:600;">🛵 ร้านจัดส่งเอง</span>`;
+    firstOrderNotice.style.display = "none";
+    fdNotice.style.display = "block";
+    fdNotice.innerHTML = `🛵 ร้านนี้จัดส่งเอง ไม่มีค่าส่งในแอป — ชำระค่าอาหารกับทางร้านโดยตรงเมื่อได้รับของครับ`;
+  } else if (isFirst) {
+    document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! 🎉</span>`;
     firstOrderNotice.style.display = "block";
     fdNotice.style.display = "none";
   } else {
+    if (promoApplied && (promoInfo?.promoType || "free_delivery") === "free_delivery") {
+      document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! (โค้ดส่งฟรี) 🎉</span>`;
+    } else if (delivery < origDel) {
+      document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`;
+    } else {
+      document.getElementById("s-delivery").textContent = `฿${delivery}`;
+    }
+
     firstOrderNotice.style.display = "none";
     const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
     if (!promoIsDeliveryType && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
@@ -1264,6 +1273,8 @@ function renderCart() {
       fdNotice.style.display = "none";
     }
   }
+
+  document.getElementById("s-total").textContent = `฿${subtotal - foodDiscount + delivery}`;
 
   if (currentMember) {
     document.getElementById("f-name").value = currentMember.name || "";
@@ -1401,7 +1412,8 @@ async function submitOrder() {
   const netSubtotal = subtotal - foodDiscount;
   const delivery = calcDelivery(subtotal);
   const total = netSubtotal + delivery;
-  const needDeposit = netSubtotal > 300 && payment === "cash";
+  const isSelfDelivery = currentShop?.gpPlan === "gp_self";
+  const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
   const wantsTransfer = payment !== "cash";
   const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? total : 0);
 
@@ -1452,7 +1464,8 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
   const foodDiscount = calcFoodDiscount(subtotal);
   const netSubtotal = subtotal - foodDiscount;
   const delivery = calcDelivery(subtotal);
-  const needDeposit = netSubtotal > 300 && payment === "cash";
+  const isSelfDelivery = currentShop?.gpPlan === "gp_self";
+  const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
   const wantsTransfer = payment !== "cash";
   const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? netSubtotal+delivery : 0);
 

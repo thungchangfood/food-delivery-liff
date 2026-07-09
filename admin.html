@@ -533,7 +533,9 @@ function renderOrders() {
     const foodDiscount = Number(o.foodDiscount || 0); // ✅ ส่วนลดค่าอาหารจากโค้ดโปรโมชั่น
     const isCash = o.paymentType === "cash";
     const isPromptpay = o.paymentType === "promptpay";
-    const needDeposit = subtotal > 300 && isCash;
+    // ✅ เชื่อ depositAmount ที่ backend คำนวณมาให้แล้ว ไม่คำนวณ needDeposit ซ้ำเองจาก subtotal
+    // เพราะจะพลาดกรณีร้าน gp_self ที่ backend ตั้งใจไม่บังคับมัดจำ (depositAmount = 0 เสมอ)
+    const needDeposit = isCash && depositAmount > 0;
     const depositPaid = String(o.depositPaid) === "true" || o.depositPaid === true;
     const isPaid = o.paymentStatus === "paid";
     const isCOD = o.paymentStatus === "cod";

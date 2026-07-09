@@ -949,7 +949,6 @@ async function openShop(restaurantId) {
     ? `<img src="${driveThumb(shop.imageUrl,800)}" onerror="this.innerHTML='<div class=shop-hero-emoji>🍜</div>'">`
     : `<div class="shop-hero-emoji">🍜</div>`;
   const addressHtml = shop.address ? `<div class="shop-hero-address">📍 <span>${shop.address}</span></div>` : "";
-  const deliverySubText = shop.gpPlan === "gp_self" ? "🛵 ร้านจัดส่งเอง" : "ค่าจัดส่ง ฿" + shop.deliveryFee;
   hero.innerHTML += `<div class="shop-hero-overlay"><div class="shop-hero-name">${shop.name}</div>${addressHtml}<div class="shop-hero-sub">ค่าจัดส่ง ฿${shop.deliveryFee}</div></div>`;
   renderShopHoursBar(shop);
   showPage("page-menu");

@@ -294,7 +294,7 @@ const ADMIN_PASS = "admin1234";
 const GP_PLANS = {
   gp25: { deliveryFee: 9,  gpPercent: 25 },
   gp21: { deliveryFee: 14, gpPercent: 21 },
-  gp16: { deliveryFee: 19, gpPercent: 16 },
+  gp17: { deliveryFee: 19, gpPercent: 17 },
 };
 const DEFAULT_DELIVERY_FEE = 19;
 
@@ -318,6 +318,9 @@ function getPromoNote(o) {
 }
 
 function getDeliveryNote(o) {
+  if (o.gpPlan === "gp_self") {
+    return `🛵 ร้านจัดส่งเอง — ไม่มีค่าส่งในระบบ`;
+  }
   const plan = GP_PLANS[o.gpPlan];
   const originalFee = plan ? plan.deliveryFee : DEFAULT_DELIVERY_FEE;
   const actualFee = Number(o.deliveryFee || 0);
@@ -1018,26 +1021,41 @@ function renderGpSettlement(data) {
     <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:600;color:#92400e;">
       📅 รอบ ${data.startDate} ถึง ${data.endDate} · ยอด GP รวมทุกร้าน ฿${grandTotalGp.toLocaleString()}
     </div>` +
-    data.restaurants.map(r => `
+    data.restaurants.map(r => {
+      const isSelf = r.gpPlan === "gp_self";
+      const restaurantOwesUs = Number(r.restaurantOwesUs || 0);
+      const weOweRestaurant = Number(r.weOweRestaurant || 0);
+      const headerAmount = isSelf
+        ? (restaurantOwesUs > 0 ? `ร้านเป็นหนี้เรา ฿${restaurantOwesUs.toLocaleString()}` : `เราเป็นหนี้ร้าน ฿${weOweRestaurant.toLocaleString()}`)
+        : `เก็บ GP ฿${r.totalGp.toLocaleString()}`;
+      return `
     <div class="order-card" style="margin-bottom:12px;">
       <div class="order-head" style="cursor:default;">
         <div class="order-head-left">
-          <div class="order-id">🏪 ${r.name}</div>
+          <div class="order-id">🏪 ${r.name}${isSelf ? " 🛵 (จัดส่งเอง)" : ""}</div>
           <div class="order-meta">${r.orderCount} ออเดอร์ · ยอดอาหารรวม ฿${r.totalSubtotal.toLocaleString()}</div>
         </div>
-        <div class="order-status s-DONE" style="font-size:15px;">เก็บ GP ฿${r.totalGp.toLocaleString()}</div>
+        <div class="order-status s-DONE" style="font-size:14px;">${headerAmount}</div>
       </div>
       <div class="order-body open">
         <div class="order-section">
           <div class="money-box">
             <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
             ${r.totalMenuDiscount > 0 ? `<div class="money-row"><span>ส่วนลดเมนู (ร้านลดเอง)</span><span>-฿${r.totalMenuDiscount.toLocaleString()}</span></div>` : ""}
+            ${isSelf ? `
+            <div class="money-row"><span>GP รวมทั้งหมด (อ้างอิง)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
+            <div class="money-row" style="color:#DC2626;"><span>💵 ลูกค้าจ่ายเงินสด → ร้านเป็นหนี้เรา</span><span>฿${restaurantOwesUs.toLocaleString()}</span></div>
+            <div class="money-row" style="color:#06C755;"><span>💸 ลูกค้าโอน → เราเป็นหนี้ร้าน</span><span>฿${weOweRestaurant.toLocaleString()}</span></div>
+            <div class="money-row total"><span>สุทธิ${restaurantOwesUs >= weOweRestaurant ? " (ร้านต้องจ่ายเรา)" : " (เราต้องจ่ายร้าน)"}</span><span>฿${Math.abs(restaurantOwesUs - weOweRestaurant).toLocaleString()}</span></div>
+            ` : `
             <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
             <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
+            `}
           </div>
         </div>
       </div>
-    </div>`).join("");
+    </div>`;
+    }).join("");
 }
 
 function openPrintDocument(title, bodyHtml) {
@@ -1092,15 +1110,21 @@ function exportGpPrint() {
 const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
   const grandMenuDiscount = d.restaurants.reduce((s,r)=>s+r.totalMenuDiscount,0);
   const grandGp = d.restaurants.reduce((s,r)=>s+r.totalGp,0);
-  const rows = d.restaurants.map(r => `
+  const rows = d.restaurants.map(r => {
+    const isSelf = r.gpPlan === "gp_self";
+    const netCol = isSelf
+      ? `ร้านหนี้เรา ฿${Number(r.restaurantOwesUs||0).toLocaleString()} / เราหนี้ร้าน ฿${Number(r.weOweRestaurant||0).toLocaleString()}`
+      : `฿${r.totalGp.toLocaleString()}`;
+    return `
     <tr>
-      <td>${r.name}</td>
+      <td>${r.name}${isSelf ? " (จัดส่งเอง)" : ""}</td>
       <td class="num">${r.orderCount}</td>
       <td class="num">฿${r.totalSubtotal.toLocaleString()}</td>
       <td class="num">${r.totalMenuDiscount>0 ? "-฿"+r.totalMenuDiscount.toLocaleString() : "-"}</td>
-      <td class="num">฿${r.totalGp.toLocaleString()}</td>
+      <td class="num">${netCol}</td>
       <td style="height:40px;"></td>
-    </tr>`).join("");
+    </tr>`;
+  }).join("");
   const body = `
     <div style="margin-bottom:10px;font-size:14px;">
       <strong>รอบเก็บ GP:</strong> ${d.startDate} ถึง ${d.endDate}

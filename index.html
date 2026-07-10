@@ -376,12 +376,18 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
     <div class="cart-section">
       <div class="cart-section-title">💰 ชำระเงิน</div>
-      <div class="fg">
+      <div class="fg" id="payment-select-wrap">
         <label class="fl">วิธีชำระ</label>
         <select class="fi" id="f-payment" onchange="updateDepositNotice()">
           <option value="promptpay">พร้อมเพย์ / โอนเงิน</option>
           <option value="cash">เงินสด (ชำระปลายทาง)</option>
         </select>
+      </div>
+      <div class="fg" id="payment-fixed-cash" style="display:none;">
+        <label class="fl">วิธีชำระ</label>
+        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:600;color:#15803d;">
+          💵 เงินสด (ชำระปลายทาง) — ร้านนี้จัดส่งเอง รับเฉพาะเงินสดครับ
+        </div>
       </div>
     </div>
     <div id="deposit-notice" style="display:none;" class="deposit-notice"></div>
@@ -1202,6 +1208,18 @@ function calcFoodDiscount(subtotal) {
 }
 
 function renderCart() {
+  // ✅ ร้าน gp_self จัดส่งเอง — บังคับชำระเงินสดปลายทางอย่างเดียว ไม่ให้เลือกโอน
+  const isSelfDeliveryShop = currentShop?.gpPlan === "gp_self";
+  const paymentSelectWrap = document.getElementById("payment-select-wrap");
+  const paymentFixedCash = document.getElementById("payment-fixed-cash");
+  if (isSelfDeliveryShop) {
+    paymentSelectWrap.style.display = "none";
+    paymentFixedCash.style.display = "block";
+    document.getElementById("f-payment").value = "cash";
+  } else {
+    paymentSelectWrap.style.display = "block";
+    paymentFixedCash.style.display = "none";
+  }
   const entries = Object.values(cart);
   document.getElementById("cart-items").innerHTML = entries.length
     ? entries.map(e => `<div class="cart-item">

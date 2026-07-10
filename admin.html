@@ -344,6 +344,7 @@ let prevNewCount = 0;
 let refreshTimer = null;
 let systemOpen = true;
 let restaurantsMap = {};
+let restaurantGpPlanMap = {}; // restaurantId → gpPlan (ใช้เช็คร้าน gp_self)
 let membersMap = {};      // memberId → { name, phone }
 let processingOrders = new Set(); // ✅ เก็บ orderId ที่กำลังกดปุ่ม action อยู่ กันกดซ้ำตอน auto-refresh มาทับ
 let lastGpData = null;
@@ -383,7 +384,11 @@ async function loadRestaurants() {
     const res = await apiGet("action=getRestaurants");
     const list = Array.isArray(res) ? res : (res.data || []);
     restaurantsMap = {};
-    list.forEach(r => { restaurantsMap[r.restaurantId] = r.name; });
+    restaurantGpPlanMap = {};
+    list.forEach(r => {
+      restaurantsMap[r.restaurantId] = r.name;
+      restaurantGpPlanMap[r.restaurantId] = r.gpPlan || "";
+    });
   } catch(e) { console.error("loadRestaurants", e); }
 }
 
@@ -524,8 +529,12 @@ function renderOrders() {
   };
 
   wrap.innerHTML = orders.map(o => {
+    const isSelfDel = restaurantGpPlanMap[o.restaurantId] === "gp_self";
+    const statusLabel = (o.status === "PICKED" && isSelfDel)
+      ? "🛵 ร้านกำลังจัดส่งเอง"
+      : (statusTh[o.status] || o.status);
     const items = parseItems(o.Items);
-    const subtotal = Number(o.subtotal || 0);
+    const subtotal = Number(o.subtotal || 0);;
     const deliveryFee = Number(o.deliveryFee || 0);
     const total = Number(o.total || 0);
     const depositAmount = Number(o.depositAmount || 0);
@@ -643,7 +652,7 @@ function renderOrders() {
           <div class="order-meta">${formatTime(o.CreateAT)} · ${restaurantsMap[o.restaurantId] || o.restaurantId} · ฿${total}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="order-status s-${o.status}">${statusTh[o.status]||o.status}</span>
+          <span class="order-status s-${o.status}">${statusLabel}</span>
           <span style="color:#bbb;font-size:18px;">›</span>
         </div>
       </div>
@@ -672,7 +681,7 @@ function renderOrders() {
           </div>
           <div class="info-row">
             <span class="info-key">ไรเดอร์</span>
-            <span class="info-val">${o.riderId || "— ยังไม่มีไรเดอร์"}</span>
+            <span class="info-val">${isSelfDel ? "🛵 ร้านจัดส่งเอง (ไม่ใช้ไรเดอร์)" : (o.riderId || "— ยังไม่มีไรเดอร์")}</span>
           </div>
           <div class="info-row">
             <span class="info-key">ที่อยู่</span>

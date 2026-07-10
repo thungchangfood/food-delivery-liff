@@ -366,7 +366,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
     <div id="free-delivery-notice" style="display:none;" class="free-delivery-notice"></div>
 
-    <div class="cart-section">
+    <div class="cart-section" id="promo-section">
       <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
       <div class="fg" style="display:flex;gap:8px;align-items:center;">
         <input class="fi" id="promo-input" placeholder="กรอกโค้ดโปรโมชั่น (ถ้ามี)" style="flex:1;">
@@ -1219,6 +1219,20 @@ function renderCart() {
   } else {
     paymentSelectWrap.style.display = "block";
     paymentFixedCash.style.display = "none";
+  }
+
+  // ✅ ร้าน gp_self ไม่ให้ใช้โค้ดส่วนลด — ซ่อนช่องกรอก + เคลียร์โค้ดที่อาจค้างมาจากร้านก่อนหน้า
+  const promoSection = document.getElementById("promo-section");
+  if (isSelfDeliveryShop) {
+    promoSection.style.display = "none";
+    if (promoApplied) {
+      promoApplied = false;
+      promoInfo = null;
+      const pi = document.getElementById("promo-input"); if (pi) pi.value = "";
+      const pm = document.getElementById("promo-msg"); if (pm) pm.style.display = "none";
+    }
+  } else {
+    promoSection.style.display = "block";
   }
   const entries = Object.values(cart);
   document.getElementById("cart-items").innerHTML = entries.length

@@ -328,7 +328,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <div class="shop-hours-bar" id="menu-hours-bar" style="display:none;"></div>
   <div id="menu-list" class="pb-80"></div>
   <div class="bottom-bar" id="view-cart-bar" style="display:none;">
-    <button class="btn-green" onclick="goCart()">ดูตะกร้า (<span id="cart-count-btn">0</span> รายการ) →</button>
+    <button class="btn-green" onclick="goCart()">ดูตะกร้า (<span id="cart-count-btn">0</span> รายการ) — ฿<span id="cart-total-btn">0</span> →</button>
   </div>
 </div>
 
@@ -1753,10 +1753,13 @@ function showPage(id) {
   if (id !== "page-track" && trackTimer) { clearInterval(trackTimer); trackTimer = null; }
 }
 function updateCartUI() {
-  const total = Object.values(cart).reduce((s,e) => s + e.qty, 0);
+  const items = Object.values(cart);
+  const total = items.reduce((s,e) => s + e.qty, 0);
+  const totalPrice = items.reduce((s,e) => s + e.price*e.qty, 0);
   ["cart-badge","cart-badge2"].forEach(id => { const el=document.getElementById(id); if(el){el.textContent=total;el.style.display=total>0?"flex":"none";} });
   const bar = document.getElementById("view-cart-bar"); if(bar) bar.style.display = total > 0 ? "block" : "none";
   const cnt = document.getElementById("cart-count-btn"); if(cnt) cnt.textContent = total;
+  const priceEl = document.getElementById("cart-total-btn"); if(priceEl) priceEl.textContent = totalPrice;
 }
 function parseItems(str) { try{return JSON.parse(str)||[];}catch(_){return[];} }
 

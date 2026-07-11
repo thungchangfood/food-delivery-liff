@@ -536,6 +536,76 @@ let sheetMenu = null;
 let sheetQty = 1;
 let sheetSelections = {};
 
+// ── Local state persistence (กู้คืนตะกร้า/ออเดอร์ค้าง ถ้าลูกค้าปัดแอปทิ้งกลางคัน) ──
+const LOCAL_STATE_KEY = "tc_delivery_pending_state";
+const LOCAL_STATE_MAX_AGE_MIN = 60; // ถ้าค้างเกิน 60 นาที ทิ้งไปเลย กันราคา/โปรที่อาจเปลี่ยนไปแล้ว
+
+function saveLocalState() {
+  try {
+    const state = {
+      cart,
+      currentShopId: currentShop?.restaurantId || null,
+      pendingOrderData,
+      savedAt: Date.now()
+    };
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
+  } catch(_) {}
+}
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem(LOCAL_STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(_) { return null; }
+}
+function clearLocalState() {
+  try { localStorage.removeItem(LOCAL_STATE_KEY); } catch(_) {}
+}
+
+// ✅ เรียกหลัง allShops โหลดเสร็จแล้ว — เช็คว่ามีตะกร้า/ออเดอร์ค้างจากครั้งก่อนไหม
+function restoreLocalStateIfAny() {
+  const state = loadLocalState();
+  if (!state) return;
+  const ageMinutes = (Date.now() - (state.savedAt || 0)) / 60000;
+  if (ageMinutes > LOCAL_STATE_MAX_AGE_MIN) { clearLocalState(); return; }
+
+  // ── กรณีที่ 1: มีออเดอร์ที่กำลังจะยืนยันตอนแอปถูกปิดกลางคัน (สำคัญที่สุด) ──
+  if (state.pendingOrderData) {
+    const shop = allShops.find(s => s.restaurantId === state.pendingOrderData.restaurantId);
+    const shopName = shop ? shop.name : "ร้านค้า";
+    const total = (Number(state.pendingOrderData.subtotal||0) - Number(state.pendingOrderData.foodDiscount||0)) + Number(state.pendingOrderData.deliveryFee||0);
+    const resume = confirm(`พบออเดอร์ที่ยังไม่ได้ยืนยันจากครั้งก่อน (${shopName})\nยอดรวม ฿${total}\n\nต้องการสั่งต่อเลยไหมครับ?`);
+    if (resume) {
+      pendingOrderData = state.pendingOrderData;
+      cart = {};
+      if (shop) currentShop = shop;
+      updateCartUI();
+      document.getElementById("success-order-id").textContent = "กำลังยืนยันออเดอร์...";
+      document.getElementById("payment-info").style.display = "none";
+      document.getElementById("cancel-order-btn").style.display = "";
+      document.getElementById("countdown-wrap").style.display = "";
+      showPage("page-success");
+      startCountdown(10);
+    } else {
+      clearLocalState();
+      showToast("ยกเลิกออเดอร์ค้างแล้วครับ");
+    }
+    return;
+  }
+
+  // ── กรณีที่ 2: ไม่มีออเดอร์ค้าง แต่มีตะกร้าค้างอยู่ — กู้คืนให้เลย ──
+  if (state.cart && Object.keys(state.cart).length && state.currentShopId) {
+    const shop = allShops.find(s => s.restaurantId === state.currentShopId);
+    if (shop && shop.status === "active") {
+      cart = state.cart;
+      currentShop = shop;
+      updateCartUI();
+      showToast("🛒 กู้คืนตะกร้าที่ค้างไว้แล้วครับ");
+    } else {
+      clearLocalState();
+    }
+  }
+}
+
 function getEffectivePrice(m) {
   const discount = Number(m.priceDiscount);
   const original = Number(m.price);
@@ -630,8 +700,10 @@ async function loadInitialData(isRetry) {
       } else {
         showPage("page-shops");
       }
+      restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน (จะ override หน้าที่แสดงถ้าเจอ)
     } else {
       showRegisterPage();
+    }
     }
   } catch(e) {
     console.error("loadInitialData:", e);
@@ -728,6 +800,7 @@ async function checkAndLoadShops() {
     renderFirstOrderBanner();
     showPage("page-shops");
     prefetchAllMenus();
+    restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
@@ -965,6 +1038,7 @@ async function openShop(restaurantId) {
     cart = {}; updateCartUI();
   }
   currentShop = shop;
+  saveLocalState();
   document.getElementById("menu-shop-name").textContent = shop.name;
   const hero = document.getElementById("menu-hero");
   hero.innerHTML = shop.imageUrl
@@ -1149,6 +1223,7 @@ function addFromSheet() {
     cart[key] = { menuId: sheetMenu.menuId, variant: optKey, name: displayName, price, qty: 0, optLabel, basePrice: Number(sheetMenu.price) };
   }
   cart[key].qty += sheetQty;
+  saveLocalState();
   showToast(`เพิ่ม ${displayName} ×${sheetQty}`);
   closeSheet();
   renderMenus();
@@ -1164,6 +1239,7 @@ function addDirectToCart(m) {
   const key = `${m.menuId}_default`;
   if (!cart[key]) cart[key] = { menuId: m.menuId, variant: "default", name: m.menuName, price: getEffectivePrice(m), qty: 0 };
   cart[key].qty++;
+  saveLocalState();
   showToast(`เพิ่ม ${m.menuName}`);
   renderMenus();
 }
@@ -1178,6 +1254,7 @@ function removeOneFromMenu(menuId) {
   const key = keys[keys.length - 1];
   cart[key].qty--;
   if (cart[key].qty <= 0) delete cart[key];
+  saveLocalState();
   renderMenus();
 }
 
@@ -1324,12 +1401,14 @@ function removeCartEntry(key) {
   if (!cart[key]) return;
   cart[key].qty--;
   if (cart[key].qty <= 0) delete cart[key];
+  saveLocalState();
   if (!Object.keys(cart).length) { showPage("page-menu"); return; }
   renderCart();
 }
 function addCartEntry(key) {
   if (!cart[key]) return;
   cart[key].qty++;
+  saveLocalState();
   renderCart();
 }
 
@@ -1530,6 +1609,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     depositAmount,
     deliveryFee: delivery
   };
+  saveLocalState(); // ✅ เซฟไว้กันปัดแอปทิ้งระหว่าง countdown — เปิดใหม่จะถามว่าจะสั่งต่อไหม
 
   document.getElementById("success-order-id").textContent = "กำลังยืนยันออเดอร์...";
   document.getElementById("payment-info").style.display = "none";
@@ -1562,6 +1642,7 @@ async function startCountdown(sec) {
         // (ฝั่ง server จะบันทึก firstOrderDone=true ลง Sheet ให้ตอนนี้แล้วด้วย)
         if (currentMember) currentMember.isFirstOrder = false;
         renderFirstOrderBanner();
+        clearLocalState(); // ✅ ออเดอร์เข้าระบบแล้วจริง ไม่ต้องเก็บสถานะค้างไว้อีก
 
         const pi = document.getElementById("payment-info");
         if (needDeposit) {
@@ -1586,6 +1667,7 @@ async function startCountdown(sec) {
 function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
+  clearLocalState();
   // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้ คืนค่าเดิม
   if (currentMember) currentMember.isFirstOrder = firstOrderFreeEnabled;
   showToast("ยกเลิกออเดอร์แล้วครับ");
@@ -1745,6 +1827,7 @@ function resetAndHome() {
   userLat = null; userLng = null;
   promoApplied = false;
   promoInfo = null;
+  clearLocalState();
   const pi = document.getElementById("promo-input"); if(pi) pi.value = "";
   const pm = document.getElementById("promo-msg"); if(pm) pm.style.display = "none";
   document.getElementById("f-address").value = "";

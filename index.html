@@ -182,6 +182,15 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .fi{width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;transition:.15s;background:white;}
 .fi:focus{border-color:#06C755;}
 .fi[readonly]{background:#f9f9f9;color:#555;cursor:default;}
+
+/* ── Payment method buttons ── */
+.payment-btns{display:flex;gap:10px;}
+.payment-btn{flex:1;border:2px solid #e0e0e0;border-radius:12px;padding:16px 10px;background:white;font-family:inherit;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.payment-btn:active{transform:scale(.97);}
+.payment-btn-icon{font-size:26px;}
+.payment-btn-label{font-size:14px;font-weight:700;color:#555;}
+.payment-btn.selected{border-color:#06C755;background:#f0fdf4;}
+.payment-btn.selected .payment-btn-label{color:#06C755;}
 .summary-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:#555;}
 .summary-total{display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:700;border-top:.5px solid #ececec;}
 .deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
@@ -376,12 +385,19 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
     <div class="cart-section">
       <div class="cart-section-title">💰 ชำระเงิน</div>
-      <div class="fg" id="payment-select-wrap">
+      <div class="fg">
         <label class="fl">วิธีชำระ</label>
-        <select class="fi" id="f-payment" onchange="updateDepositNotice()">
-          <option value="promptpay">พร้อมเพย์ / โอนเงิน</option>
-          <option value="cash">เงินสด (ชำระปลายทาง)</option>
-        </select>
+        <input type="hidden" id="f-payment" value="cash">
+        <div class="payment-btns">
+          <button type="button" class="payment-btn selected" id="pay-btn-cash" onclick="selectPayment('cash')">
+            <span class="payment-btn-icon">💵</span>
+            <span class="payment-btn-label">เงินสด<br>(ชำระปลายทาง)</span>
+          </button>
+          <button type="button" class="payment-btn" id="pay-btn-promptpay" onclick="selectPayment('promptpay')">
+            <span class="payment-btn-icon">💸</span>
+            <span class="payment-btn-label">พร้อมเพย์<br>/ โอนเงิน</span>
+          </button>
+        </div>
       </div>
       <div class="fg" id="payment-fixed-cash" style="display:none;">
         <label class="fl">วิธีชำระ</label>
@@ -1320,6 +1336,13 @@ function addCartEntry(key) {
 function formatPhone(p) {
   const s = String(p).replace(/\D/g, "");
   return s.startsWith("0") ? s : "0" + s;
+}
+
+function selectPayment(value) {
+  document.getElementById("f-payment").value = value;
+  document.getElementById("pay-btn-cash").classList.toggle("selected", value === "cash");
+  document.getElementById("pay-btn-promptpay").classList.toggle("selected", value === "promptpay");
+  updateDepositNotice();
 }
 
 function updateDepositNotice() {

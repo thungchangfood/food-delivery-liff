@@ -1401,7 +1401,7 @@ function removeCartEntry(key) {
   cart[key].qty--;
   if (cart[key].qty <= 0) delete cart[key];
   saveLocalState();
-  if (!Object.keys(cart).length) { showPage("page-menu"); return; }
+  if (!Object.keys(cart).length) { updateCartUI(); showPage("page-menu"); return; }
   renderCart();
 }
 function addCartEntry(key) {

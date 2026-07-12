@@ -1037,7 +1037,7 @@ function renderGpSettlement(data) {
       const restaurantOwesUs = Number(r.restaurantOwesUs || 0);
       const weOweRestaurant = Number(r.weOweRestaurant || 0);
       const headerAmount = isSelf
-        ? (restaurantOwesUs > 0 ? `ร้านเป็นหนี้เรา ฿${restaurantOwesUs.toLocaleString()}` : `เราเป็นหนี้ร้าน ฿${weOweRestaurant.toLocaleString()}`)
+        ? `ร้านเป็นหนี้เรา ฿${restaurantOwesUs.toLocaleString()}`
         : `เก็บ GP ฿${r.totalGp.toLocaleString()}`;
       return `
     <div class="order-card" style="margin-bottom:12px;">
@@ -1054,11 +1054,9 @@ function renderGpSettlement(data) {
             <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
             ${r.totalMenuDiscount > 0 ? `<div class="money-row"><span>ส่วนลดเมนู (ร้านลดเอง)</span><span>-฿${r.totalMenuDiscount.toLocaleString()}</span></div>` : ""}
             ${isSelf ? `
-            <div class="money-row"><span>GP รวมทั้งหมด (อ้างอิง)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
-            <div class="money-row" style="color:#DC2626;"><span>💵 ลูกค้าจ่ายเงินสด → ร้านเป็นหนี้เรา</span><span>฿${restaurantOwesUs.toLocaleString()}</span></div>
-            <div class="money-row" style="color:#06C755;"><span>💸 ลูกค้าโอน → เราเป็นหนี้ร้าน</span><span>฿${weOweRestaurant.toLocaleString()}</span></div>
-            <div class="money-row total"><span>สุทธิ${restaurantOwesUs >= weOweRestaurant ? " (ร้านต้องจ่ายเรา)" : " (เราต้องจ่ายร้าน)"}</span><span>฿${Math.abs(restaurantOwesUs - weOweRestaurant).toLocaleString()}</span></div>
-            ` : `
+            <div class="money-row"><span>ยอด GP ที่ร้านเป็นหนี้ระบบ</span><span>฿${restaurantOwesUs.toLocaleString()}</span></div>
+            <div class="money-row" style="color:#888;font-size:12px;">ร้านเก็บเงินลูกค้าเองทุกออเดอร์ (ปลายทาง/โอนตรงเข้าร้าน) ระบบมีหน้าที่แค่หาออเดอร์ให้ครับ</div>
+            ` : ``
             <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
             <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
             `}

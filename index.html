@@ -1697,10 +1697,20 @@ function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
   clearLocalState();
-  // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้ คืนค่าเดิม
-  if (currentMember) currentMember.isFirstOrder = firstOrderFreeEnabled;
+  // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้
+  // เช็คสถานะจริงจาก server แทนการเดา เพื่อกันกรณีลูกค้าเคยใช้สิทธิ์ไปแล้วก่อนหน้านี้
+  refreshMemberFirstOrderStatus();
   showToast("ยกเลิกออเดอร์แล้วครับ");
   resetAndHome();
+}
+
+// ✅ ดึงสถานะสมาชิกล่าสุดจาก server มาอัปเดต isFirstOrder ให้ตรงความจริงเสมอ
+async function refreshMemberFirstOrderStatus() {
+  if (!currentMember?.memberId) return;
+  try {
+    const r = await apiGet("action=getMember&memberId=" + currentMember.memberId);
+    if (r.success) currentMember.isFirstOrder = checkIsFirstOrder(r.data);
+  } catch(_) {}
 }
 
 // ── TRACK ────────────────────────────────────────────

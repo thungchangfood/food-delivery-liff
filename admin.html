@@ -1056,7 +1056,7 @@ function renderGpSettlement(data) {
             ${isSelf ? `
             <div class="money-row"><span>ยอด GP ที่ร้านเป็นหนี้ระบบ</span><span>฿${restaurantOwesUs.toLocaleString()}</span></div>
             <div class="money-row" style="color:#888;font-size:12px;">ร้านเก็บเงินลูกค้าเองทุกออเดอร์ (ปลายทาง/โอนตรงเข้าร้าน) ระบบมีหน้าที่แค่หาออเดอร์ให้ครับ</div>
-            ` : ``
+            ` : `
             <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
             <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
             `}

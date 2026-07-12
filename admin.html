@@ -289,7 +289,11 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 <script>
 const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const ADMIN_PASS = "admin1234";
-
+function toLocalDateStr(d) {
+  return d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+}
 // ✅ ใช้คำนวณย้อนกลับว่าค่าส่งเดิมของร้าน (ก่อนหักส่วนลด) ควรเป็นเท่าไหร่
 const GP_PLANS = {
   gp25: { deliveryFee: 9,  gpPercent: 25 },
@@ -921,7 +925,7 @@ function showRiderSettle() {
   document.getElementById("biz-summary-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "block";
   const dateInput = document.getElementById("settle-date");
-  if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0,10);
+  if (!dateInput.value) dateInput.value = toLocalDateStr(new Date());
   loadRiderSettlement();
 }
 function hideRiderSettle() {
@@ -1039,8 +1043,8 @@ function setGpRange(collectDay) {
     start = new Date(now.getFullYear(), now.getMonth(), 1);
     end = new Date(now.getFullYear(), now.getMonth(), 15);
   }
-  document.getElementById("gp-start-date").value = start.toISOString().slice(0,10);
-  document.getElementById("gp-end-date").value = end.toISOString().slice(0,10);
+  document.getElementById("gp-start-date").value = toLocalDateStr(start);
+  document.getElementById("gp-end-date").value = toLocalDateStr(end);
 }
 async function loadGpSettlement() {
   const start = document.getElementById("gp-start-date").value;
@@ -1146,6 +1150,11 @@ function exportGpPrint() {
     showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน");
     return;
   }
+  const selStart = document.getElementById("gp-start-date").value;
+  const selEnd = document.getElementById("gp-end-date").value;
+  if (lastGpData.startDate !== selStart || lastGpData.endDate !== selEnd) {
+    if (!confirm("⚠️ ข้อมูลที่แสดงอยู่เป็นช่วง " + lastGpData.startDate + " ถึง " + lastGpData.endDate + " แต่ช่องวันที่เลือกไว้คือ " + selStart + " ถึง " + selEnd + "\nต้องการ export ต่อไหม? (แนะนำกด 'โหลด' ก่อน)")) return;
+  }
   const d = lastGpData;
 const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
   const grandMenuDiscount = d.restaurants.reduce((s,r)=>s+r.totalMenuDiscount,0);
@@ -1153,7 +1162,7 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
   const rows = d.restaurants.map(r => {
     const isSelf = r.gpPlan === "gp_self";
     const netCol = isSelf
-      ? `ร้านหนี้เรา ฿${Number(r.restaurantOwesUs||0).toLocaleString()} / เราหนี้ร้าน ฿${Number(r.weOweRestaurant||0).toLocaleString()}`
+      ? `ร้านเป็นหนี้เรา ฿${Number(r.restaurantOwesUs||0).toLocaleString()}`
       : `฿${r.totalGp.toLocaleString()}`;
     return `
     <tr>
@@ -1172,7 +1181,7 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
     <table>
       <thead><tr>
         <th>ร้านอาหาร</th><th class="num">จำนวนออเดอร์</th><th class="num">ยอดอาหารรวม</th>
-        <th class="num">ส่วนลดเมนู</th><th class="num">ยอด GP ที่เก็บ</th><th>ลายเซ็นรับทราบ</th>
+        <th class="num">ส่วนลดเมนู</th><th class="num">ยอดที่เก็บ/หนี้*</th><th>ลายเซ็นรับทราบ</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
@@ -1186,6 +1195,9 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
         </tr>
       </tfoot>
     </table>
+    <div style="margin-top:8px;font-size:12px;color:#888;">
+      *ร้านทั่วไป = ยอด GP ที่หักจากค่าอาหารตามรอบ / ร้านจัดส่งเอง (gp_self) = ยอดที่ร้านต้องโอนให้ระบบ
+    </div>
     <div class="doc-footer">
       <div class="sign-box"><div class="sign-line">ผู้จัดเก็บเงิน</div></div>
       <div class="sign-box"><div class="sign-line">ผู้ตรวจสอบ</div></div>
@@ -1197,6 +1209,10 @@ function exportRiderPrint() {
   if (!lastRiderData || !lastRiderData.riders || !lastRiderData.riders.length) {
     showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน");
     return;
+  }
+  const selectedDate = document.getElementById("settle-date").value;
+  if (lastRiderData.date !== selectedDate) {
+    if (!confirm("⚠️ ข้อมูลที่แสดงอยู่เป็นของวันที่ " + lastRiderData.date + " แต่ช่องวันที่เลือกไว้คือ " + selectedDate + "\nต้องการ export ต่อไหม? (แนะนำกด 'โหลด' ก่อน)")) return;
   }
   const d = lastRiderData;
   const grandFood = d.riders.reduce((s,r)=>s+r.totalFoodReimburse,0);
@@ -1270,8 +1286,8 @@ function setBizRange(kind) {
     start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     end = new Date(now.getFullYear(), now.getMonth(), 0);
   }
-  document.getElementById("biz-start-date").value = start.toISOString().slice(0,10);
-  document.getElementById("biz-end-date").value = end.toISOString().slice(0,10);
+  document.getElementById("biz-start-date").value = toLocalDateStr(start);
+  document.getElementById("biz-end-date").value = toLocalDateStr(end);
 }
 async function loadBizSummary() {
   const start = document.getElementById("biz-start-date").value;
@@ -1323,6 +1339,11 @@ function renderBizSummary(d) {
 }
 function exportBizPrint() {
   if (!lastBizData) { showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน"); return; }
+  const selStart = document.getElementById("biz-start-date").value;
+  const selEnd = document.getElementById("biz-end-date").value;
+  if (lastBizData.startDate !== selStart || lastBizData.endDate !== selEnd) {
+    if (!confirm("⚠️ ข้อมูลที่แสดงอยู่เป็นช่วง " + lastBizData.startDate + " ถึง " + lastBizData.endDate + " แต่ช่องวันที่เลือกไว้คือ " + selStart + " ถึง " + selEnd + "\nต้องการ export ต่อไหม? (แนะนำกด 'โหลด' ก่อน)")) return;
+  }
   const d = lastBizData;
   const body = `
     <div style="margin-bottom:10px;font-size:14px;">

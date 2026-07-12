@@ -1625,7 +1625,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
   pendingOrderData = {
     memberId: currentMember.memberId,
     restaurantId: currentShop.restaurantId,
-    items: items.map(e => ({ menuId:e.menuId, name:e.name, price:e.price, qty:e.qty, variant:e.variant })),
+    items: items.map(e => ({ menuId:e.menuId, name:e.name, price:e.price, qty:e.qty, variant:e.variant, optLabel:e.optLabel || "" })),
     address, note,
     lat: userLat, lng: userLng,
     paymentType: payment,

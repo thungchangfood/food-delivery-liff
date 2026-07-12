@@ -515,6 +515,31 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <button class="sheet-add-btn" id="sheet-add-btn" onclick="addFromSheet()">เพิ่มในตะกร้า — ฿0</button>
 </div>
 
+<!-- CANCEL ORDER SHEET -->
+<div class="sheet-overlay" id="cancel-sheet-overlay" onclick="closeCancelSheet()"></div>
+<div class="sheet" id="cancel-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">ยกเลิกออเดอร์</div>
+    <div style="font-size:13px;color:#888;margin-top:2px;">กรุณาเลือกเหตุผลในการยกเลิกครับ</div>
+  </div>
+  <div class="sheet-section">
+    <div class="option-chips" id="cancel-reason-chips">
+      <div class="option-chip" onclick="selectCancelReason('สั่งผิด/เปลี่ยนใจ')">สั่งผิด/เปลี่ยนใจ</div>
+      <div class="option-chip" onclick="selectCancelReason('ร้านทำนานเกินไป')">ร้านทำนานเกินไป</div>
+      <div class="option-chip" onclick="selectCancelReason('สั่งซ้ำ')">สั่งซ้ำ</div>
+      <div class="option-chip" onclick="selectCancelReason('ที่อยู่/เบอร์ไม่ถูกต้อง')">ที่อยู่/เบอร์ไม่ถูกต้อง</div>
+      <div class="option-chip" onclick="selectCancelReason('อื่นๆ')">อื่นๆ (ระบุเอง)</div>
+    </div>
+  </div>
+  <div class="sheet-section" id="cancel-note-wrap" style="display:none;">
+    <div class="sheet-section-label">ระบุเหตุผล</div>
+    <textarea id="cancel-note-input" rows="3" placeholder="พิมพ์เหตุผลที่ต้องการยกเลิกครับ"
+      style="width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;resize:none;"></textarea>
+  </div>
+  <button class="sheet-add-btn" id="cancel-confirm-btn" style="background:#EF4444;" onclick="confirmCancelOrder()" disabled>เลือกเหตุผลก่อนครับ</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1722,6 +1747,7 @@ function renderTrack(active, all) {
           <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
         </div>
         ${o.status==="DELIVERING"?`<div class="rider-info">🛵 ไรเดอร์กำลังมาส่งครับ!</div>`:""}
+        ${(o.status==="NEW"||o.status==="ASSIGNED")?`<button onclick="event.stopPropagation();openCancelSheet('${o.orderId}')" style="margin-top:10px;width:100%;padding:10px;background:white;border:1.5px solid #EF4444;color:#EF4444;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">❌ ยกเลิกออเดอร์นี้</button>`:""}
       </div>`;
     });
   }
@@ -1748,6 +1774,74 @@ function renderTrack(active, all) {
   }
   if (!active.length && !hist.length) html = `<div style="text-align:center;padding:60px 20px;color:#aaa;"><div style="font-size:48px;margin-bottom:12px;">📋</div>ยังไม่มีออเดอร์ครับ</div>`;
   document.getElementById("track-wrap").innerHTML = html;
+}
+
+// ── CANCEL ORDER ─────────────────────────────────────
+let cancelTargetOrderId = null;
+let cancelSelectedReason = null;
+
+function openCancelSheet(orderId) {
+  cancelTargetOrderId = orderId;
+  cancelSelectedReason = null;
+  document.querySelectorAll("#cancel-reason-chips .option-chip").forEach(c => c.classList.remove("selected"));
+  document.getElementById("cancel-note-wrap").style.display = "none";
+  document.getElementById("cancel-note-input").value = "";
+  updateCancelConfirmBtn();
+  document.getElementById("cancel-sheet-overlay").classList.add("show");
+  document.getElementById("cancel-sheet").classList.add("show");
+}
+
+function closeCancelSheet() {
+  document.getElementById("cancel-sheet-overlay").classList.remove("show");
+  document.getElementById("cancel-sheet").classList.remove("show");
+  cancelTargetOrderId = null;
+}
+
+function selectCancelReason(reason) {
+  cancelSelectedReason = reason;
+  document.querySelectorAll("#cancel-reason-chips .option-chip").forEach(c => {
+    c.classList.toggle("selected", c.textContent.trim().startsWith(reason));
+  });
+  document.getElementById("cancel-note-wrap").style.display = (reason === "อื่นๆ") ? "block" : "none";
+  updateCancelConfirmBtn();
+}
+
+function updateCancelConfirmBtn() {
+  const btn = document.getElementById("cancel-confirm-btn");
+  const hasReason = cancelSelectedReason && (cancelSelectedReason !== "อื่นๆ" || document.getElementById("cancel-note-input").value.trim());
+  btn.disabled = !hasReason;
+  btn.textContent = hasReason ? "✅ ยืนยันยกเลิกออเดอร์" : "เลือกเหตุผลก่อนครับ";
+}
+
+document.addEventListener("input", (e) => {
+  if (e.target && e.target.id === "cancel-note-input") updateCancelConfirmBtn();
+});
+
+async function confirmCancelOrder() {
+  if (!cancelTargetOrderId || !cancelSelectedReason) return;
+  const note = document.getElementById("cancel-note-input").value.trim();
+  const finalReason = cancelSelectedReason === "อื่นๆ" ? note : cancelSelectedReason;
+  if (!finalReason) { showToast("กรุณาระบุเหตุผลครับ"); return; }
+
+  if (!confirm(`ยืนยันยกเลิกออเดอร์ ${cancelTargetOrderId}?\nเหตุผล: ${finalReason}`)) return;
+
+  const btn = document.getElementById("cancel-confirm-btn");
+  btn.disabled = true; btn.textContent = "กำลังยกเลิก...";
+  try {
+    const r = await apiPost({
+      action: "cancelOrder",
+      orderId: cancelTargetOrderId,
+      memberId: currentMember?.memberId || "",
+      reason: finalReason
+    });
+    if (!r.success) throw new Error(r.error || "ยกเลิกไม่สำเร็จ");
+    showToast("✅ ยกเลิกออเดอร์เรียบร้อยครับ");
+    closeCancelSheet();
+    await loadTrackOrders();
+  } catch(e) {
+    showToast("❌ " + e.message);
+    btn.disabled = false; btn.textContent = "✅ ยืนยันยกเลิกออเดอร์";
+  }
 }
 
 // ── HELPERS ──────────────────────────────────────────

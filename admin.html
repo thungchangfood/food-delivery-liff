@@ -534,7 +534,7 @@ function renderOrders() {
       ? "🛵 ร้านกำลังจัดส่งเอง"
       : (statusTh[o.status] || o.status);
     const items = parseItems(o.Items);
-    const subtotal = Number(o.subtotal || 0);;
+    const subtotal = Number(o.subtotal || 0);
     const deliveryFee = Number(o.deliveryFee || 0);
     const total = Number(o.total || 0);
     const depositAmount = Number(o.depositAmount || 0);
@@ -956,12 +956,43 @@ function renderRiderSettlement(data) {
       </div>
       <div class="order-body open">
         <div class="order-section">
-          <div class="items-list">
-            ${r.orders.map(o => `
-              <div class="item-row">
-                <span class="item-name">#${o.orderId} (อาหาร ฿${o.subtotal}${o.foodDiscount>0?`, ลด ฿${o.foodDiscount}`:""}${o.depositAmount>0?`, มัดจำ ฿${o.depositAmount}`:""})</span>
-                <span class="item-price">฿${o.totalDue}</span>
-              </div>`).join("")}
+          <div class="items-list" style="padding:4px 0;">
+            ${r.orders.map(o => {
+              const diffColor = o.foodReimburse > 0 ? "#06C755" : (o.foodReimburse < 0 ? "#EF4444" : "#888");
+              const diffLabel = o.foodReimburse > 0 ? "🟢 ระบบจ่ายเพิ่มให้ไรเดอร์" : (o.foodReimburse < 0 ? "🔴 หักคืนจากไรเดอร์" : "⚪ ไม่มีส่วนต่าง");
+              const collectLine = o.collectedFromCustomer > 0
+                ? "฿" + o.collectedFromCustomer
+                : "ลูกค้าโอนแล้ว ไม่ต้องเก็บ";
+              return `
+              <div style="padding:10px 12px;margin-bottom:8px;background:white;border:1px solid #eee;border-radius:10px;">
+                <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #e5e5e5;">
+                  <span>#${o.orderId}</span>
+                  <span style="color:#06C755;">รวมได้ ฿${o.totalDue}</span>
+                </div>
+                <div style="font-size:12.5px;color:#555;line-height:2;">
+                  <div style="display:flex;justify-content:space-between;">
+                    <span>🏪 จ่ายร้านไป (ค่าอาหารเต็ม)</span><span style="font-weight:600;">฿${o.paidToShop}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span>💵 เก็บจากลูกค้า</span><span style="font-weight:600;">${collectLine}</span>
+                  </div>
+                  ${o.foodDiscount > 0 ? `
+                  <div style="display:flex;justify-content:space-between;color:#7e22ce;">
+                    <span>🎟 ลูกค้าใช้โค้ดลดค่าอาหาร</span><span style="font-weight:600;">฿${o.foodDiscount}</span>
+                  </div>` : ""}
+                  ${o.depositAmount > 0 ? `
+                  <div style="display:flex;justify-content:space-between;color:#0369a1;">
+                    <span>📥 รับมัดจำไปแล้ว</span><span style="font-weight:600;">฿${o.depositAmount}</span>
+                  </div>` : ""}
+                  <div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px;border-top:1px dashed #e5e5e5;color:${diffColor};font-weight:700;">
+                    <span>${diffLabel}</span><span>฿${Math.abs(o.foodReimburse)}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span>🛵 ค่ารอบไรเดอร์</span><span style="font-weight:600;">฿${o.riderFee}</span>
+                  </div>
+                </div>
+              </div>`;
+            }).join("")}
           </div>
         </div>
         <div class="action-section">

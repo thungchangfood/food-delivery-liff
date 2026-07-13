@@ -973,37 +973,93 @@ function renderRiderSettlement(data) {
                   <span>#${o.orderId}</span>
                   <span style="color:#06C755;">รวมได้ ฿${o.totalDue}</span>
                 </div>
-                <div style="font-size:12.5px;color:#555;line-height:2;">
-                  <div style="display:flex;justify-content:space-between;">
-                    <span>🏪 จ่ายร้านไป (ค่าอาหารเต็ม)</span><span style="font-weight:600;">฿${o.paidToShop}</span>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;">
-                    <span>💵 เก็บจากลูกค้า</span><span style="font-weight:600;">${collectLine}</span>
-                  </div>
-                  ${o.foodDiscount > 0 ? `
-                  <div style="display:flex;justify-content:space-between;color:#7e22ce;">
-                    <span>🎟 ลูกค้าใช้โค้ดลดค่าอาหาร</span><span style="font-weight:600;">฿${o.foodDiscount}</span>
-                  </div>` : ""}
-                  ${o.depositAmount > 0 ? `
-                  <div style="display:flex;justify-content:space-between;color:#0369a1;">
-                    <span>📥 รับมัดจำไปแล้ว</span><span style="font-weight:600;">฿${o.depositAmount}</span>
-                  </div>` : ""}
-                  <div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px;border-top:1px dashed #e5e5e5;color:${diffColor};font-weight:700;">
-                    <span>${diffLabel}</span><span>฿${Math.abs(o.foodReimburse)}</span>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;">
-                    <span>🛵 ค่ารอบไรเดอร์</span><span style="font-weight:600;">฿${o.riderFee}</span>
+                <div style="font-size:12.5px;color:#555;linefunction renderRiderSettlement(data) {
+  const list = document.getElementById("rider-settle-list");
+  if (!data.riders.length) { list.innerHTML = `<div class="empty">ไม่มีออเดอร์ที่ต้องเคลียร์ในวันนี้</div>`; return; }
+  list.innerHTML = data.riders.map(r => `
+    <div class="order-card" style="margin-bottom:14px;">
+      <div class="order-head" onclick="toggleRiderCard('${r.riderId}')">
+        <div class="order-head-left">
+          <div class="order-id">🛵 ${r.name}</div>
+          <div class="order-meta">${r.orders.length} ออเดอร์ · คืนค่าอาหาร ฿${r.totalFoodReimburse} + ค่ารอบ ฿${r.totalRiderFee}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="order-status s-DONE" style="font-size:15px;">รวม ฿${r.totalDue}</div>
+          <span style="color:#bbb;font-size:18px;" id="rider-arrow-${r.riderId}">›</span>
+        </div>
+      </div>
+      <div class="action-section" style="padding-top:0;">
+        <button class="btn-action btn-pay" onclick='event.stopPropagation();confirmRiderSettledBtn("${r.riderId}", ${JSON.stringify(r.orders.map(o=>o.orderId))})'>✅ ยืนยันจ่ายไรเดอร์แล้ว ฿${r.totalDue}</button>
+      </div>
+      <div class="order-body" id="rider-body-${r.riderId}">
+        <div class="order-section">
+          <div class="items-list" style="padding:4px 0;">
+            ${r.orders.map(o => `
+              <div style="margin-bottom:6px;background:white;border:1px solid #eee;border-radius:10px;overflow:hidden;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;" onclick="toggleRiderOrder('${o.orderId}')">
+                  <span style="font-weight:700;font-size:13.5px;">#${o.orderId}</span>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="color:#06C755;font-weight:600;font-size:13.5px;">รวมได้ ฿${o.totalDue}</span>
+                    <span style="color:#bbb;font-size:16px;" id="rider-order-arrow-${o.orderId}">›</span>
                   </div>
                 </div>
-              </div>`;
-            }).join("")}
+                <div id="rider-order-body-${o.orderId}" style="display:none;padding:0 12px 10px;">
+                  ${buildRiderOrderDetailHtml(o)}
+                </div>
+              </div>`).join("")}
           </div>
-        </div>
-        <div class="action-section">
-          <button class="btn-action btn-pay" onclick='confirmRiderSettledBtn("${r.riderId}", ${JSON.stringify(r.orders.map(o=>o.orderId))})'>✅ ยืนยันจ่ายไรเดอร์แล้ว ฿${r.totalDue}</button>
         </div>
       </div>
     </div>`).join("");
+}
+
+function buildRiderOrderDetailHtml(o) {
+  const diffColor = o.foodReimburse > 0 ? "#06C755" : (o.foodReimburse < 0 ? "#EF4444" : "#888");
+  const diffLabel = o.foodReimburse > 0 ? "🟢 ระบบจ่ายเพิ่มให้ไรเดอร์" : (o.foodReimburse < 0 ? "🔴 หักคืนจากไรเดอร์" : "⚪ ไม่มีส่วนต่าง");
+  const collectLine = o.collectedFromCustomer > 0
+    ? "฿" + o.collectedFromCustomer
+    : "ลูกค้าโอนแล้ว ไม่ต้องเก็บ";
+  return `
+    <div style="font-size:12.5px;color:#555;line-height:2;border-top:1px dashed #e5e5e5;padding-top:8px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span>🏪 จ่ายร้านไป (ค่าอาหารเต็ม)</span><span style="font-weight:600;">฿${o.paidToShop}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>💵 เก็บจากลูกค้า</span><span style="font-weight:600;">${collectLine}</span>
+      </div>
+      ${o.foodDiscount > 0 ? `
+      <div style="display:flex;justify-content:space-between;color:#7e22ce;">
+        <span>🎟 ลูกค้าใช้โค้ดลดค่าอาหาร</span><span style="font-weight:600;">฿${o.foodDiscount}</span>
+      </div>` : ""}
+      ${o.depositAmount > 0 ? `
+      <div style="display:flex;justify-content:space-between;color:#0369a1;">
+        <span>📥 รับมัดจำไปแล้ว</span><span style="font-weight:600;">฿${o.depositAmount}</span>
+      </div>` : ""}
+      <div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px;border-top:1px dashed #e5e5e5;color:${diffColor};font-weight:700;">
+        <span>${diffLabel}</span><span>฿${Math.abs(o.foodReimburse)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span>🛵 ค่ารอบไรเดอร์</span><span style="font-weight:600;">฿${o.riderFee}</span>
+      </div>
+    </div>`;
+}
+
+function toggleRiderCard(riderId) {
+  const body = document.getElementById("rider-body-" + riderId);
+  const arrow = document.getElementById("rider-arrow-" + riderId);
+  if (!body) return;
+  const isOpen = body.classList.contains("open");
+  body.classList.toggle("open");
+  if (arrow) arrow.textContent = isOpen ? "›" : "⌄";
+}
+
+function toggleRiderOrder(orderId) {
+  const body = document.getElementById("rider-order-body-" + orderId);
+  const arrow = document.getElementById("rider-order-arrow-" + orderId);
+  if (!body) return;
+  const isOpen = body.style.display === "block";
+  body.style.display = isOpen ? "none" : "block";
+  if (arrow) arrow.textContent = isOpen ? "›" : "⌄";
 }
 
 async function confirmRiderSettledBtn(riderId, orderIds) {

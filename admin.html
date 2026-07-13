@@ -362,7 +362,7 @@ function doLogin() {
   if (pass === ADMIN_PASS) {
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
-    sessionStorage.setItem("admin_auth", "1");
+    localStorage.setItem("admin_auth", "1");
     init();
   } else {
     showToast("รหัสผ่านไม่ถูกต้องครับ");
@@ -370,7 +370,7 @@ function doLogin() {
   }
 }
 function logout() {
-  sessionStorage.removeItem("admin_auth");
+  localStorage.removeItem("admin_auth");
   clearInterval(refreshTimer);
   location.reload();
 }
@@ -1488,7 +1488,7 @@ async function doClearArchive() {
   }
 }
 
-if (sessionStorage.getItem("admin_auth") === "1") {
+if (localStorage.getItem("admin_auth") === "1") {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
   init();

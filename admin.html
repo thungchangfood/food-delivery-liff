@@ -1166,9 +1166,23 @@ function openPrintDocument(title, bodyHtml) {
   </div>
   ${bodyHtml}
   <div class="print-meta">พิมพ์เอกสารเมื่อ ${new Date().toLocaleString("th-TH")}</div>
-  <div class="no-print" style="text-align:center;margin-top:24px;">
+  <div class="no-print" style="text-align:center;margin-top:24px;display:flex;gap:10px;justify-content:center;">
     <button onclick="window.print()" style="padding:10px 24px;font-size:14px;font-family:inherit;cursor:pointer;">🖨 พิมพ์ / บันทึกเป็น PDF</button>
+    <button onclick="closeThisWindow()" style="padding:10px 24px;font-size:14px;font-family:inherit;cursor:pointer;background:#EF4444;color:white;border:none;border-radius:6px;">✕ ปิดหน้านี้</button>
   </div>
+  <script>
+    function closeThisWindow() {
+      window.close();
+      // ถ้าปิดไม่ได้ (บางเบราว์เซอร์บนมือถือไม่ยอมให้ script ปิดเอง)
+      setTimeout(() => {
+        if (!window.closed) {
+          document.body.innerHTML = '<div style="text-align:center;padding:60px 20px;font-family:sans-serif;">' +
+            '<div style="font-size:16px;margin-bottom:10px;">ปิดแท็บนี้ไม่ได้อัตโนมัติครับ</div>' +
+            '<div style="font-size:14px;color:#888;">กรุณาปิดแท็บนี้เอง หรือกดปุ่ม "ย้อนกลับ" ของเบราว์เซอร์</div></div>';
+        }
+      }, 300);
+    }
+  </script>
 </body>
 </html>`);
   win.document.close();

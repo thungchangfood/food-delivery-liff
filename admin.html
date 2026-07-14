@@ -137,16 +137,17 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .refresh-dot{width:8px;height:8px;border-radius:50%;background:#06C755;display:inline-block;margin-right:4px;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-@media(max-width:600px){
-  .stats{grid-template-columns:1fr 1fr;}
-  .close-reason-input{width:140px;}
-}
-.page-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:white;border-bottom:1px solid #e8e8e8;position:sticky;top:57px;z-index:90;}
+.page-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:white;border-bottom:1px solid #e8e8e8;}
 .btn-back{display:flex;align-items:center;gap:6px;background:#f0f0f0;color:#1a1a1a;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;flex-shrink:0;}
 .btn-back:hover{background:#e0e0e0;}
 .btn-back:active{transform:scale(.97);}
 .page-title{font-size:17px;font-weight:700;flex:1;}
 .page-toolbar{padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fafafa;border-bottom:1px solid #eee;}
+
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr;}
+  .close-reason-input{width:140px;}
+}
 </style>
 </head>
 <body>
@@ -181,12 +182,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <button class="btn-toggle-close" id="btn-toggle" onclick="toggleSystem()">ปิดระบบ</button>
   </div>
 
-  <div class="refresh-bar">
+  <div class="refresh-bar" id="refresh-bar">
     <span><span class="refresh-dot"></span>รีเฟรชอัตโนมัติทุก 10 วินาที</span>
     <span id="last-refresh">-</span>
   </div>
 
-  <div class="stats">
+  <div class="stats" id="stats-bar">
     <div class="stat-card s-new" onclick="filterOrders('NEW',this)">
       <div class="stat-num" id="sn-NEW">0</div>
       <div class="stat-label">⏳ รอยืนยัน</div>
@@ -871,9 +872,22 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 2500);
 }
 
-function showReport() {
+// ── หน้าย่อย: ซ่อน/แสดงแถบสถิติหลักตอนสลับหน้า ──────────────
+function enterSubpage() {
   document.querySelector(".filter-wrap").style.display = "none";
   document.getElementById("orders-wrap").style.display = "none";
+  document.getElementById("stats-bar").style.display = "none";
+  document.getElementById("refresh-bar").style.display = "none";
+}
+function exitSubpage() {
+  document.querySelector(".filter-wrap").style.display = "";
+  document.getElementById("orders-wrap").style.display = "";
+  document.getElementById("stats-bar").style.display = "";
+  document.getElementById("refresh-bar").style.display = "";
+}
+
+function showReport() {
+  enterSubpage();
   document.getElementById("rider-settle-page").style.display = "none";
   document.getElementById("gp-settle-page").style.display = "none";
   document.getElementById("biz-summary-page").style.display = "none";
@@ -882,10 +896,8 @@ function showReport() {
   buildReport();
 }
 function hideReport() {
-  document.querySelector(".filter-wrap").style.display = "";
-  document.getElementById("orders-wrap").style.display = "";
+  exitSubpage();
   document.getElementById("report-page").style.display = "none";
-  document.getElementById("rider-settle-page").style.display = "none";
 }
 function buildReport() {
   const today = new Date().toDateString();
@@ -943,19 +955,18 @@ async function closeDayAdmin() {
 }
 
 function showRiderSettle() {
-  document.querySelector(".filter-wrap").style.display = "none";
-  document.getElementById("orders-wrap").style.display = "none";
+  enterSubpage();
   document.getElementById("report-page").style.display = "none";
   document.getElementById("gp-settle-page").style.display = "none";
   document.getElementById("biz-summary-page").style.display = "none";
+  document.getElementById("clear-archive-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "block";
   const dateInput = document.getElementById("settle-date");
   if (!dateInput.value) dateInput.value = toLocalDateStr(new Date());
   loadRiderSettlement();
 }
 function hideRiderSettle() {
-  document.querySelector(".filter-wrap").style.display = "";
-  document.getElementById("orders-wrap").style.display = "";
+  exitSubpage();
   document.getElementById("rider-settle-page").style.display = "none";
 }
 
@@ -1071,18 +1082,17 @@ async function confirmRiderSettledBtn(riderId, orderIds) {
 }
 
 function showGpSettle() {
-  document.querySelector(".filter-wrap").style.display = "none";
-  document.getElementById("orders-wrap").style.display = "none";
+  enterSubpage();
   document.getElementById("report-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "none";
   document.getElementById("biz-summary-page").style.display = "none";
+  document.getElementById("clear-archive-page").style.display = "none";
   document.getElementById("gp-settle-page").style.display = "block";
   if (!document.getElementById("gp-start-date").value) setGpRange(16);
   loadGpSettlement();
 }
 function hideGpSettle() {
-  document.querySelector(".filter-wrap").style.display = "";
-  document.getElementById("orders-wrap").style.display = "";
+  exitSubpage();
   document.getElementById("gp-settle-page").style.display = "none";
 }
 function setGpRange(collectDay) {
@@ -1323,18 +1333,17 @@ function exportRiderPrint() {
 }
 
 function showBizSummary() {
-  document.querySelector(".filter-wrap").style.display = "none";
-  document.getElementById("orders-wrap").style.display = "none";
+  enterSubpage();
   document.getElementById("report-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "none";
   document.getElementById("gp-settle-page").style.display = "none";
+  document.getElementById("clear-archive-page").style.display = "none";
   document.getElementById("biz-summary-page").style.display = "block";
   if (!document.getElementById("biz-start-date").value) setBizRange("thisMonth");
   loadBizSummary();
 }
 function hideBizSummary() {
-  document.querySelector(".filter-wrap").style.display = "";
-  document.getElementById("orders-wrap").style.display = "";
+  exitSubpage();
   document.getElementById("biz-summary-page").style.display = "none";
 }
 function setBizRange(kind) {
@@ -1440,8 +1449,7 @@ function exportBizPrint() {
 }
 
 function showClearArchive() {
-  document.querySelector(".filter-wrap").style.display = "none";
-  document.getElementById("orders-wrap").style.display = "none";
+  enterSubpage();
   document.getElementById("report-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "none";
   document.getElementById("gp-settle-page").style.display = "none";
@@ -1451,8 +1459,7 @@ function showClearArchive() {
   updateClearButtonState();
 }
 function hideClearArchive() {
-  document.querySelector(".filter-wrap").style.display = "";
-  document.getElementById("orders-wrap").style.display = "";
+  exitSubpage();
   document.getElementById("clear-archive-page").style.display = "none";
 }
 function onClearCutoffChange() {

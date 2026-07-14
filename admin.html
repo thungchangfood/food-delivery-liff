@@ -141,6 +141,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
   .stats{grid-template-columns:1fr 1fr;}
   .close-reason-input{width:140px;}
 }
+.page-header{display:flex;align-items:center;gap:12px;padding:14px 20px;background:white;border-bottom:1px solid #e8e8e8;position:sticky;top:57px;z-index:90;}
+.btn-back{display:flex;align-items:center;gap:6px;background:#f0f0f0;color:#1a1a1a;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;flex-shrink:0;}
+.btn-back:hover{background:#e0e0e0;}
+.btn-back:active{transform:scale(.97);}
+.page-title{font-size:17px;font-weight:700;flex:1;}
+.page-toolbar{padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fafafa;border-bottom:1px solid #eee;}
 </style>
 </head>
 <body>
@@ -208,46 +214,61 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div class="filter-chip" onclick="filterOrders('CANCEL',this)">❌ ยกเลิก</div>
   </div>
 
-  <div id="report-page" style="display:none;padding:20px;">
-    <div class="stats">
-      <div class="stat-card"><div class="stat-num" id="report-orders">0</div><div class="stat-label">ออร์เดอร์วันนี้</div></div>
-      <div class="stat-card"><div class="stat-num" id="report-sales">0</div><div class="stat-label">ยอดขายรวม</div></div>
-      <div class="stat-card"><div class="stat-num" id="report-delivery">0</div><div class="stat-label">ค่าส่งรวม</div></div>
-      <div class="stat-card"><div class="stat-num" id="report-done">0</div><div class="stat-label">ส่งสำเร็จ</div></div>
+  <div id="report-page" style="display:none;">
+    <div class="page-header">
+      <button class="btn-back" onclick="hideReport()">← กลับ</button>
+      <div class="page-title">📊 รายงานประจำวัน</div>
     </div>
-    <div style="margin-top:15px;display:flex;gap:8px;">
-      <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-      <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
-      <button class="btn-sm" onclick="hideReport()">🔙 กลับ</button>
+    <div style="padding:20px;">
+      <div class="stats" style="grid-template-columns:repeat(4,1fr);padding:0;margin-bottom:16px;">
+        <div class="stat-card"><div class="stat-num" id="report-orders">0</div><div class="stat-label">ออร์เดอร์วันนี้</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-sales">0</div><div class="stat-label">ยอดขายรวม</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-delivery">0</div><div class="stat-label">ค่าส่งรวม</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-done">0</div><div class="stat-label">ส่งสำเร็จ</div></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+        <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
+      </div>
     </div>
   </div>
   
-  <div id="rider-settle-page" style="display:none;padding:20px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+  <div id="rider-settle-page" style="display:none;">
+    <div class="page-header">
+      <button class="btn-back" onclick="hideRiderSettle()">← กลับ</button>
+      <div class="page-title">💰 เคลียร์ยอดไรเดอร์</div>
+    </div>
+    <div class="page-toolbar">
       <input type="date" id="settle-date" class="close-reason-input" style="width:160px;" onchange="loadRiderSettlement()">
       <button class="btn-sm" onclick="loadRiderSettlement()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportRiderPrint()">📄 Export เอกสาร</button>
-      <button class="btn-sm" onclick="hideRiderSettle()">🔙 กลับ</button>
     </div>
-    <div id="rider-settle-list"></div>
+    <div style="padding:20px;" id="rider-settle-list"></div>
   </div>
 
-  <div id="gp-settle-page" style="display:none;padding:20px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+  <div id="gp-settle-page" style="display:none;">
+    <div class="page-header">
+      <button class="btn-back" onclick="hideGpSettle()">← กลับ</button>
+      <div class="page-title">🧾 เก็บ GP ร้านค้า</div>
+    </div>
+    <div class="page-toolbar">
       <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;">
       <span>ถึง</span>
       <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;">
-      <button class="btn-sm" onclick="setGpRange(1)">🧾 รอบเก็บ GP วันที่ 1</button>
-      <button class="btn-sm" onclick="setGpRange(16)">🧾 รอบเก็บ GP วันที่ 16</button>
+      <button class="btn-sm" onclick="setGpRange(1)">🧾 รอบวันที่ 1</button>
+      <button class="btn-sm" onclick="setGpRange(16)">🧾 รอบวันที่ 16</button>
       <button class="btn-sm" onclick="loadGpSettlement()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportGpPrint()">📄 Export เอกสาร</button>
-      <button class="btn-sm" onclick="hideGpSettle()">🔙 กลับ</button>
     </div>
-    <div id="gp-settle-list"></div>
+    <div style="padding:20px;" id="gp-settle-list"></div>
   </div>
   
-  <div id="biz-summary-page" style="display:none;padding:20px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+  <div id="biz-summary-page" style="display:none;">
+    <div class="page-header">
+      <button class="btn-back" onclick="hideBizSummary()">← กลับ</button>
+      <div class="page-title">📈 สรุปผลประกอบการ</div>
+    </div>
+    <div class="page-toolbar">
       <input type="date" id="biz-start-date" class="close-reason-input" style="width:150px;">
       <span>ถึง</span>
       <input type="date" id="biz-end-date" class="close-reason-input" style="width:150px;">
@@ -257,26 +278,30 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <button class="btn-sm" onclick="setBizRange('lastMonth')">เดือนที่แล้ว</button>
       <button class="btn-sm" onclick="loadBizSummary()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportBizPrint()">📄 Export เอกสาร</button>
-      <button class="btn-sm" onclick="hideBizSummary()">🔙 กลับ</button>
     </div>
-    <div id="biz-summary-body"></div>
+    <div style="padding:20px;" id="biz-summary-body"></div>
   </div>
   
-  <div id="clear-archive-page" style="display:none;padding:20px;">
-    <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;line-height:1.7;">
-      ⚠️ <strong>คำเตือน:</strong> การลบข้อมูลจะ<strong>ลบถาวร ไม่สามารถกู้คืนได้</strong> กรุณา Export เอกสารสรุปเก็บไว้เป็นหลักฐานก่อนลบทุกครั้ง<br>
-      ระบบจะ<strong>ลบทุกออเดอร์ที่เก่ากว่าหรือเท่ากับวันที่เลือก</strong> ออกจาก OrdersArchive (ออเดอร์หลังจากวันนี้จะไม่ถูกแตะต้อง)
+  <div id="clear-archive-page" style="display:none;">
+    <div class="page-header">
+      <button class="btn-back" onclick="hideClearArchive()">← กลับ</button>
+      <div class="page-title">🗑 ล้างข้อมูลเก่า</div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <label style="font-size:13px;font-weight:600;">ลบข้อมูลถึงวันที่:</label>
-      <input type="date" id="clear-cutoff-date" class="close-reason-input" style="width:160px;" onchange="onClearCutoffChange()">
-      <button class="btn-sm" onclick="hideClearArchive()">🔙 กลับ</button>
+    <div style="padding:20px;">
+      <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;line-height:1.7;">
+        ⚠️ <strong>คำเตือน:</strong> การลบข้อมูลจะ<strong>ลบถาวร ไม่สามารถกู้คืนได้</strong> กรุณา Export เอกสารสรุปเก็บไว้เป็นหลักฐานก่อนลบทุกครั้ง<br>
+        ระบบจะ<strong>ลบทุกออเดอร์ที่เก่ากว่าหรือเท่ากับวันที่เลือก</strong> ออกจาก OrdersArchive (ออเดอร์หลังจากวันนี้จะไม่ถูกแตะต้อง)
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <label style="font-size:13px;font-weight:600;">ลบข้อมูลถึงวันที่:</label>
+        <input type="date" id="clear-cutoff-date" class="close-reason-input" style="width:160px;" onchange="onClearCutoffChange()">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-sm" style="background:#1a1a1a;" onclick="exportBeforeClear()">📄 1. Export เอกสารสรุปก่อนลบ</button>
+        <button class="btn-sm" id="btn-do-clear" style="background:#EF4444;opacity:.4;cursor:not-allowed;" disabled onclick="doClearArchive()">🗑 2. ลบข้อมูลถึงวันที่นี้</button>
+      </div>
+      <div id="clear-status" style="margin-top:14px;font-size:13px;color:#888;"></div>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <button class="btn-sm" style="background:#1a1a1a;" onclick="exportBeforeClear()">📄 1. Export เอกสารสรุปก่อนลบ</button>
-      <button class="btn-sm" id="btn-do-clear" style="background:#EF4444;opacity:.4;cursor:not-allowed;" disabled onclick="doClearArchive()">🗑 2. ลบข้อมูลถึงวันที่นี้</button>
-    </div>
-    <div id="clear-status" style="margin-top:14px;font-size:13px;color:#888;"></div>
   </div>
   
   <div class="orders-wrap" id="orders-wrap">

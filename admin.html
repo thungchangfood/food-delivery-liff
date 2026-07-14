@@ -220,17 +220,68 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <button class="btn-back" onclick="hideReport()">← กลับ</button>
       <div class="page-title">📊 รายงานประจำวัน</div>
     </div>
-    <div style="padding:20px;">
-      <div class="stats" style="grid-template-columns:repeat(4,1fr);padding:0;margin-bottom:16px;">
-        <div class="stat-card"><div class="stat-num" id="report-orders">0</div><div class="stat-label">ออร์เดอร์วันนี้</div></div>
-        <div class="stat-card"><div class="stat-num" id="report-sales">0</div><div class="stat-label">ยอดขายรวม</div></div>
-        <div class="stat-card"><div class="stat-num" id="report-delivery">0</div><div class="stat-label">ค่าส่งรวม</div></div>
-        <div class="stat-card"><div class="stat-num" id="report-done">0</div><div class="stat-label">ส่งสำเร็จ</div></div>
+    <div class="page-toolbar">
+      <input type="date" id="report-date" class="close-reason-input" style="width:160px;" onchange="buildReport()">
+      <button class="btn-sm" onclick="setReportToday()">วันนี้</button>
+      <button class="btn-sm" onclick="buildReport()">🔄 โหลด</button>
+      <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
+    </div>
+    <div style="padding:20px;" id="report-body">
+
+      <!-- แถวสถิติหลัก -->
+      <div class="stats" style="grid-template-columns:repeat(4,1fr);padding:0;margin-bottom:12px;">
+        <div class="stat-card"><div class="stat-num" id="report-orders">0</div><div class="stat-label">ออร์เดอร์ทั้งหมด</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-done" style="color:#06C755;">0</div><div class="stat-label">✅ ส่งสำเร็จ</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-active" style="color:#3B82F6;">0</div><div class="stat-label">🔄 กำลังดำเนินการ</div></div>
+        <div class="stat-card"><div class="stat-num" id="report-cancel" style="color:#EF4444;">0</div><div class="stat-label">❌ ยกเลิก</div></div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-        <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
+
+      <!-- ยอดเงินรวม -->
+      <div class="order-card" style="margin-bottom:14px;">
+        <div class="order-head" style="cursor:default;">
+          <div class="order-head-left"><div class="section-label" style="margin:0;">สรุปยอดเงิน (เฉพาะออเดอร์ที่ไม่ถูกยกเลิก)</div></div>
+        </div>
+        <div class="order-body open">
+          <div class="order-section">
+            <div class="money-box">
+              <div class="money-row"><span>ยอดอาหารรวม (หลังหักส่วนลด)</span><span id="report-food">฿0</span></div>
+              <div class="money-row"><span>ค่าจัดส่งที่เก็บจากลูกค้า</span><span id="report-delivery">฿0</span></div>
+              <div class="money-row total"><span>ยอดขายรวมทั้งหมด</span><span id="report-sales">฿0</span></div>
+              <div class="money-row" style="margin-top:8px;"><span>💚 ชำระแล้ว (โอน/ยืนยันแล้ว)</span><span id="report-paid" style="color:#06C755;font-weight:600;">฿0</span></div>
+              <div class="money-row"><span>💵 ยังต้องเก็บปลายทาง / ยังไม่ยืนยัน</span><span id="report-unpaid" style="color:#EF4444;font-weight:600;">฿0</span></div>
+              <div class="money-row" style="margin-top:8px;"><span>🧾 GP ที่หักจากร้าน</span><span id="report-gp">฿0</span></div>
+              <div class="money-row"><span>🛵 ค่ารอบไรเดอร์รวม</span><span id="report-riderfee">฿0</span></div>
+              <div class="money-row" id="report-promo-row" style="display:none;"><span>🎟 ต้นทุนโปรโมชั่นรวม</span><span id="report-promo">฿0</span></div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- แยกตามร้านอาหาร -->
+      <div class="order-card" style="margin-bottom:14px;">
+        <div class="order-head" style="cursor:default;">
+          <div class="order-head-left"><div class="section-label" style="margin:0;">แยกตามร้านอาหาร</div></div>
+        </div>
+        <div class="order-body open" id="report-by-restaurant"></div>
+      </div>
+
+      <!-- แยกตามการชำระเงิน -->
+      <div class="order-card" style="margin-bottom:14px;">
+        <div class="order-head" style="cursor:default;">
+          <div class="order-head-left"><div class="section-label" style="margin:0;">แยกตามวิธีชำระเงิน</div></div>
+        </div>
+        <div class="order-body open" id="report-by-payment"></div>
+      </div>
+
+      <!-- รายการออเดอร์ทั้งหมด -->
+      <div class="order-card">
+        <div class="order-head" style="cursor:default;">
+          <div class="order-head-left"><div class="section-label" style="margin:0;">รายการออเดอร์ในวันที่เลือก</div></div>
+        </div>
+        <div class="order-body open" id="report-order-list"></div>
+      </div>
+
     </div>
   </div>
   
@@ -893,32 +944,140 @@ function showReport() {
   document.getElementById("biz-summary-page").style.display = "none";
   document.getElementById("clear-archive-page").style.display = "none";
   document.getElementById("report-page").style.display = "block";
+  const dateInput = document.getElementById("report-date");
+  if (!dateInput.value) dateInput.value = toLocalDateStr(new Date());
   buildReport();
 }
 function hideReport() {
   exitSubpage();
   document.getElementById("report-page").style.display = "none";
 }
+function setReportToday() {
+  document.getElementById("report-date").value = toLocalDateStr(new Date());
+  buildReport();
+}
+function getReportOrders() {
+  const dateStr = document.getElementById("report-date").value || toLocalDateStr(new Date());
+  return allOrders.filter(o => o.CreateAT && toLocalDateStr(new Date(o.CreateAT)) === dateStr);
+}
 function buildReport() {
-  const today = new Date().toDateString();
-  const todayOrders = allOrders.filter(o => new Date(o.CreateAT).toDateString() === today);
-  let sales = 0, delivery = 0, done = 0;
-  todayOrders.forEach(o => {
-    sales += Number(o.total || 0);
-    delivery += Number(o.deliveryFee || 0);
-    if (o.status === "DONE") done++;
+  const dayOrders = getReportOrders();
+  const notCancelled = dayOrders.filter(o => o.status !== "CANCEL");
+  const doneOrders = dayOrders.filter(o => o.status === "DONE");
+  const cancelOrders = dayOrders.filter(o => o.status === "CANCEL");
+  const activeOrders = dayOrders.filter(o => ["NEW","ASSIGNED","WAIT_RIDER","PICKED","DELIVERING"].includes(o.status));
+
+  // ── สถิติหลัก ──────────────────────────────────
+  document.getElementById("report-orders").textContent = dayOrders.length;
+  document.getElementById("report-done").textContent = doneOrders.length;
+  document.getElementById("report-active").textContent = activeOrders.length;
+  document.getElementById("report-cancel").textContent = cancelOrders.length;
+
+  // ── ยอดเงินรวม (ไม่นับออเดอร์ที่ยกเลิก) ──────────
+  let food = 0, delivery = 0, sales = 0, paid = 0, unpaid = 0, gp = 0, riderFee = 0, promoCost = 0;
+  notCancelled.forEach(o => {
+    const subtotal = Number(o.subtotal || 0);
+    const foodDiscount = Number(o.foodDiscount || 0);
+    const deliveryFee = Number(o.deliveryFee || 0);
+    const total = Number(o.total || 0);
+    food += subtotal - foodDiscount;
+    delivery += deliveryFee;
+    sales += total;
+    gp += Number(o.gpAmount || 0);
+    riderFee += Number(o.riderFee || 0);
+    promoCost += Number(o.promoCost || 0) + Number(o.foodDiscount || 0);
+    const isPaid = o.paymentStatus === "paid";
+    if (isPaid) paid += total; else unpaid += total;
   });
-  document.getElementById("report-orders").textContent = todayOrders.length;
-  document.getElementById("report-sales").textContent = "฿" + sales.toLocaleString();
+  document.getElementById("report-food").textContent = "฿" + food.toLocaleString();
   document.getElementById("report-delivery").textContent = "฿" + delivery.toLocaleString();
-  document.getElementById("report-done").textContent = done;
+  document.getElementById("report-sales").textContent = "฿" + sales.toLocaleString();
+  document.getElementById("report-paid").textContent = "฿" + paid.toLocaleString();
+  document.getElementById("report-unpaid").textContent = "฿" + unpaid.toLocaleString();
+  document.getElementById("report-gp").textContent = "฿" + gp.toLocaleString();
+  document.getElementById("report-riderfee").textContent = "฿" + riderFee.toLocaleString();
+  const promoRow = document.getElementById("report-promo-row");
+  if (promoCost > 0) {
+    promoRow.style.display = "flex";
+    document.getElementById("report-promo").textContent = "฿" + promoCost.toLocaleString();
+  } else {
+    promoRow.style.display = "none";
+  }
+
+  // ── แยกตามร้านอาหาร ──────────────────────────
+  const byRestaurant = {};
+  notCancelled.forEach(o => {
+    const rid = o.restaurantId || "-";
+    if (!byRestaurant[rid]) byRestaurant[rid] = { count: 0, sales: 0, gp: 0 };
+    byRestaurant[rid].count++;
+    byRestaurant[rid].sales += Number(o.total || 0);
+    byRestaurant[rid].gp += Number(o.gpAmount || 0);
+  });
+  const restRows = Object.entries(byRestaurant).sort((a,b) => b[1].sales - a[1].sales);
+  const restWrap = document.getElementById("report-by-restaurant");
+  if (!restRows.length) {
+    restWrap.innerHTML = `<div class="order-section"><div style="color:#aaa;font-size:13px;text-align:center;">ไม่มีข้อมูล</div></div>`;
+  } else {
+    restWrap.innerHTML = `<div class="order-section"><div class="items-list">` +
+      restRows.map(([rid, r]) => `
+        <div class="item-row">
+          <span class="item-name">${restaurantsMap[rid] || rid}</span>
+          <span class="item-qty">${r.count} ออเดอร์</span>
+          <span class="item-price">฿${r.sales.toLocaleString()}${r.gp > 0 ? ` <span style="color:#888;font-weight:400;font-size:11px;">(GP ฿${r.gp.toLocaleString()})</span>` : ""}</span>
+        </div>`).join("") +
+      `</div></div>`;
+  }
+
+  // ── แยกตามวิธีชำระเงิน ──────────────────────
+  const payLabels = { cash: "💵 เงินสด", promptpay: "💚 พร้อมเพย์", cod: "📦 เก็บปลายทาง" };
+  const byPayment = {};
+  notCancelled.forEach(o => {
+    const key = o.paymentType || o.paymentStatus || "อื่นๆ";
+    if (!byPayment[key]) byPayment[key] = { count: 0, sales: 0 };
+    byPayment[key].count++;
+    byPayment[key].sales += Number(o.total || 0);
+  });
+  const payRows = Object.entries(byPayment).sort((a,b) => b[1].sales - a[1].sales);
+  const payWrap = document.getElementById("report-by-payment");
+  if (!payRows.length) {
+    payWrap.innerHTML = `<div class="order-section"><div style="color:#aaa;font-size:13px;text-align:center;">ไม่มีข้อมูล</div></div>`;
+  } else {
+    payWrap.innerHTML = `<div class="order-section"><div class="items-list">` +
+      payRows.map(([key, p]) => `
+        <div class="item-row">
+          <span class="item-name">${payLabels[key] || key}</span>
+          <span class="item-qty">${p.count} ออเดอร์</span>
+          <span class="item-price">฿${p.sales.toLocaleString()}</span>
+        </div>`).join("") +
+      `</div></div>`;
+  }
+
+  // ── รายการออเดอร์ทั้งหมด ──────────────────────
+  const statusTh = {
+    NEW:"⏳ รอยืนยัน", ASSIGNED:"✅ ยืนยันแล้ว", WAIT_RIDER:"👨‍🍳 รอไรเดอร์",
+    PICKED:"🛵 รับงาน", DELIVERING:"🛵 กำลังส่ง", DONE:"✅ สำเร็จ", CANCEL:"❌ ยกเลิก"
+  };
+  const listWrap = document.getElementById("report-order-list");
+  const sorted = [...dayOrders].sort((a,b) => new Date(b.CreateAT) - new Date(a.CreateAT));
+  if (!sorted.length) {
+    listWrap.innerHTML = `<div class="order-section"><div style="color:#aaa;font-size:13px;text-align:center;">ไม่มีออเดอร์ในวันที่เลือก</div></div>`;
+  } else {
+    listWrap.innerHTML = `<div class="order-section"><div class="items-list">` +
+      sorted.map(o => `
+        <div class="item-row">
+          <span class="item-name">#${o.orderId} · ${formatTime(o.CreateAT)} · ${restaurantsMap[o.restaurantId] || o.restaurantId}</span>
+          <span class="item-qty">${statusTh[o.status] || o.status}</span>
+          <span class="item-price">฿${Number(o.total || 0).toLocaleString()}</span>
+        </div>`).join("") +
+      `</div></div>`;
+  }
 }
 
 function exportCSV() {
-  const today = new Date().toDateString();
-  const todayOrders = allOrders.filter(o => new Date(o.CreateAT).toDateString() === today);
+  const dayOrders = getReportOrders();
+  const dateStr = document.getElementById("report-date")?.value || toLocalDateStr(new Date());
   let csv = [["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"]];
-  todayOrders.forEach(o => {
+  dayOrders.forEach(o => {
     const m = membersMap[o.memberId] || {};
     csv.push([
       o.orderId, o.CreateAT,
@@ -936,7 +1095,7 @@ function exportCSV() {
   const blob = new Blob(["\uFEFF" + csv.map(r => r.join(",")).join("\n")], { type:"text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "Orders-" + new Date().toISOString().slice(0,10) + ".csv";
+  link.download = "Orders-" + dateStr + ".csv";
   document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 

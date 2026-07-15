@@ -312,7 +312,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     </div>
   </div>
 
-  <div class="section-title">ร้านทั้งหมด</div>
+  <div class="section-title" id="shop-grid-title">ร้านทั้งหมด</div>
   <div class="shop-grid" id="shop-grid"></div>
   <div style="height:20px;"></div>
 </div>
@@ -1016,6 +1016,12 @@ function selectCat(el, cat) {
   document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
   el.classList.add("active");
   renderShops(cat === "ทั้งหมด" ? allShops : allShops.filter(s => s.category === cat));
+  // ✅ เลื่อนจอลงไปที่ผลลัพธ์ (ส่วน "ร้านทั้งหมด") อัตโนมัติ เพราะผลลัพธ์อยู่ใต้เมนูแนะนำ/แนะนำประจำสัปดาห์
+  // ใช้ setTimeout เล็กน้อยให้ renderShops วาด DOM เสร็จก่อน แล้วค่อยคำนวณตำแหน่งเลื่อน
+  setTimeout(() => {
+    const titleEl = document.getElementById("shop-grid-title");
+    if (titleEl) titleEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 50);
 }
 function filterShops() {
   const q = document.getElementById("search-input").value.toLowerCase();

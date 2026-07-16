@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>จัดการร้านของฉัน</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<link rel="preconnect" href="https://lh3.googleusercontent.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width:480px;margin:0 auto;min-height:100vh;}
+
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;padding:32px;text-align:center;}
+.spinner{width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#06C755;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.header{background:#06C755;color:white;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.header-title{font-size:17px;font-weight:700;flex:1;}
+
+.menu-cat-title{padding:12px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;background:#f5f5f5;}
+
+.shop-toggle{position:relative;display:inline-block;width:50px;height:28px;flex-shrink:0;}
+.shop-toggle input{opacity:0;width:0;height:0;}
+.shop-toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e0e0e0;border-radius:28px;transition:.2s;}
+.shop-toggle-slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.shop-toggle input:checked + .shop-toggle-slider{background:#06C755;}
+.shop-toggle input:checked + .shop-toggle-slider:before{transform:translateX(22px);}
+
+.shop-menu-row{display:flex;align-items:center;gap:12px;background:white;padding:12px 16px;border-bottom:.5px solid #f0f0f0;}
+.shop-menu-row.inactive{opacity:.55;}
+.shop-menu-row-img{width:56px;height:56px;border-radius:10px;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.shop-menu-row-img img{width:100%;height:100%;object-fit:cover;}
+.shop-menu-row-body{flex:1;min-width:0;}
+.shop-menu-row-name{font-size:14px;font-weight:600;}
+.shop-menu-row-price{font-size:13px;color:#06C755;font-weight:600;margin-top:2px;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:white;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;max-width:90%;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading-wrap">
+  <div class="spinner"></div>
+  <div style="font-size:14px;color:#888;">กำลังโหลด...</div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="header">
+    <div class="header-title">🏪 จัดการร้านของฉัน</div>
+  </div>
+  <div id="shop-manage-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
+const LIFF_ID = "2009898131-0IpEQjEj"; // ✅ ใช้ LIFF ID ตัวเดียวกับ index.html
+
+let lineProfile = null;
+let shopManageData = null;
+
+// ── API helpers ──────────────────────────────────────
+async function apiGet(p) { return (await fetch(`${API}?${p}`)).json(); }
+async function apiPost(body) {
+  const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
+  return JSON.parse(t);
+}
+
+function driveThumb(url, w = 200) {
+  if (!url) return "";
+  let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w${w}` : url;
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+function showError(msg) {
+  document.getElementById("loading").innerHTML = `
+    <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+    <div style="font-size:15px;color:#555;line-height:1.6;">${msg}</div>`;
+}
+
+// ── INIT ─────────────────────────────────────────────
+async function init() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isInClient()) { showError("กรุณาเปิดหน้านี้ผ่านแอป LINE เท่านั้นครับ"); return; }
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    lineProfile = await liff.getProfile();
+  } catch(e) {
+    showError("เชื่อมต่อ LINE ไม่สำเร็จ กรุณาลองใหม่ครับ");
+    return;
+  }
+  await loadShopManage();
+}
+
+async function loadShopManage() {
+  try {
+    const r = await apiGet("action=getShopMenus&lineUserId=" + encodeURIComponent(lineProfile.userId));
+    if (!r.success) throw new Error(r.error);
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    renderShopManage(r.data);
+  } catch(e) {
+    showError(e.message || "โหลดข้อมูลไม่สำเร็จครับ");
+  }
+}
+
+function renderShopManage(data) {
+  shopManageData = data;
+  const r = data.restaurant;
+  const closed = r.tempClosed;
+  const cats = {};
+  data.menus.forEach(m => { const c = m.category || "เมนู"; if (!cats[c]) cats[c] = []; cats[c].push(m); });
+
+  document.getElementById("shop-manage-body").innerHTML = `
+    <div style="background:white;padding:16px;margin-bottom:10px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:10px;">${r.name}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:${closed?"#fef2f2":"#f0fdf4"};border:1.5px solid ${closed?"#fca5a5":"#86efac"};border-radius:12px;padding:14px 16px;">
+        <div>
+          <div style="font-weight:700;color:${closed?"#dc2626":"#16a34a"};">${closed?"🔴 ร้านปิดชั่วคราว":"🟢 ร้านเปิดอยู่"}</div>
+          <div style="font-size:12px;color:#888;margin-top:2px;">${r.open && r.close ? "เวลาเปิดร้านปกติ "+r.open+" - "+r.close : "ไม่ได้ตั้งเวลาเปิด-ปิดอัตโนมัติ"}</div>
+        </div>
+        <label class="shop-toggle">
+          <input type="checkbox" ${closed?"":"checked"} onchange="toggleShopManage(this.checked)">
+          <span class="shop-toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    ${!data.menus.length ? `<div style="text-align:center;padding:40px;color:#aaa;">ยังไม่มีเมนูในร้านครับ</div>` :
+      Object.entries(cats).map(([cat, items]) => `
+        <div class="menu-cat-title">${cat}</div>
+        ${items.map(m => {
+          const isActive = m.active == true || String(m.active).toUpperCase() === "TRUE";
+          return `<div class="shop-menu-row ${isActive?"":"inactive"}">
+            <div class="shop-menu-row-img">${m.imageUrl ? `<img src="${driveThumb(m.imageUrl,120)}" onerror="this.parentElement.innerHTML='🍜'">` : "🍜"}</div>
+            <div class="shop-menu-row-body">
+              <div class="shop-menu-row-name">${m.menuName}</div>
+              <div class="shop-menu-row-price">฿${Number(m.price)}</div>
+            </div>
+            <label class="shop-toggle">
+              <input type="checkbox" ${isActive?"checked":""} onchange="toggleMenuManage('${m.menuId}', this.checked)">
+              <span class="shop-toggle-slider"></span>
+            </label>
+          </div>`;
+        }).join("")}
+      `).join("")}
+  `;
+}
+
+async function toggleShopManage(isOpen) {
+  try {
+    const r = await apiPost({ action:"toggleShopOpen", lineUserId: lineProfile.userId, tempClosed: !isOpen });
+    if (!r.success) throw new Error(r.error);
+    showToast(isOpen ? "🟢 เปิดร้านแล้วครับ" : "🔴 ปิดร้านชั่วคราวแล้วครับ");
+  } catch(e) { showToast("เกิดข้อผิดพลาด: " + e.message); }
+  loadShopManage();
+}
+
+async function toggleMenuManage(menuId, isActive) {
+  try {
+    const r = await apiPost({ action:"toggleMenuActive", lineUserId: lineProfile.userId, menuId, active: isActive });
+    if (!r.success) throw new Error(r.error);
+    showToast(isActive ? "✅ เปิดขายเมนูนี้แล้ว" : "⏸ ปิดเมนูนี้ชั่วคราวแล้ว");
+  } catch(e) { showToast("เกิดข้อผิดพลาด: " + e.message); }
+  loadShopManage();
+}
+
+init();
+</script>
+</body>
+</html>

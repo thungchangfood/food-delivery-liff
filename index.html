@@ -862,7 +862,7 @@ async function refreshShopData(silent) {
       });
     }
     renderCategories();
-    applyFilters();
+    resetShopFilters();
     renderWeekly();
     renderFeaturedMenus();
     renderFirstOrderBanner();
@@ -1098,8 +1098,8 @@ function renderWeekly() {
 
 function renderCategories() {
   const cats = ["ทั้งหมด", ...new Set(allShops.map(s => s.category).filter(Boolean))];
-  document.getElementById("cat-scroll").innerHTML = cats.map((c) =>
-    `<div class="cat-chip ${c===selectedCategory?"active":""}" onclick="selectCat(this,'${c}')">${c}</div>`
+  document.getElementById("cat-scroll").innerHTML = cats.map((c, i) =>
+    `<div class="cat-chip ${i===0?"active":""}" onclick="selectCat(this,'${c}')">${c}</div>`
   ).join("");
 }
 function selectCat(el, cat) {

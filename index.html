@@ -20,7 +20,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .header{background:#06C755;color:white;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
 .header-back{font-size:22px;cursor:pointer;padding:2px 6px;}
 .header-title{font-size:17px;font-weight:700;flex:1;}
-.cart-btn{position:relative;cursor:pointer;padding:4px;font-size:20px;}
+.cart-btn{position:relative;cursor:pointer;font-size:16px;display:flex;align-items:center;gap:5px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:20px;background:rgba(255,255,255,.15);font-weight:600;color:white;}
+.cart-btn:active{transform:scale(.96);}
 .cart-badge{position:absolute;top:-4px;right:-4px;background:#FF3B30;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
 
 /* ── Register ── */
@@ -289,7 +290,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <div class="header">
   <div class="header-title">🛵 สั่งอาหาร</div>
   <div class="cart-btn" id="refresh-btn" onclick="refreshShopData()">🔄</div>
-  <div class="cart-btn" onclick="goCart()">🛒<div class="cart-badge" id="cart-badge" style="display:none">0</div></div>
+  <div class="cart-btn" onclick="goCart()">🛒 <span>ตะกร้า</span><div class="cart-badge" id="cart-badge" style="display:none">0</div></div>
 </div>
   <button class="track-btn" onclick="goTrack()">📍 ติดตามออเดอร์ของฉัน</button>
 
@@ -336,7 +337,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
   <div class="header">
     <div class="header-back" onclick="showPage('page-shops')">←</div>
     <div class="header-title" id="menu-shop-name"></div>
-    <div class="cart-btn" onclick="goCart()">🛒<div class="cart-badge" id="cart-badge2" style="display:none">0</div></div>
+    <div class="cart-btn" onclick="goCart()">🛒 <span>ตะกร้า</span><div class="cart-badge" id="cart-badge2" style="display:none">0</div></div>
   </div>
   <div class="shop-hero" id="menu-hero"></div>
   <div class="shop-hours-bar" id="menu-hours-bar" style="display:none;"></div>
@@ -923,9 +924,10 @@ function renderFeaturedMenus() {
   const scroll = document.getElementById("featured-scroll");
   if (!sec || !scroll) return;
 
-  // รวบรวมเมนู featured จากทุกร้านที่โหลดแล้ว
+  // รวบรวมเมนู featured จากทุกร้านที่โหลดแล้ว (กรองร้านปิดออกถ้าเปิดฟิลเตอร์อยู่)
   const featured = [];
   allShops.forEach(s => {
+    if (openOnlyFilter && !isShopOpen(s)) return;
     const menus = menuCache[s.restaurantId];
     if (!menus) return;
     menus.forEach(m => {
@@ -1117,6 +1119,7 @@ function toggleOpenOnly() {
   document.getElementById("open-only-chip").classList.toggle("active", openOnlyFilter);
   applyFilters();
   renderWeekly();
+  renderFeaturedMenus();
 }
 function applyFilters() {
   const q = document.getElementById("search-input").value.toLowerCase();
@@ -2082,22 +2085,6 @@ async function copySuccessBankAccount() {
   if (!a) { showToast("ไม่พบเลขบัญชี"); return; }
   try { await navigator.clipboard.writeText(a); showToast("📋 คัดลอกเลขบัญชีแล้ว"); } catch(_) { showToast("คัดลอกไม่สำเร็จ"); }
 }
-
-(function setupPullToRefresh() {
-  let startY = 0, pulling = false;
-  const threshold = 70;
-  document.addEventListener("touchstart", (e) => {
-    const shopsPage = document.getElementById("page-shops");
-    if (!shopsPage.classList.contains("active")) return;
-    if (window.scrollY <= 0) { startY = e.touches[0].clientY; pulling = true; }
-  }, { passive: true });
-  document.addEventListener("touchmove", (e) => {
-    if (!pulling) return;
-    const diff = e.touches[0].clientY - startY;
-    if (diff > threshold) { pulling = false; refreshShopData(); }
-  }, { passive: true });
-  document.addEventListener("touchend", () => { pulling = false; });
-})();
 
 if (new URLSearchParams(window.location.search).get("page") === "shop") {
   window.location.replace("shop.html" + window.location.search);

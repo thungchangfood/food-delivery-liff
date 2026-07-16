@@ -287,9 +287,10 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 <!-- SHOPS -->
 <div class="page" id="page-shops">
   <div class="header">
-    <div class="header-title">🛵 สั่งอาหาร</div>
-    <div class="cart-btn" onclick="goCart()">🛒<div class="cart-badge" id="cart-badge" style="display:none">0</div></div>
-  </div>
+  <div class="header-title">🛵 สั่งอาหาร</div>
+  <div class="cart-btn" id="refresh-btn" onclick="refreshShopData()">🔄</div>
+  <div class="cart-btn" onclick="goCart()">🛒<div class="cart-badge" id="cart-badge" style="display:none">0</div></div>
+</div>
   <button class="track-btn" onclick="goTrack()">📍 ติดตามออเดอร์ของฉัน</button>
 
   <div class="first-order-banner" id="first-order-shop-banner" style="display:none;">
@@ -824,6 +825,54 @@ async function registerMember() {
   }
 }
 
+// ── REFRESH (ปุ่มบน + pull-to-refresh) ───────────────
+let isRefreshing = false;
+async function refreshShopData(silent) {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  const btn = document.getElementById("refresh-btn");
+  if (btn) { btn.style.transition = "transform .6s linear"; btn.style.transform = "rotate(360deg)"; }
+  if (!silent) showToast("🔄 กำลังรีเฟรช...");
+  try {
+    const [statusRes, shopsRes, menusRes] = await Promise.all([
+      apiGet("action=getSystemStatus"),
+      apiGet("action=getRestaurants"),
+      apiGet("action=getAllMenus")
+    ]);
+    if (statusRes.success) {
+      if (!statusRes.data.open) {
+        document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+        showPage("page-closed"); return;
+      }
+      bankAccount = statusRes.data.bankAccount || "";
+      bankName = statusRes.data.bankName || "";
+      weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
+      weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
+      firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+    }
+    allShops = shopsRes.data || [];
+    if (menusRes.success) {
+      Object.keys(menuCache).forEach(k => delete menuCache[k]);
+      menusRes.data.forEach(item => {
+        if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
+        menuCache[item.restaurantId].push(item);
+      });
+    }
+    renderCategories();
+    applyFilters();
+    renderWeekly();
+    renderFeaturedMenus();
+    renderFirstOrderBanner();
+    if (!silent) showToast("✅ อัปเดตข้อมูลล่าสุดแล้ว");
+  } catch(e) {
+    showToast("❌ รีเฟรชไม่สำเร็จ ลองใหม่อีกครั้งครับ");
+  } finally {
+    isRefreshing = false;
+    if (btn) setTimeout(() => btn.style.transform = "rotate(0deg)", 50);
+  }
+}
+
 // ── SYSTEM + SHOPS ───────────────────────────────────
 async function checkAndLoadShops() {
   try {
@@ -1067,6 +1116,7 @@ function toggleOpenOnly() {
   openOnlyFilter = !openOnlyFilter;
   document.getElementById("open-only-chip").classList.toggle("active", openOnlyFilter);
   applyFilters();
+  renderWeekly();
 }
 function applyFilters() {
   const q = document.getElementById("search-input").value.toLowerCase();
@@ -2032,6 +2082,22 @@ async function copySuccessBankAccount() {
   if (!a) { showToast("ไม่พบเลขบัญชี"); return; }
   try { await navigator.clipboard.writeText(a); showToast("📋 คัดลอกเลขบัญชีแล้ว"); } catch(_) { showToast("คัดลอกไม่สำเร็จ"); }
 }
+
+(function setupPullToRefresh() {
+  let startY = 0, pulling = false;
+  const threshold = 70;
+  document.addEventListener("touchstart", (e) => {
+    const shopsPage = document.getElementById("page-shops");
+    if (!shopsPage.classList.contains("active")) return;
+    if (window.scrollY <= 0) { startY = e.touches[0].clientY; pulling = true; }
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!pulling) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff > threshold) { pulling = false; refreshShopData(); }
+  }, { passive: true });
+  document.addEventListener("touchend", () => { pulling = false; });
+})();
 
 if (new URLSearchParams(window.location.search).get("page") === "shop") {
   window.location.replace("shop.html" + window.location.search);

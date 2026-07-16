@@ -898,6 +898,7 @@ function renderFeaturedMenus() {
 
 function isShopOpen(shop) {
   if (shop.status !== "active") return false;
+  if (String(shop.tempClosed).toLowerCase() === "true") return false;
   const open = String(shop.open || "").trim();
   const close = String(shop.close || "").trim();
   if (!open || !close) return true; // ไม่ได้ตั้งเวลา = เปิดตลอด
@@ -914,6 +915,9 @@ function isShopOpen(shop) {
 
 // ✅ คืนสถานะร้านแบบละเอียด: เปิดอยู่ / ใกล้ปิด (เหลือ ≤30 นาที) / ปิดแล้ว
 function getShopStatus(shop) {
+  if (String(shop.tempClosed).toLowerCase() === "true") {
+    return { open: false, closingSoon: false, minutesLeft: null, label: "ปิดชั่วคราว" };
+  }
   const open = isShopOpen(shop);
   if (!open) return { open: false, closingSoon: false, minutesLeft: null, label: "ปิดแล้ว" };
 
@@ -1999,7 +2003,11 @@ async function copySuccessBankAccount() {
   try { await navigator.clipboard.writeText(a); showToast("📋 คัดลอกเลขบัญชีแล้ว"); } catch(_) { showToast("คัดลอกไม่สำเร็จ"); }
 }
 
-init();
+if (new URLSearchParams(window.location.search).get("page") === "shop") {
+  window.location.replace("shop.html" + window.location.search);
+} else {
+  init();
+}
 </script>
 </body>
 </html>

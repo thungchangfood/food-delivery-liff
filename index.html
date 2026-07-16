@@ -304,6 +304,9 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <input class="search-input" id="search-input" placeholder="🔍  ค้นหาร้านอาหาร..." oninput="filterShops()">
   </div>
   <div class="cat-scroll" id="cat-scroll"></div>
+  <div style="padding:0 16px 8px;background:white;border-bottom:.5px solid #ececec;">
+    <div class="cat-chip" id="open-only-chip" onclick="toggleOpenOnly()" style="display:inline-block;">🟢 เปิดอยู่ตอนนี้</div>
+  </div>
 
   <!-- ✅ เมนูแนะนำจากทุกร้านรวมกัน -->
   <div id="featured-section">
@@ -557,6 +560,8 @@ const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const LIFF_ID = "2009898131-0IpEQjEj";
 
 let allShops = [], currentShop = null, currentMenus = [];
+let selectedCategory = "ทั้งหมด";
+let openOnlyFilter = false;
 let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
@@ -839,12 +844,24 @@ async function checkAndLoadShops() {
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
     }
     allShops = shopsRes.data || [];
-    renderCategories(); renderShops(allShops);
+    resetShopFilters(); // ✅ เริ่มดูร้านใหม่แบบไม่มีฟิลเตอร์ค้างจากรอบก่อน
+    renderCategories();
     renderFirstOrderBanner();
     showPage("page-shops");
     prefetchAllMenus();
     restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
+}
+
+// ✅ รีเซ็ตตัวกรองร้าน (หมวดหมู่ / เปิดอยู่ตอนนี้ / คำค้นหา) กลับเป็นค่าเริ่มต้น
+function resetShopFilters() {
+  selectedCategory = "ทั้งหมด";
+  openOnlyFilter = false;
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) searchInput.value = "";
+  const openChip = document.getElementById("open-only-chip");
+  if (openChip) openChip.classList.remove("active");
+  applyFilters();
 }
 
 // ── Weekly picks ──────────────────────────────────────
@@ -1001,7 +1018,8 @@ async function openShopAndItem(restaurantId, menuId) {
 function renderWeekly() {
   const sec = document.getElementById("weekly-section");
   if (!weeklyPicksEnabled || weeklyPicksCount <= 0) { sec.style.display = "none"; return; }
-  const picks = allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount);
+  let picks = allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount);
+  if (openOnlyFilter) picks = picks.filter(s => isShopOpen(s));
   if (!picks.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
   document.getElementById("weekly-scroll").innerHTML = picks.map(s => {
@@ -1032,19 +1050,31 @@ function renderCategories() {
   ).join("");
 }
 function selectCat(el, cat) {
-  document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".cat-chip").forEach(c => { if (c.id !== "open-only-chip") c.classList.remove("active"); });
   el.classList.add("active");
-  renderShops(cat === "ทั้งหมด" ? allShops : allShops.filter(s => s.category === cat));
+  selectedCategory = cat;
+  applyFilters();
   // ✅ เลื่อนจอลงไปที่ผลลัพธ์ (ส่วน "ร้านทั้งหมด") อัตโนมัติ เพราะผลลัพธ์อยู่ใต้เมนูแนะนำ/แนะนำประจำสัปดาห์
-  // ใช้ setTimeout เล็กน้อยให้ renderShops วาด DOM เสร็จก่อน แล้วค่อยคำนวณตำแหน่งเลื่อน
   setTimeout(() => {
     const titleEl = document.getElementById("shop-grid-title");
     if (titleEl) titleEl.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 50);
 }
 function filterShops() {
+  applyFilters();
+}
+function toggleOpenOnly() {
+  openOnlyFilter = !openOnlyFilter;
+  document.getElementById("open-only-chip").classList.toggle("active", openOnlyFilter);
+  applyFilters();
+}
+function applyFilters() {
   const q = document.getElementById("search-input").value.toLowerCase();
-  renderShops(allShops.filter(s => s.name.toLowerCase().includes(q)));
+  let shops = allShops;
+  if (selectedCategory !== "ทั้งหมด") shops = shops.filter(s => s.category === selectedCategory);
+  if (q) shops = shops.filter(s => s.name.toLowerCase().includes(q));
+  if (openOnlyFilter) shops = shops.filter(s => isShopOpen(s));
+  renderShops(shops);
 }
 function getWeeklyPickIds() {
   if (!weeklyPicksEnabled || weeklyPicksCount <= 0) return new Set();

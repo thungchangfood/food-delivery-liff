@@ -831,7 +831,6 @@ let isRefreshing = false;
 async function refreshShopData(silent) {
   if (isRefreshing) return;
   isRefreshing = true;
-  const scrollPos = window.scrollY;
   const btn = document.getElementById("refresh-btn");
   if (btn) { btn.style.transition = "transform .6s linear"; btn.style.transform = "rotate(360deg)"; }
   if (!silent) showToast("🔄 กำลังรีเฟรช...");
@@ -876,7 +875,7 @@ async function refreshShopData(silent) {
   } finally {
     isRefreshing = false;
     if (btn) setTimeout(() => btn.style.transform = "rotate(0deg)", 50);
-    window.scrollTo(0, scrollPos);
+    window.scrollTo(0, 0);
   }
 }
 

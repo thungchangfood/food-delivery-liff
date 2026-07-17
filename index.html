@@ -934,6 +934,7 @@ function renderFeaturedMenus() {
   const featured = [];
   allShops.forEach(s => {
     if (openOnlyFilter && !isShopOpen(s)) return;
+    if (selectedCategory !== "ทั้งหมด" && s.category !== selectedCategory) return;
     const menus = menuCache[s.restaurantId];
     if (!menus) return;
     menus.forEach(m => {
@@ -1076,6 +1077,7 @@ function renderWeekly() {
   const sec = document.getElementById("weekly-section");
   if (!weeklyPicksEnabled || weeklyPicksCount <= 0) { sec.style.display = "none"; return; }
   let picks = allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount);
+  if (selectedCategory !== "ทั้งหมด") picks = picks.filter(s => s.category === selectedCategory);
   if (openOnlyFilter) picks = picks.filter(s => isShopOpen(s));
   if (!picks.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
@@ -1111,6 +1113,14 @@ function selectCat(el, cat) {
   el.classList.add("active");
   selectedCategory = cat;
   applyFilters();
+  renderWeekly();
+  renderFeaturedMenus();
+  if (cat !== "ทั้งหมด") {
+    setTimeout(() => {
+      const titleEl = document.getElementById("featured-section");
+      if (titleEl) titleEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
 }
 function filterShops() {
   applyFilters();

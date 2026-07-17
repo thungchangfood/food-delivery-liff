@@ -18,7 +18,8 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 
 /* ── Header ── */
 .header{background:#06C755;color:white;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
-.header-back{font-size:22px;cursor:pointer;padding:2px 6px;}
+.header-back{font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:20px;background:rgba(255,255,255,.15);color:white;}
+.header-back:active{transform:scale(.96);}
 .header-title{font-size:17px;font-weight:700;flex:1;}
 .cart-btn{position:relative;cursor:pointer;font-size:16px;display:flex;align-items:center;gap:5px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:20px;background:rgba(255,255,255,.15);font-weight:600;color:white;}
 .cart-btn:active{transform:scale(.96);}
@@ -335,7 +336,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 <!-- MENU -->
 <div class="page" id="page-menu">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-shops')">←</div>
+    <div class="header-back" onclick="showPage('page-shops')">← กลับ</div>
     <div class="header-title" id="menu-shop-name"></div>
     <div class="cart-btn" onclick="goCart()">🛒 <span>ตะกร้า</span><div class="cart-badge" id="cart-badge2" style="display:none">0</div></div>
   </div>
@@ -350,7 +351,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 <!-- CART -->
 <div class="page" id="page-cart">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-menu')">←</div>
+    <div class="header-back" onclick="showPage('page-menu')">← กลับ</div>
     <div class="header-title">ตะกร้าสินค้า</div>
   </div>
   <div class="pb-80">
@@ -452,7 +453,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 <!-- DEPOSIT -->
 <div class="page" id="page-deposit">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-cart')">←</div>
+    <div class="header-back" onclick="showPage('page-cart')">← กลับ</div>
     <div class="header-title">สรุปออเดอร์</div>
   </div>
   <div class="dep-wrap">

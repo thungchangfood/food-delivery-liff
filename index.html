@@ -1412,7 +1412,7 @@ function goCart() {
 }
 function goBackFromCart() {
   if (currentShop) {
-    showPage("page-menu");
+    openShop(currentShop.restaurantId);
   } else {
     showPage("page-shops");
   }

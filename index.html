@@ -862,7 +862,11 @@ async function refreshShopData(silent) {
       });
     }
     renderCategories();
-    resetShopFilters();
+    selectedCategory = "ทั้งหมด";
+    openOnlyFilter = false;
+    document.getElementById("search-input").value = "";
+    document.getElementById("open-only-chip").classList.remove("active");
+    applyFilters();
     renderWeekly();
     renderFeaturedMenus();
     renderFirstOrderBanner();
@@ -1107,11 +1111,6 @@ function selectCat(el, cat) {
   el.classList.add("active");
   selectedCategory = cat;
   applyFilters();
-  // ✅ เลื่อนจอลงไปที่ผลลัพธ์ (ส่วน "ร้านทั้งหมด") อัตโนมัติ เพราะผลลัพธ์อยู่ใต้เมนูแนะนำ/แนะนำประจำสัปดาห์
-  setTimeout(() => {
-    const titleEl = document.getElementById("shop-grid-title");
-    if (titleEl) titleEl.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 50);
 }
 function filterShops() {
   applyFilters();

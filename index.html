@@ -1172,8 +1172,18 @@ function renderShops(shops) {
 
 // ── MENU ─────────────────────────────────────────────
 async function openShop(restaurantId) {
-  const shop = allShops.find(s => s.restaurantId === restaurantId);
-  if (!shop) return;
+  let shop = allShops.find(s => s.restaurantId === restaurantId);
+  if (!shop) {
+    // ✅ กันเคสหาร้านไม่เจอ (เช่นข้อมูล allShops ยังโหลดไม่เสร็จ) — ลองดึงร้านใหม่อีกครั้งก่อนยอมแพ้
+    try {
+      const r = await apiGet("action=getRestaurants");
+      if (r.success) {
+        allShops = r.data || [];
+        shop = allShops.find(s => s.restaurantId === restaurantId);
+      }
+    } catch(_) {}
+  }
+  if (!shop) { showToast("ไม่พบร้านนี้ครับ กรุณาลองใหม่"); showPage("page-shops"); return; }
   if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); return; }
   if (!isShopOpen(shop)) {
     const timeText = (shop.open && shop.close) ? ` (เปิด ${shop.open} - ปิด ${shop.close})` : (shop.close ? ` (ปิด ${shop.close})` : "");
@@ -1412,9 +1422,40 @@ function goCart() {
 }
 function goBackFromCart() {
   if (currentShop) {
-    openShop(currentShop.restaurantId);
+    showShopMenuPage(currentShop);
   } else {
     showPage("page-shops");
+  }
+}
+
+// ✅ แสดงหน้าเมนูร้าน โดยไม่เช็คเงื่อนไขปิด/เปิดร้าน ใช้ตอนกดกลับจากตะกร้า
+// (ลูกค้าเพิ่งอยู่ในร้านนี้มาหมาดๆ มีของในตะกร้าจากร้านนี้อยู่แล้ว ไม่ต้องเช็คซ้ำ)
+function showShopMenuPage(shop) {
+  currentShop = shop;
+  document.getElementById("menu-shop-name").textContent = shop.name;
+  const hero = document.getElementById("menu-hero");
+  hero.innerHTML = shop.imageUrl
+    ? `<img src="${driveThumb(shop.imageUrl,800)}" onerror="this.innerHTML='<div class=shop-hero-emoji>🍜</div>'">`
+    : `<div class="shop-hero-emoji">🍜</div>`;
+  const addressHtml = shop.address ? `<div class="shop-hero-address">📍 <span>${shop.address}</span></div>` : "";
+  hero.innerHTML += `<div class="shop-hero-overlay"><div class="shop-hero-name">${shop.name}</div>${addressHtml}<div class="shop-hero-sub">ค่าจัดส่ง ฿${shop.deliveryFee}</div></div>`;
+  renderShopHoursBar(shop);
+  showPage("page-menu");
+
+  if (menuCache[shop.restaurantId] && menuCache[shop.restaurantId].length) {
+    currentMenus = menuCache[shop.restaurantId];
+    renderMenus();
+  } else {
+    document.getElementById("menu-list").innerHTML = `<div class="loading-wrap" style="min-height:200px;"><div class="spinner"></div></div>`;
+    apiGet("action=getMenus&restaurantId=" + shop.restaurantId).then(r => {
+      if (r.success) {
+        menuCache[shop.restaurantId] = r.data;
+        currentMenus = r.data;
+        renderMenus();
+      } else {
+        showToast("โหลดเมนูไม่สำเร็จครับ");
+      }
+    }).catch(() => showToast("โหลดเมนูไม่สำเร็จครับ"));
   }
 }
 const FREE_DELIVERY_THRESHOLD = 160;

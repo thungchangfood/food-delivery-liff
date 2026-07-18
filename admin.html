@@ -1139,8 +1139,16 @@ function buildReport() {
 }
 
 function exportXLSX() {
+ try {
+  if (typeof XLSX === "undefined") {
+    alert("โหลด Excel library ไม่สำเร็จครับ (อินเทอร์เน็ตอาจไม่เสถียร หรือถูกบล็อก) กรุณารีเฟรชหน้าแล้วลองใหม่");
+    return;
+  }
   const dayOrders = getReportOrders();
   const dateStr = document.getElementById("report-date")?.value || toLocalDateStr(new Date());
+  if (!dayOrders.length) {
+    if (!confirm("ไม่มีออเดอร์ในวันที่เลือกเลยครับ ต้องการ export ไฟล์เปล่าต่อไหม?")) return;
+  }
 
   const headers = ["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"];
   const numericCols = new Set(["Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","PromoValue","PromoCost"]);
@@ -1207,7 +1215,22 @@ function exportXLSX() {
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Orders");
-  XLSX.writeFile(wb, "Orders-" + dateStr + ".xlsx", { cellStyles: true });
+
+  // ✅ สร้างเป็น Blob แล้วดาวน์โหลดผ่าน anchor tag เอง (เสถียรกว่า XLSX.writeFile()
+  //    ในเบราว์เซอร์บางตัว/webview ในแอป เช่น LINE, Facebook in-app browser)
+  const wbArrayBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array", cellStyles: true });
+  const blob = new Blob([wbArrayBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "Orders-" + dateStr + ".xlsx";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(link.href), 3000);
+ } catch(e) {
+  console.error("exportXLSX error:", e);
+  alert("Export ไม่สำเร็จครับ: " + e.message);
+ }
 }
 
 async function closeDayAdmin() {

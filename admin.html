@@ -15,6 +15,31 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-sm{background:#333;color:white;border:none;padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:.2s;}
 .btn-sm:hover{background:#444;}
 .btn-sm:disabled{background:#666;cursor:not-allowed;opacity:.6;}
+.btn-step{display:inline-flex;align-items:center;gap:5px;}
+.step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:rgba(255,255,255,.9);color:#1a1a1a;
+  font-size:10px;font-weight:800;flex-shrink:0;
+}
+.btn-logout{
+  background:transparent;
+  color:#fca5a5;
+  border:1.5px solid #fca5a5;
+  padding:6px 14px;
+  border-radius:8px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  font-family:inherit;
+  transition:.15s;
+}
+.btn-logout:hover{
+  background:#EF4444;
+  color:white;
+  border-color:#EF4444;
+}
+.btn-logout:active{transform:scale(.96);}
 .btn-close-day{background:#f59e0b;color:#fff;font-weight:700;}
 
 .system-bar{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #e8e8e8;}
@@ -166,13 +191,33 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div class="header-title">🛵 TC Delivery</div>
     <div class="header-right">
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
-      <button class="btn-sm" onclick="showReport()">📊 รายงาน</button>
-      <button class="btn-sm" onclick="showRiderSettle()">💰 เคลียร์ไรเดอร์</button>
-      <button class="btn-sm" onclick="showGpSettle()">🧾 เก็บ GP ร้านค้า</button>
-      <button class="btn-sm" onclick="showBizSummary()">📈 สรุปกิจการ</button>
-      <button class="btn-sm" style="background:#7c2d12;" onclick="showClearArchive()">🗑 ล้างข้อมูลเก่า</button>
+
+      <!-- งานประจำวัน เรียงตามลำดับที่ต้องทำ -->
+      <button class="btn-sm btn-step" onclick="showRiderSettle()" title="ทำทุกวัน — ก่อนปิดวัน">
+        <span class="step-num">1</span>💰 เคลียร์ไรเดอร์
+      </button>
+      <button class="btn-sm btn-step" onclick="showReport()" title="ทำทุกวัน — ดูสรุป + กดปิดวัน">
+        <span class="step-num">2</span>📊 รายงาน / ปิดวัน
+      </button>
+
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.25);margin:0 4px;"></span>
+
+      <!-- งานตามรอบ (จ่ายเงิน/รายเดือน) -->
+      <button class="btn-sm btn-step" onclick="showGpSettle()" title="ทำรอบวันที่ 1 และ 16 เท่านั้น">
+        <span class="step-num">3</span>🧾 เก็บ GP ร้านค้า
+      </button>
+      <button class="btn-sm btn-step" onclick="showBizSummary()" title="ดูเมื่อไหร่ก็ได้ — ภาพรวมรายสัปดาห์/เดือน">
+        <span class="step-num">4</span>📈 สรุปกิจการ
+      </button>
+      <button class="btn-sm btn-step" style="background:#7c2d12;" onclick="showClearArchive()" title="ทำเป็นครั้งคราวเมื่อข้อมูลเยอะ">
+        <span class="step-num">5</span>🗑 ล้างข้อมูลเก่า
+      </button>
+
       <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
-      <button class="btn-sm" onclick="logout()">ออก</button>
+
+      <span style="width:20px;"></span>
+
+      <button class="btn-logout" onclick="logout()">🚪 ออกจากระบบ</button>
     </div>
   </div>
 

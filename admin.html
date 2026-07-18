@@ -269,7 +269,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <input type="date" id="report-date" class="close-reason-input" style="width:160px;" onchange="buildReport()">
       <button class="btn-sm" onclick="setReportToday()">วันนี้</button>
       <button class="btn-sm" onclick="buildReport()">🔄 โหลด</button>
-      <button class="btn-sm" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="btn-sm" onclick="exportXLSX()">📊 Export Excel</button>
       <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
     </div>
     <div style="padding:20px;" id="report-body">
@@ -1138,30 +1138,76 @@ function buildReport() {
   }
 }
 
-function exportCSV() {
+function exportXLSX() {
   const dayOrders = getReportOrders();
   const dateStr = document.getElementById("report-date")?.value || toLocalDateStr(new Date());
-  let csv = [["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"]];
-  dayOrders.forEach(o => {
+
+  const headers = ["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"];
+  const numericCols = new Set(["Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","PromoValue","PromoCost"]);
+
+  const rows = dayOrders.map(o => {
     const m = membersMap[o.memberId] || {};
-    csv.push([
+    return [
       o.orderId, o.CreateAT,
       o.restaurantId, restaurantsMap[o.restaurantId] || o.restaurantId,
       m.name || "", m.phone || "",
       o.riderId || "",
-      o.subtotal || 0, o.foodDiscount || 0, o.smallOrderFee || 0, o.deliveryFee || 0, o.total || 0,
-      o.gpPercent || 0, o.gpAmount || 0, o.riderFee || 0,
-      o.depositAmount || 0, o.depositPaid || "",
+      Number(o.subtotal || 0), Number(o.foodDiscount || 0), Number(o.smallOrderFee || 0), Number(o.deliveryFee || 0), Number(o.total || 0),
+      Number(o.gpPercent || 0), Number(o.gpAmount || 0), Number(o.riderFee || 0),
+      Number(o.depositAmount || 0), o.depositPaid || "",
       o.paymentType || "", o.paymentStatus || "",
-      o.promoCode || "", o.promoType || "", o.promoValue || 0, o.promoCost || 0,
+      o.promoCode || "", o.promoType || "", Number(o.promoValue || 0), Number(o.promoCost || 0),
       o.status || "", o.deliveredAt || ""
-    ]);
+    ];
   });
-  const blob = new Blob(["\uFEFF" + csv.map(r => r.join(",")).join("\n")], { type:"text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "Orders-" + dateStr + ".csv";
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  // หัวตารางตัวหนา + พื้นเทาเข้ม + ตัวหนังสือขาว
+  headers.forEach((h, i) => {
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c: i });
+    if (ws[cellRef]) {
+      ws[cellRef].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "1A1A1A" } },
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+    }
+  });
+
+  // ฟอร์แมตตัวเลขมีคอมมาคั่นหลักพัน + จัดคอลัมน์ตัวเลขชิดขวา
+  rows.forEach((row, rIdx) => {
+    headers.forEach((h, cIdx) => {
+      if (numericCols.has(h)) {
+        const cellRef = XLSX.utils.encode_cell({ r: rIdx + 1, c: cIdx });
+        if (ws[cellRef]) {
+          ws[cellRef].z = "#,##0";
+          ws[cellRef].s = { alignment: { horizontal: "right" } };
+        }
+      }
+    });
+  });
+
+  // Auto-fit ความกว้างคอลัมน์ตามความยาวข้อความที่ยาวที่สุดในแต่ละคอลัมน์
+  const colWidths = headers.map((h, i) => {
+    let maxLen = h.length;
+    rows.forEach(row => {
+      const val = row[i] == null ? "" : String(row[i]);
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    return { wch: Math.min(Math.max(maxLen + 2, 10), 40) };
+  });
+  ws["!cols"] = colWidths;
+
+  // Freeze แถวหัวตาราง + เปิด autofilter
+  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  if (rows.length) {
+    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: headers.length - 1 } }) };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Orders");
+  XLSX.writeFile(wb, "Orders-" + dateStr + ".xlsx", { cellStyles: true });
 }
 
 async function closeDayAdmin() {

@@ -250,6 +250,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
               <div class="money-row total"><span>ยอดขายรวมทั้งหมด</span><span id="report-sales">฿0</span></div>
               <div class="money-row" style="margin-top:8px;"><span>💚 ชำระแล้ว (โอน/ยืนยันแล้ว)</span><span id="report-paid" style="color:#06C755;font-weight:600;">฿0</span></div>
               <div class="money-row"><span>💵 ยังต้องเก็บปลายทาง / ยังไม่ยืนยัน</span><span id="report-unpaid" style="color:#EF4444;font-weight:600;">฿0</span></div>
+              <div class="money-row" id="report-smallfee-row" style="display:none;margin-top:8px;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span id="report-smallfee" style="color:#dc2626;font-weight:600;">฿0</span></div>
               <div class="money-row" style="margin-top:8px;"><span>🧾 GP ที่หักจากร้าน</span><span id="report-gp">฿0</span></div>
               <div class="money-row"><span>🛵 ค่ารอบไรเดอร์รวม</span><span id="report-riderfee">฿0</span></div>
               <div class="money-row" id="report-promo-row" style="display:none;"><span>🎟 ต้นทุนโปรโมชั่นรวม</span><span id="report-promo">฿0</span></div>
@@ -677,8 +678,10 @@ function renderOrders() {
     }
 
     // ── ยอดเงิน ──────────────────────────────────────────
+    const smallOrderFee = Number(o.smallOrderFee || 0);
     const moneyRows = `
       <div class="money-row"><span>ยอดอาหาร</span><span>${foodDiscount > 0 ? `฿${subtotal} - ส่วนลด ฿${foodDiscount}` : `฿${subtotal}`}</span></div>
+      ${smallOrderFee > 0 ? `<div class="money-row" style="color:#dc2626;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>+฿${smallOrderFee}</span></div>` : ""}
       <div class="money-row"><span>ค่าจัดส่ง</span><span>฿${deliveryFee}</span></div>
       <div class="money-row total"><span>รวมทั้งหมด</span><span>฿${total}</span></div>
       ${depositAmount > 0 ? `
@@ -974,7 +977,7 @@ function buildReport() {
   document.getElementById("report-cancel").textContent = cancelOrders.length;
 
   // ── ยอดเงินรวม (ไม่นับออเดอร์ที่ยกเลิก) ──────────
-  let food = 0, delivery = 0, sales = 0, paid = 0, unpaid = 0, gp = 0, riderFee = 0, promoCost = 0;
+  let food = 0, delivery = 0, sales = 0, paid = 0, unpaid = 0, gp = 0, riderFee = 0, promoCost = 0, smallFee = 0;
   notCancelled.forEach(o => {
     const subtotal = Number(o.subtotal || 0);
     const foodDiscount = Number(o.foodDiscount || 0);
@@ -986,6 +989,7 @@ function buildReport() {
     gp += Number(o.gpAmount || 0);
     riderFee += Number(o.riderFee || 0);
     promoCost += Number(o.promoCost || 0) + Number(o.foodDiscount || 0);
+    smallFee += Number(o.smallOrderFee || 0);
     const isPaid = o.paymentStatus === "paid";
     if (isPaid) paid += total; else unpaid += total;
   });
@@ -996,6 +1000,13 @@ function buildReport() {
   document.getElementById("report-unpaid").textContent = "฿" + unpaid.toLocaleString();
   document.getElementById("report-gp").textContent = "฿" + gp.toLocaleString();
   document.getElementById("report-riderfee").textContent = "฿" + riderFee.toLocaleString();
+  const smallFeeRow = document.getElementById("report-smallfee-row");
+  if (smallFee > 0) {
+    smallFeeRow.style.display = "flex";
+    document.getElementById("report-smallfee").textContent = "฿" + smallFee.toLocaleString();
+  } else {
+    smallFeeRow.style.display = "none";
+  }
   const promoRow = document.getElementById("report-promo-row");
   if (promoCost > 0) {
     promoRow.style.display = "flex";
@@ -1076,7 +1087,7 @@ function buildReport() {
 function exportCSV() {
   const dayOrders = getReportOrders();
   const dateStr = document.getElementById("report-date")?.value || toLocalDateStr(new Date());
-  let csv = [["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"]];
+  let csv = [["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"]];
   dayOrders.forEach(o => {
     const m = membersMap[o.memberId] || {};
     csv.push([
@@ -1084,7 +1095,7 @@ function exportCSV() {
       o.restaurantId, restaurantsMap[o.restaurantId] || o.restaurantId,
       m.name || "", m.phone || "",
       o.riderId || "",
-      o.subtotal || 0, o.foodDiscount || 0, o.deliveryFee || 0, o.total || 0,
+      o.subtotal || 0, o.foodDiscount || 0, o.smallOrderFee || 0, o.deliveryFee || 0, o.total || 0,
       o.gpPercent || 0, o.gpAmount || 0, o.riderFee || 0,
       o.depositAmount || 0, o.depositPaid || "",
       o.paymentType || "", o.paymentStatus || "",
@@ -1198,6 +1209,10 @@ function buildRiderOrderDetailHtml(o) {
       ${o.foodDiscount > 0 ? `
       <div style="display:flex;justify-content:space-between;color:#7e22ce;">
         <span>🎟 ลูกค้าใช้โค้ดลดค่าอาหาร</span><span style="font-weight:600;">฿${o.foodDiscount}</span>
+      </div>` : ""}
+      ${o.smallOrderFee > 0 ? `
+      <div style="display:flex;justify-content:space-between;color:#dc2626;">
+        <span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ (ระบบเก็บเอง)</span><span style="font-weight:600;">฿${o.smallOrderFee}</span>
       </div>` : ""}
       ${o.depositAmount > 0 ? `
       <div style="display:flex;justify-content:space-between;color:#0369a1;">
@@ -1552,6 +1567,7 @@ function renderBizSummary(d) {
             <div class="money-row"><span>ยอดขายอาหารรวม</span><span>฿${d.totalFood.toLocaleString()}</span></div>
             <div class="money-row"><span>GP ที่เก็บจากร้าน</span><span>฿${d.totalGp.toLocaleString()}</span></div>
             <div class="money-row"><span>ค่าส่งที่เก็บจากลูกค้า</span><span>฿${d.totalDeliveryFee.toLocaleString()}</span></div>
+            ${d.totalSmallOrderFee > 0 ? `<div class="money-row"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>฿${d.totalSmallOrderFee.toLocaleString()}</span></div>` : ""}
           </div>
         </div>
         <div class="order-section">
@@ -1591,6 +1607,7 @@ function exportBizPrint() {
         <tr><td>ยอดขายอาหารรวม</td><td class="num">฿${d.totalFood.toLocaleString()}</td></tr>
         <tr><td>GP ที่เก็บจากร้าน</td><td class="num">฿${d.totalGp.toLocaleString()}</td></tr>
         <tr><td>ค่าส่งที่เก็บจากลูกค้า</td><td class="num">฿${d.totalDeliveryFee.toLocaleString()}</td></tr>
+        ${d.totalSmallOrderFee > 0 ? `<tr><td>ค่าธรรมเนียมออเดอร์ขั้นต่ำ</td><td class="num">฿${d.totalSmallOrderFee.toLocaleString()}</td></tr>` : ""}
         <tr><td>ค่ารอบไรเดอร์</td><td class="num">-฿${d.totalRiderFee.toLocaleString()}</td></tr>
         ${d.totalPromoCost>0 ? `<tr><td>ต้นทุนโปรส่งฟรี/ลดค่าส่ง</td><td class="num">-฿${d.totalPromoCost.toLocaleString()}</td></tr>` : ""}
         ${d.totalDeliveryDiscount>0 ? `<tr><td>ส่วนลดค่าส่ง (ยอดครบ ฿160)</td><td class="num">-฿${d.totalDeliveryDiscount.toLocaleString()}</td></tr>` : ""}
@@ -1654,6 +1671,7 @@ async function exportBeforeClear() {
           <tr><td>ยอดขายอาหารรวม</td><td class="num">฿${d.totalFood.toLocaleString()}</td></tr>
           <tr><td>GP ที่เก็บจากร้าน</td><td class="num">฿${d.totalGp.toLocaleString()}</td></tr>
           <tr><td>ค่าส่งที่เก็บจากลูกค้า</td><td class="num">฿${d.totalDeliveryFee.toLocaleString()}</td></tr>
+          ${d.totalSmallOrderFee > 0 ? `<tr><td>ค่าธรรมเนียมออเดอร์ขั้นต่ำ</td><td class="num">฿${d.totalSmallOrderFee.toLocaleString()}</td></tr>` : ""}
           <tr><td>ค่ารอบไรเดอร์</td><td class="num">-฿${d.totalRiderFee.toLocaleString()}</td></tr>
         </tbody>
         <tfoot><tr class="total-row"><td>กำไรสุทธิสะสม</td><td class="num">฿${d.systemProfit.toLocaleString()}</td></tr></tfoot>

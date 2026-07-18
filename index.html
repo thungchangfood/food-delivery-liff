@@ -392,6 +392,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       🎉 ออเดอร์แรกของคุณ! <strong>ส่งฟรีทันที ไม่มีขั้นต่ำ</strong>
     </div>
     <div id="free-delivery-notice" style="display:none;" class="free-delivery-notice"></div>
+    <div id="small-order-notice" style="display:none;" class="deposit-notice"></div>
 
     <div class="cart-section" id="promo-section">
       <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
@@ -428,6 +429,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <div class="cart-section">
       <div class="summary-row"><span>ยอดอาหาร</span><span id="s-subtotal">฿0</span></div>
       <div class="summary-row" id="s-food-discount-row" style="display:none;color:#06C755;"><span>ส่วนลดค่าอาหาร</span><span id="s-food-discount">-฿0</span></div>
+      <div class="summary-row" id="s-small-fee-row" style="display:none;color:#dc2626;"><span>ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span id="s-small-fee">+฿0</span></div>
       <div class="summary-row"><span>ค่าจัดส่ง</span><span id="s-delivery">฿0</span></div>
       <div class="summary-total"><span>รวมทั้งหมด</span><span id="s-total">฿0</span></div>
     </div>
@@ -577,6 +579,9 @@ let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
 let firstOrderFreeEnabled = true;
+let smallOrderFeeEnabled = true;
+let smallOrderFeeAmount = 10;
+let smallOrderThresholds = { gp25: 65, gp21: 55, gp17: 45, default: 55 };
 let menusLoaded = false;
 let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
   
@@ -733,6 +738,16 @@ async function loadInitialData(isRetry) {
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+      smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
+      smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      if (statusRes.data.smallOrderThresholds) {
+        try {
+          const t = typeof statusRes.data.smallOrderThresholds === "string"
+            ? JSON.parse(statusRes.data.smallOrderThresholds)
+            : statusRes.data.smallOrderThresholds;
+          smallOrderThresholds = { ...smallOrderThresholds, ...t };
+        } catch(_) {}
+      }
     }
     allShops = shopsRes.data || [];
     renderCategories(); renderShops(allShops);
@@ -854,6 +869,16 @@ async function refreshShopData(silent) {
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+      smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
+      smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      if (statusRes.data.smallOrderThresholds) {
+        try {
+          const t = typeof statusRes.data.smallOrderThresholds === "string"
+            ? JSON.parse(statusRes.data.smallOrderThresholds)
+            : statusRes.data.smallOrderThresholds;
+          smallOrderThresholds = { ...smallOrderThresholds, ...t };
+        } catch(_) {}
+      }
     }
     allShops = shopsRes.data || [];
     if (menusRes.success) {
@@ -900,6 +925,16 @@ async function checkAndLoadShops() {
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+      smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
+      smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      if (statusRes.data.smallOrderThresholds) {
+        try {
+          const t = typeof statusRes.data.smallOrderThresholds === "string"
+            ? JSON.parse(statusRes.data.smallOrderThresholds)
+            : statusRes.data.smallOrderThresholds;
+          smallOrderThresholds = { ...smallOrderThresholds, ...t };
+        } catch(_) {}
+      }
     }
     allShops = shopsRes.data || [];
     resetShopFilters(); // ✅ เริ่มดูร้านใหม่แบบไม่มีฟิลเตอร์ค้างจากรอบก่อน
@@ -1495,6 +1530,17 @@ function calcDelivery(subtotal) {
 function calcFoodDiscount(subtotal) {
   return getPromoFoodDiscount(subtotal);
 }
+function getSmallOrderThreshold(shop) {
+  const plan = shop?.gpPlan;
+  return smallOrderThresholds[plan] ?? smallOrderThresholds.default;
+}
+function calcSmallOrderFee(subtotal, shop) {
+  if (!smallOrderFeeEnabled) return 0;
+  if (subtotal <= 0) return 0;
+  const threshold = getSmallOrderThreshold(shop);
+  if (subtotal >= threshold) return 0;
+  return smallOrderFeeAmount;
+}
 
 function renderCart() {
   // ✅ ร้าน gp_self จัดส่งเอง — บังคับชำระเงินสดปลายทางอย่างเดียว ไม่ให้เลือกโอน
@@ -1544,6 +1590,7 @@ function renderCart() {
   const origDel = currentShop?.deliveryFee || 0;
   const delivery = calcDelivery(subtotal);
   const foodDiscount = calcFoodDiscount(subtotal);
+  const smallFee = calcSmallOrderFee(subtotal, currentShop);
 
   document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
 
@@ -1553,6 +1600,19 @@ function renderCart() {
     document.getElementById("s-food-discount").textContent = `-฿${foodDiscount}`;
   } else {
     foodDiscRow.style.display = "none";
+  }
+
+  const smallFeeRow = document.getElementById("s-small-fee-row");
+  const smallNotice = document.getElementById("small-order-notice");
+  if (smallFee > 0) {
+    smallFeeRow.style.display = "flex";
+    document.getElementById("s-small-fee").textContent = `+฿${smallFee}`;
+    const threshold = getSmallOrderThreshold(currentShop);
+    smallNotice.style.display = "block";
+    smallNotice.innerHTML = `⚠️ ยอดสั่งต่ำกว่า <strong>฿${threshold}</strong> มีค่าธรรมเนียมเพิ่ม <strong>฿${smallFee}</strong> ครับ<br><span style="font-size:12px;color:#888;">สั่งเพิ่มให้ครบ ฿${threshold} เพื่อไม่ต้องเสียค่าธรรมเนียมนี้</span>`;
+  } else {
+    smallFeeRow.style.display = "none";
+    smallNotice.style.display = "none";
   }
 
   const firstOrderNotice = document.getElementById("first-order-notice");
@@ -1584,8 +1644,8 @@ function renderCart() {
     }
   }
 
-  document.getElementById("s-total").textContent = `฿${subtotal - foodDiscount + delivery}`;
-  document.getElementById("s-total-sticky").textContent = `฿${subtotal - foodDiscount + delivery}`;
+  document.getElementById("s-total").textContent = `฿${subtotal - foodDiscount + delivery + smallFee}`;
+  document.getElementById("s-total-sticky").textContent = `฿${subtotal - foodDiscount + delivery + smallFee}`;
 
   if (currentMember) {
     document.getElementById("f-name").value = currentMember.name || "";
@@ -1733,7 +1793,8 @@ async function submitOrder() {
   const items = Object.values(cart);
   const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
   const foodDiscount = calcFoodDiscount(subtotal);
-  const netSubtotal = subtotal - foodDiscount;
+  const smallFee = calcSmallOrderFee(subtotal, currentShop);
+  const netSubtotal = subtotal - foodDiscount + smallFee;
   const delivery = calcDelivery(subtotal);
   const total = netSubtotal + delivery;
   const isSelfDelivery = currentShop?.gpPlan === "gp_self";
@@ -1789,7 +1850,8 @@ async function submitOrderWithDeposit() {
 async function doCreateOrder(name, phone, address, note, payment, items) {
   const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
   const foodDiscount = calcFoodDiscount(subtotal);
-  const netSubtotal = subtotal - foodDiscount;
+  const smallFee = calcSmallOrderFee(subtotal, currentShop);
+  const netSubtotal = subtotal - foodDiscount + smallFee;
   const delivery = calcDelivery(subtotal);
   const isSelfDelivery = currentShop?.gpPlan === "gp_self";
   const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
@@ -1808,6 +1870,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     promoValue: promoApplied ? Number(promoInfo?.value || 0) : 0,
     subtotal,
     foodDiscount,
+    smallOrderFee: smallFee,
     needDeposit: needDeposit || wantsTransfer,
     depositAmount,
     deliveryFee: delivery

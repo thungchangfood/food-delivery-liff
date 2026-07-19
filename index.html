@@ -285,7 +285,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
         <span class="closed-hours-icon">🕐</span>
         <div>
           <div class="closed-hours-label">เวลาทำการ</div>
-          <div class="closed-hours-time">08:30 - 20:30 น.</div>
+          <div class="closed-hours-time" id="closed-hours-time">08:30 - 20:30 น.</div>
         </div>
       </div>
       <button class="btn-green" onclick="checkAndLoadShops()">🔄 ลองเช็คอีกครั้ง</button>
@@ -599,6 +599,8 @@ let smallOrderFeeAmount = 10;
 let smallOrderThresholds = { gp25: 65, gp21: 55, gp17: 45, default: 55 };
 let menusLoaded = false;
 let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
+let businessHoursWeekday = { open: "09:00", close: "20:30" };
+let businessHoursWeekend = { open: "08:30", close: "21:00" };
   
 // Sheet state
 let sheetMenu = null;
@@ -743,8 +745,13 @@ async function loadInitialData(isRetry) {
       apiGet("action=getRestaurants")
     ]);
     if (statusRes.success) {
+      if (statusRes.data.businessHours) {
+        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
+        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+      }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+        renderClosedPageHours();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
@@ -755,6 +762,8 @@ async function loadInitialData(isRetry) {
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -874,8 +883,13 @@ async function refreshShopData(silent) {
       apiGet("action=getAllMenus")
     ]);
     if (statusRes.success) {
+      if (statusRes.data.businessHours) {
+        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
+        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+      }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+        renderClosedPageHours();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
@@ -886,6 +900,8 @@ async function refreshShopData(silent) {
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -930,8 +946,13 @@ async function checkAndLoadShops() {
       apiGet("action=getRestaurants")
     ]);
     if (statusRes.success) {
+      if (statusRes.data.businessHours) {
+        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
+        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+      }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+        renderClosedPageHours();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
@@ -942,6 +963,8 @@ async function checkAndLoadShops() {
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+      PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1023,6 +1046,19 @@ function renderFeaturedMenus() {
   }).join("");
 }
 
+function isWeekendDay(d) {
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
+function renderClosedPageHours() {
+  const el = document.getElementById("closed-hours-time");
+  if (!el) return;
+  const todayHours = isWeekendDay(new Date()) ? businessHoursWeekend : businessHoursWeekday;
+  el.innerHTML = `${todayHours.open} - ${todayHours.close} น.` +
+    `<div style="font-size:11px;color:#aaa;font-weight:400;margin-top:4px;">` +
+    `จ-ศ ${businessHoursWeekday.open}-${businessHoursWeekday.close} น. · ส-อา ${businessHoursWeekend.open}-${businessHoursWeekend.close} น.` +
+    `</div>`;
+}
 function isShopOpen(shop) {
   if (shop.status !== "active") return false;
   if (String(shop.tempClosed).toLowerCase() === "true") return false;
@@ -1510,7 +1546,7 @@ function showShopMenuPage(shop) {
     }).catch(() => showToast("โหลดเมนูไม่สำเร็จครับ"));
   }
 }
-const FREE_DELIVERY_THRESHOLD = 160;
+let FREE_DELIVERY_THRESHOLD = 160; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
 
 // ✅ โปรโค้ดของระบบ: โค้ดเดียวกันสามารถให้ผลลัพธ์ต่างกันได้ตาม promoType ที่แอดมินตั้งไว้หลังบ้าน
 // promoType ที่รองรับ: "free_delivery" (ส่งฟรี, ค่า default ถ้าไม่ได้ส่ง promoType มา — เพื่อ backward compatible),
@@ -1723,7 +1759,7 @@ function updateDepositNotice() {
 }
 
 // ── PROMO ────────────────────────────────────────────
-const PROMO_MIN_SUBTOTAL = 65; // แค่โชว์ข้อความเร็วๆ ฝั่งลูกค้า — ตัวบังคับจริงอยู่ที่ server
+let PROMO_MIN_SUBTOTAL = 65; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ — ตัวบังคับจริงอยู่ที่ server
 
 async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();

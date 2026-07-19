@@ -424,6 +424,7 @@ const GP_PLANS = {
   gp17: { deliveryFee: 19, gpPercent: 17 },
 };
 const DEFAULT_DELIVERY_FEE = 19;
+let deliveryDiscountThreshold = 160; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
 
 function getPromoNote(o) {
   if (!o.promoCode) return null;
@@ -460,7 +461,7 @@ function getDeliveryNote(o) {
     return `🎉 ออเดอร์แรกลูกค้าใหม่ (ส่งฟรี)`;
   }
   if (actualFee < originalFee) {
-    return `🛵 ยอดครบ ฿160 ลดค่าส่ง ฿${originalFee - actualFee} (เหลือ ฿${actualFee})`;
+    return `🛵 ยอดครบ ฿${deliveryDiscountThreshold} ลดค่าส่ง ฿${originalFee - actualFee} (เหลือ ฿${actualFee})`;
   }
   return `ค่าส่งปกติ ฿${actualFee}`;
 }
@@ -568,7 +569,13 @@ async function apiPost(body) {
 async function loadSystemStatus() {
   try {
     const res = await apiGet("action=getSystemStatus");
-    if (res.success) { systemOpen = res.data.open; updateSystemUI(systemOpen, res.data.reason); }
+    if (res.success) {
+      systemOpen = res.data.open;
+      updateSystemUI(systemOpen, res.data.reason);
+      if (res.data.deliveryDiscountThreshold != null) {
+        deliveryDiscountThreshold = Number(res.data.deliveryDiscountThreshold);
+      }
+    }
   } catch(_) {}
 }
 function updateSystemUI(isOpen, reason) {
@@ -1699,7 +1706,7 @@ function renderBizSummary(d) {
           <div class="money-box">
             <div class="money-row"><span>ค่ารอบไรเดอร์</span><span>-฿${d.totalRiderFee.toLocaleString()}</span></div>
             ${d.totalPromoCost>0 ? `<div class="money-row"><span>ต้นทุนโปรส่งฟรี/ลดค่าส่ง (โค้ด)</span><span>-฿${d.totalPromoCost.toLocaleString()}</span></div>` : ""}
-            ${d.totalDeliveryDiscount>0 ? `<div class="money-row"><span>ส่วนลดค่าส่ง (ยอดครบ ฿160)</span><span>-฿${d.totalDeliveryDiscount.toLocaleString()}</span></div>` : ""}
+            ${d.totalDeliveryDiscount>0 ? `<div class="money-row"><span>ส่วนลดค่าส่ง (ยอดครบ ฿${deliveryDiscountThreshold})</span><span>-฿${d.totalDeliveryDiscount.toLocaleString()}</span></div>` : ""}
             ${d.totalFoodDiscount>0 ? `<div class="money-row"><span>ต้นทุนโปรลดค่าอาหาร (โค้ด)</span><span>-฿${d.totalFoodDiscount.toLocaleString()}</span></div>` : ""}
           </div>
         </div>
@@ -1734,7 +1741,7 @@ function exportBizPrint() {
         ${d.totalSmallOrderFee > 0 ? `<tr><td>ค่าธรรมเนียมออเดอร์ขั้นต่ำ</td><td class="num">฿${d.totalSmallOrderFee.toLocaleString()}</td></tr>` : ""}
         <tr><td>ค่ารอบไรเดอร์</td><td class="num">-฿${d.totalRiderFee.toLocaleString()}</td></tr>
         ${d.totalPromoCost>0 ? `<tr><td>ต้นทุนโปรส่งฟรี/ลดค่าส่ง</td><td class="num">-฿${d.totalPromoCost.toLocaleString()}</td></tr>` : ""}
-        ${d.totalDeliveryDiscount>0 ? `<tr><td>ส่วนลดค่าส่ง (ยอดครบ ฿160)</td><td class="num">-฿${d.totalDeliveryDiscount.toLocaleString()}</td></tr>` : ""}
+        ${d.totalDeliveryDiscount>0 ? `<tr><td>ส่วนลดค่าส่ง (ยอดครบ ฿${deliveryDiscountThreshold})</td><td class="num">-฿${d.totalDeliveryDiscount.toLocaleString()}</td></tr>` : ""}
         ${d.totalFoodDiscount>0 ? `<tr><td>ต้นทุนโปรลดค่าอาหาร</td><td class="num">-฿${d.totalFoodDiscount.toLocaleString()}</td></tr>` : ""}
       </tbody>
       <tfoot>

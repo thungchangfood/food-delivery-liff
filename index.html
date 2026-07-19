@@ -746,8 +746,10 @@ async function loadInitialData(isRetry) {
     ]);
     if (statusRes.success) {
       if (statusRes.data.businessHours) {
-        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
-        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+        const wd = statusRes.data.businessHours.weekday;
+        const we = statusRes.data.businessHours.weekend;
+        if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
+        if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
@@ -884,8 +886,11 @@ async function refreshShopData(silent) {
     ]);
     if (statusRes.success) {
       if (statusRes.data.businessHours) {
-        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
-        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+        const wd = statusRes.data.businessHours.weekday;
+        const we = statusRes.data.businessHours.weekend;
+        if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
+        if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
+      }
       }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
@@ -947,8 +952,11 @@ async function checkAndLoadShops() {
     ]);
     if (statusRes.success) {
       if (statusRes.data.businessHours) {
-        businessHoursWeekday = statusRes.data.businessHours.weekday || businessHoursWeekday;
-        businessHoursWeekend = statusRes.data.businessHours.weekend || businessHoursWeekend;
+        const wd = statusRes.data.businessHours.weekday;
+        const we = statusRes.data.businessHours.weekend;
+        if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
+        if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
+      }
       }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
@@ -1044,6 +1052,21 @@ function renderFeaturedMenus() {
       </div>
     </div>`;
   }).join("");
+}
+
+// ✅ แปลงค่าเวลาที่มาจาก API ให้เป็น "HH:MM" เสมอ ไม่ว่าจะส่งมาเป็น string ปกติ
+// หรือเป็น Date string เต็มรูปแบบ (เช่นจาก Google Sheets: "Sat Dec 30 1899 08:30:00 GMT+0642...")
+function extractTime(val) {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s; // เป็น "HH:MM" อยู่แล้ว
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+  return s;
 }
 
 function isWeekendDay(d) {

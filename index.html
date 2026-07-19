@@ -891,7 +891,6 @@ async function refreshShopData(silent) {
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
-      }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
         renderClosedPageHours();
@@ -956,7 +955,6 @@ async function checkAndLoadShops() {
         const we = statusRes.data.businessHours.weekend;
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
-      }
       }
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";

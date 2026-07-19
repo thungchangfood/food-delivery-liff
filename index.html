@@ -39,10 +39,16 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 .btn-green:disabled{background:#ccc;cursor:not-allowed;}
 
 /* ── Closed ── */
-.closed-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;}
-.closed-icon{font-size:64px;margin-bottom:16px;}
-.closed-title{font-size:20px;font-weight:700;margin-bottom:8px;}
-.closed-msg{font-size:15px;color:#888;line-height:1.6;}
+.closed-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(180deg,#fef2f2,#fff 45%);}
+.closed-card{background:white;border-radius:24px;padding:36px 28px;width:100%;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center;}
+.closed-icon-wrap{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#fef2f2,#fee2e2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.closed-icon{font-size:40px;}
+.closed-title{font-size:19px;font-weight:700;margin-bottom:8px;color:#1a1a1a;}
+.closed-msg{font-size:14px;color:#888;line-height:1.6;margin-bottom:20px;}
+.closed-hours{display:flex;align-items:center;gap:12px;background:#f9fafb;border:1px solid #eee;border-radius:14px;padding:14px 16px;margin-bottom:22px;text-align:left;}
+.closed-hours-icon{font-size:22px;}
+.closed-hours-label{font-size:11px;color:#aaa;font-weight:600;}
+.closed-hours-time{font-size:15px;font-weight:700;color:#1a1a1a;}
 
 /* ── Shop page ── */
 .search-wrap{background:white;padding:10px 16px;border-bottom:.5px solid #ececec;}
@@ -271,10 +277,19 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
 <!-- CLOSED -->
 <div class="page" id="page-closed">
   <div class="closed-wrap">
-    <div class="closed-icon">🔴</div>
-    <div class="closed-title">ขณะนี้ปิดรับออเดอร์</div>
-    <div class="closed-msg" id="closed-msg">กรุณาติดต่อแอดมินครับ</div>
-    <button class="btn-green" style="margin-top:24px;max-width:240px;" onclick="checkAndLoadShops()">รีเฟรช</button>
+    <div class="closed-card">
+      <div class="closed-icon-wrap"><span class="closed-icon">🌙</span></div>
+      <div class="closed-title">ขณะนี้ปิดรับออเดอร์</div>
+      <div class="closed-msg" id="closed-msg">กรุณาติดต่อแอดมินครับ</div>
+      <div class="closed-hours">
+        <span class="closed-hours-icon">🕐</span>
+        <div>
+          <div class="closed-hours-label">เวลาทำการ</div>
+          <div class="closed-hours-time">08:30 - 20:30 น.</div>
+        </div>
+      </div>
+      <button class="btn-green" onclick="checkAndLoadShops()">🔄 ลองเช็คอีกครั้ง</button>
+    </div>
   </div>
 </div>
 
@@ -1708,16 +1723,25 @@ function updateDepositNotice() {
 }
 
 // ── PROMO ────────────────────────────────────────────
+const PROMO_MIN_SUBTOTAL = 65; // แค่โชว์ข้อความเร็วๆ ฝั่งลูกค้า — ตัวบังคับจริงอยู่ที่ server
+
 async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();
   const msg = document.getElementById("promo-msg");
   const btn = event.target;
   if (!code) { msg.style.display="none"; promoApplied=false; promoInfo=null; renderCart(); return; }
+  const entries = Object.values(cart);
+  const subtotal = entries.reduce((s, e) => s + e.price * e.qty, 0);
+  if (subtotal < PROMO_MIN_SUBTOTAL) {
+    msg.style.display = "block"; msg.style.color = "#EF4444";
+    msg.textContent = `❌ ใช้โค้ดได้เมื่อยอดอาหารครบ ฿${PROMO_MIN_SUBTOTAL} ครับ (ตอนนี้ ฿${subtotal})`;
+    return;
+  }
   btn.disabled=true; btn.textContent="กำลังเช็ค...";
   msg.style.display="block"; msg.style.color="#888"; msg.textContent="กำลังตรวจสอบโค้ด...";
   try {
     const memberId = currentMember?.memberId || "";
-    const r = await apiGet("action=checkPromo&code=" + encodeURIComponent(code) + "&memberId=" + encodeURIComponent(memberId));
+    const r = await apiGet("action=checkPromo&code=" + encodeURIComponent(code) + "&memberId=" + encodeURIComponent(memberId) + "&subtotal=" + subtotal);
     promoApplied = r.success;
     promoInfo = r.success ? r.data : null;
     msg.style.color = r.success ? "#06C755" : "#EF4444";

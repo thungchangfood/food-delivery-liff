@@ -114,6 +114,13 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .item-price{font-weight:600;color:#1a1a1a;}
 
 .money-box{background:#f9f9f9;border-radius:10px;padding:10px 12px;}
+.money-group-title{font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px;}
+.money-group-title:first-child{margin-top:0;}
+.money-group-title.income{color:#16a34a;}
+.money-group-title.expense{color:#dc2626;}
+.money-group-title.shop{color:#b45309;}
+.money-group-title.customer{color:#1d4ed8;}
+.money-group-title.rider{color:#7c3aed;}
 .money-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:#555;}
 .money-row.total{font-size:16px;font-weight:700;color:#1a1a1a;padding-top:8px;margin-top:4px;border-top:1px solid #e0e0e0;}
 .money-row.collected{font-size:13px;color:#06C755;font-weight:600;}
@@ -291,20 +298,27 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
         <div class="order-body open">
           <div class="order-section">
             <div class="money-box">
+              <div class="money-group-title">🍜 ยอดขาย</div>
               <div class="money-row"><span>ยอดอาหารรวม (หลังหักส่วนลด)</span><span id="report-food">฿0</span></div>
               <div class="money-row"><span>ค่าจัดส่งที่เก็บจากลูกค้า</span><span id="report-delivery">฿0</span></div>
               <div class="money-row total"><span>ยอดขายรวมทั้งหมด</span><span id="report-sales">฿0</span></div>
-              <div class="money-row" style="margin-top:8px;"><span>💚 ชำระแล้ว (โอน/ยืนยันแล้ว)</span><span id="report-paid" style="color:#06C755;font-weight:600;">฿0</span></div>
+
+              <div class="money-group-title customer">💳 สถานะรับเงินจากลูกค้า</div>
+              <div class="money-row"><span>💚 ชำระแล้ว (โอน/ยืนยันแล้ว)</span><span id="report-paid" style="color:#06C755;font-weight:600;">฿0</span></div>
               <div class="money-row"><span>💵 ยังต้องเก็บปลายทาง / ยังไม่ยืนยัน</span><span id="report-unpaid" style="color:#EF4444;font-weight:600;">฿0</span></div>
-              <div class="money-row" id="report-smallfee-row" style="display:none;margin-top:8px;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span id="report-smallfee" style="color:#dc2626;font-weight:600;">฿0</span></div>
-              <div class="money-row" style="margin-top:8px;"><span>🧾 GP ที่หักจากร้าน</span><span id="report-gp">฿0</span></div>
-              <div class="money-row"><span>🛵 ค่ารอบไรเดอร์รวม</span><span id="report-riderfee">฿0</span></div>
-              <div class="money-row" id="report-promo-row" style="display:none;"><span>🎟 ต้นทุนโปรโมชั่นรวม</span><span id="report-promo">฿0</span></div>
+
+              <div class="money-group-title income">📥 รายได้ระบบ</div>
+              <div class="money-row"><span>GP ที่หักจากร้าน</span><span id="report-gp" style="color:#16a34a;font-weight:600;">฿0</span></div>
+              <div class="money-row" id="report-smallfee-row" style="display:none;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span id="report-smallfee" style="color:#16a34a;font-weight:600;">฿0</span></div>
+
+              <div class="money-group-title expense">📤 ต้นทุน/รายจ่ายระบบ</div>
+              <div class="money-row"><span>ค่ารอบไรเดอร์รวม</span><span id="report-riderfee" style="color:#dc2626;font-weight:600;">฿0</span></div>
+              <div class="money-row" id="report-promo-row" style="display:none;"><span>🎟 ต้นทุนโปรโมชั่นรวม</span><span id="report-promo" style="color:#dc2626;font-weight:600;">฿0</span></div>
             </div>
           </div>
         </div>
       </div>
-
+      
       <!-- แยกตามร้านอาหาร -->
       <div class="order-card" style="margin-bottom:14px;">
         <div class="order-head" style="cursor:default;">
@@ -742,12 +756,14 @@ function renderOrders() {
     // ── ยอดเงิน ──────────────────────────────────────────
     const smallOrderFee = Number(o.smallOrderFee || 0);
     const moneyRows = `
+      <div class="money-group-title">🍜 ยอดสั่งซื้อ</div>
       <div class="money-row"><span>ยอดอาหาร</span><span>${foodDiscount > 0 ? `฿${subtotal} - ส่วนลด ฿${foodDiscount}` : `฿${subtotal}`}</span></div>
       ${smallOrderFee > 0 ? `<div class="money-row" style="color:#dc2626;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>+฿${smallOrderFee}</span></div>` : ""}
       <div class="money-row"><span>ค่าจัดส่ง</span><span>฿${deliveryFee}</span></div>
       <div class="money-row total"><span>รวมทั้งหมด</span><span>฿${total}</span></div>
       ${depositAmount > 0 ? `
-      <div class="money-row collected" style="margin-top:6px;"><span>รับมัดจำมาแล้ว</span><span>฿${depositAmount}</span></div>
+      <div class="money-group-title customer">💳 การชำระเงิน</div>
+      <div class="money-row collected"><span>รับมัดจำมาแล้ว</span><span>฿${depositAmount}</span></div>
       <div class="money-row remaining"><span>ยังต้องเก็บปลายทาง</span><span>฿${remaining}</span></div>` : ""}
     `;
 
@@ -781,9 +797,11 @@ function renderOrders() {
         actions = `<button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิก</button>`;
       }
     } else if (o.status === "PICKED" || o.status === "DELIVERING") {
+      actions = "";
       if (isPromptpay && !isPaid) {
-        actions = `<button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>`;
+        actions += `<button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>`;
       }
+      actions += `<button class="btn-action btn-cancel" onclick="cancelOrderInTransit('${o.orderId}')">❌ ยกเลิกออเดอร์ (ติดต่อลูกค้า/ไรเดอร์ไม่ได้)</button>`;
     } else if (o.status === "DONE") {
       actions = `<div style="text-align:center;color:#06C755;font-weight:700;padding:4px;">✅ ส่งสำเร็จแล้ว</div>`;
     } else if (o.status === "CANCEL") {
@@ -911,14 +929,21 @@ async function confirmOrder(orderId) {
   }
 }
 
-async function cancelOrder(orderId) {
-  const reason = prompt("ระบุสาเหตุยกเลิก:", "");
+async function cancelOrderInTransit(orderId) {
+  const warn = confirm(
+    "⚠️ ออเดอร์นี้ไรเดอร์รับของไปแล้ว (สถานะ: กำลังส่ง)\n\n" +
+    "ใช้เฉพาะกรณีติดต่อลูกค้าไม่ได้จริงๆ เท่านั้น\n" +
+    "หลังยกเลิก กรุณาติดต่อไรเดอร์เองว่าจะจัดการอาหาร/เงินที่ถืออยู่อย่างไร ระบบจะไม่จัดการส่วนนี้ให้อัตโนมัติ\n\n" +
+    "ต้องการดำเนินการต่อไหม?"
+  );
+  if (!warn) return;
+  const reason = prompt("ระบุสาเหตุยกเลิก (เช่น ติดต่อลูกค้าไม่ได้):", "ติดต่อลูกค้าไม่ได้");
   if (reason === null) return;
   if (processingOrders.has(orderId)) return;
   processingOrders.add(orderId);
   renderOrders();
   try {
-    const res = await apiPost({ action:"updateOrderStatus", orderId, status:"CANCEL", cancelReason: reason || "ยกเลิกโดยแอดมิน" });
+    const res = await apiPost({ action:"updateOrderStatus", orderId, status:"CANCEL", cancelReason: reason || "ติดต่อลูกค้าไม่ได้" });
     if (!res.success) throw new Error(res.error);
     showToast("ยกเลิกออร์เดอร์แล้วครับ");
   } catch(e) {
@@ -1329,31 +1354,40 @@ function buildRiderOrderDetailHtml(o) {
   const collectLine = o.collectedFromCustomer > 0
     ? "฿" + o.collectedFromCustomer
     : "ลูกค้าโอนแล้ว ไม่ต้องเก็บ";
+  const rowStyle = "display:flex;justify-content:space-between;";
+  const groupStyle = "font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:10px;margin-bottom:2px;";
   return `
     <div style="font-size:12.5px;color:#555;line-height:2;border-top:1px dashed #e5e5e5;padding-top:8px;">
-      <div style="display:flex;justify-content:space-between;">
-        <span>🏪 จ่ายร้านไป (ค่าอาหารเต็ม)</span><span style="font-weight:600;">฿${o.paidToShop}</span>
+      <div style="${groupStyle}color:#b45309;">🏪 เงินฝั่งร้าน</div>
+      <div style="${rowStyle}">
+        <span>จ่ายร้านไป (ค่าอาหารเต็ม)</span><span style="font-weight:600;">฿${o.paidToShop}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;">
-        <span>💵 เก็บจากลูกค้า</span><span style="font-weight:600;">${collectLine}</span>
+
+      <div style="${groupStyle}color:#1d4ed8;">💵 เงินฝั่งลูกค้า</div>
+      <div style="${rowStyle}">
+        <span>เก็บจากลูกค้า</span><span style="font-weight:600;">${collectLine}</span>
       </div>
       ${o.foodDiscount > 0 ? `
-      <div style="display:flex;justify-content:space-between;color:#7e22ce;">
+      <div style="${rowStyle}color:#7e22ce;">
         <span>🎟 ลูกค้าใช้โค้ดลดค่าอาหาร</span><span style="font-weight:600;">฿${o.foodDiscount}</span>
       </div>` : ""}
-      ${o.smallOrderFee > 0 ? `
-      <div style="display:flex;justify-content:space-between;color:#dc2626;">
-        <span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ (ระบบเก็บเอง)</span><span style="font-weight:600;">฿${o.smallOrderFee}</span>
-      </div>` : ""}
       ${o.depositAmount > 0 ? `
-      <div style="display:flex;justify-content:space-between;color:#0369a1;">
+      <div style="${rowStyle}color:#0369a1;">
         <span>📥 รับมัดจำไปแล้ว</span><span style="font-weight:600;">฿${o.depositAmount}</span>
       </div>` : ""}
-      <div style="display:flex;justify-content:space-between;padding-top:6px;margin-top:2px;border-top:1px dashed #e5e5e5;color:${diffColor};font-weight:700;">
+
+      ${o.smallOrderFee > 0 ? `
+      <div style="${groupStyle}color:#16a34a;">📥 รายได้ระบบ</div>
+      <div style="${rowStyle}color:#dc2626;">
+        <span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ (ระบบเก็บเอง)</span><span style="font-weight:600;">฿${o.smallOrderFee}</span>
+      </div>` : ""}
+
+      <div style="${groupStyle}color:#7c3aed;">🛵 เงินฝั่งไรเดอร์</div>
+      <div style="display:flex;justify-content:space-between;padding-top:2px;color:${diffColor};font-weight:700;">
         <span>${diffLabel}</span><span>฿${Math.abs(o.foodReimburse)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;">
-        <span>🛵 ค่ารอบไรเดอร์</span><span style="font-weight:600;">฿${o.riderFee}</span>
+      <div style="${rowStyle}">
+        <span>ค่ารอบไรเดอร์</span><span style="font-weight:600;">฿${o.riderFee}</span>
       </div>
     </div>`;
 }
@@ -1455,14 +1489,16 @@ function renderGpSettlement(data) {
       <div class="order-body open">
         <div class="order-section">
           <div class="money-box">
+            <div class="money-group-title shop">🏪 ยอดขายร้าน</div>
             <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
             ${r.totalMenuDiscount > 0 ? `<div class="money-row"><span>ส่วนลดเมนู (ร้านลดเอง)</span><span>-฿${r.totalMenuDiscount.toLocaleString()}</span></div>` : ""}
+            <div class="money-group-title income">📥 ที่ต้องเก็บเข้าระบบ (GP)</div>
             ${isSelf ? `
-            <div class="money-row"><span>ยอด GP ที่ร้านเป็นหนี้ระบบ</span><span>฿${restaurantOwesUs.toLocaleString()}</span></div>
+            <div class="money-row"><span>ยอด GP ที่ร้านเป็นหนี้ระบบ</span><span style="color:#16a34a;font-weight:600;">฿${restaurantOwesUs.toLocaleString()}</span></div>
             <div class="money-row" style="color:#888;font-size:12px;">ร้านเก็บเงินลูกค้าเองทุกออเดอร์ (ปลายทาง/โอนตรงเข้าร้าน) ระบบมีหน้าที่แค่หาออเดอร์ให้ครับ</div>
             ` : `
-            <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span>-฿${r.totalGp.toLocaleString()}</span></div>
-            <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span>฿${r.totalGp.toLocaleString()}</span></div>
+            <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span style="color:#16a34a;">-฿${r.totalGp.toLocaleString()}</span></div>
+            <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span style="color:#16a34a;">฿${r.totalGp.toLocaleString()}</span></div>
             `}
           </div>
         </div>
@@ -1693,21 +1729,20 @@ function renderBizSummary(d) {
     <div class="order-card">
       <div class="order-body open">
         <div class="order-section">
-          <div class="section-label">รายรับ</div>
           <div class="money-box">
+            <div class="money-group-title">🍜 ยอดขาย (ก่อนหักต้นทุน)</div>
             <div class="money-row"><span>ยอดขายอาหารรวม</span><span>฿${d.totalFood.toLocaleString()}</span></div>
-            <div class="money-row"><span>GP ที่เก็บจากร้าน</span><span>฿${d.totalGp.toLocaleString()}</span></div>
             <div class="money-row"><span>ค่าส่งที่เก็บจากลูกค้า</span><span>฿${d.totalDeliveryFee.toLocaleString()}</span></div>
-            ${d.totalSmallOrderFee > 0 ? `<div class="money-row"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>฿${d.totalSmallOrderFee.toLocaleString()}</span></div>` : ""}
-          </div>
-        </div>
-        <div class="order-section">
-          <div class="section-label">รายจ่าย</div>
-          <div class="money-box">
-            <div class="money-row"><span>ค่ารอบไรเดอร์</span><span>-฿${d.totalRiderFee.toLocaleString()}</span></div>
-            ${d.totalPromoCost>0 ? `<div class="money-row"><span>ต้นทุนโปรส่งฟรี/ลดค่าส่ง (โค้ด)</span><span>-฿${d.totalPromoCost.toLocaleString()}</span></div>` : ""}
-            ${d.totalDeliveryDiscount>0 ? `<div class="money-row"><span>ส่วนลดค่าส่ง (ยอดครบ ฿${deliveryDiscountThreshold})</span><span>-฿${d.totalDeliveryDiscount.toLocaleString()}</span></div>` : ""}
-            ${d.totalFoodDiscount>0 ? `<div class="money-row"><span>ต้นทุนโปรลดค่าอาหาร (โค้ด)</span><span>-฿${d.totalFoodDiscount.toLocaleString()}</span></div>` : ""}
+
+            <div class="money-group-title income">📥 รายได้ระบบ</div>
+            <div class="money-row"><span>GP ที่เก็บจากร้าน</span><span style="color:#16a34a;font-weight:600;">฿${d.totalGp.toLocaleString()}</span></div>
+            ${d.totalSmallOrderFee > 0 ? `<div class="money-row"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span style="color:#16a34a;font-weight:600;">฿${d.totalSmallOrderFee.toLocaleString()}</span></div>` : ""}
+
+            <div class="money-group-title expense">📤 ต้นทุน/รายจ่ายระบบ</div>
+            <div class="money-row"><span>ค่ารอบไรเดอร์</span><span style="color:#dc2626;font-weight:600;">-฿${d.totalRiderFee.toLocaleString()}</span></div>
+            ${d.totalPromoCost>0 ? `<div class="money-row"><span>ต้นทุนโปรส่งฟรี/ลดค่าส่ง (โค้ด)</span><span style="color:#dc2626;font-weight:600;">-฿${d.totalPromoCost.toLocaleString()}</span></div>` : ""}
+            ${d.totalDeliveryDiscount>0 ? `<div class="money-row"><span>ส่วนลดค่าส่ง (ยอดครบ ฿${deliveryDiscountThreshold})</span><span style="color:#dc2626;font-weight:600;">-฿${d.totalDeliveryDiscount.toLocaleString()}</span></div>` : ""}
+            ${d.totalFoodDiscount>0 ? `<div class="money-row"><span>ต้นทุนโปรลดค่าอาหาร (โค้ด)</span><span style="color:#dc2626;font-weight:600;">-฿${d.totalFoodDiscount.toLocaleString()}</span></div>` : ""}
           </div>
         </div>
         <div class="order-section">

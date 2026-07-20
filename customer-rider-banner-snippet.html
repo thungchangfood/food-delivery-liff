@@ -1,0 +1,65 @@
+<!--
+  ============================================================
+  สนิปเป็ต: แบนเนอร์เตือน "ไม่มีไรเดอร์ว่าง" สำหรับหน้าลูกค้าสั่งอาหาร
+  ============================================================
+  วิธีติดตั้ง:
+  1) เอา HTML ส่วน <div id="rider-warning-banner">...</div> ไปแปะไว้เหนือปุ่ม
+     "ยืนยันสั่งซื้อ" หรือใกล้ๆ ตะกร้าสินค้าในหน้า index.html ของคุณ
+  2) เอา CSS ส่วน <style> ไปรวมกับ <style> เดิมของหน้า (หรือแปะเพิ่มก็ได้)
+  3) เอาโค้ด JS ไปเรียกใช้ในจุดที่หน้าโหลดข้อมูลร้าน/เมนู (เช่นใน init() เดิม)
+     แล้วเรียก checkRiderAvailability() อีกครั้งตอนลูกค้ากด "ยืนยันสั่งซื้อ" ก่อน submit
+     เพื่อให้ข้อมูลสดที่สุด ณ ตอนสั่งจริง
+  ไม่บล็อกการสั่งซื้อ — แค่โชว์ข้อความเตือนให้ลูกค้า/ร้านรับทราบว่าอาจรอนานกว่าปกติ
+-->
+
+<style>
+.rider-warning-banner{
+  display:none;
+  background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;
+  padding:12px 14px;margin:0 0 12px;font-size:13px;color:#92400e;
+  line-height:1.6;align-items:flex-start;gap:8px;
+}
+.rider-warning-banner.show{display:flex;}
+.rider-warning-banner .icon{font-size:18px;flex-shrink:0;}
+</style>
+
+<div id="rider-warning-banner" class="rider-warning-banner">
+  <span class="icon">⚠️</span>
+  <span>ตอนนี้ไรเดอร์ทุกคนกำลังส่งงานอยู่ หากสั่งตอนนี้อาจต้องรอนานกว่าปกติครับ</span>
+</div>
+
+<script>
+const API_RIDER_CHECK = "https://food-delivery-api.thungchangfood.workers.dev/api"; // ← ใช้ตัวแปร API เดิมของหน้าคุณแทนได้เลย ถ้ามีอยู่แล้ว
+
+// เรียกเช็คสถานะไรเดอร์ แล้วโชว์/ซ่อนแบนเนอร์ตามผล
+async function checkRiderAvailability() {
+  const banner = document.getElementById("rider-warning-banner");
+  try {
+    const res = await fetch(`${API_RIDER_CHECK}?action=getAvailableRidersCount`);
+    const r = await res.json();
+    if (!r.success) return; // เงียบไว้ ไม่ต้องเด้ง error ให้ลูกค้าเห็นถ้าดึงไม่สำเร็จ
+
+    if (!r.data.hasAvailableRider) {
+      // แยกข้อความ 2 กรณี: ไม่มีใครเปิดรับงานเลย vs เปิดรับงานอยู่แต่ทุกคนกำลังส่งงาน
+      const msgEl = banner.querySelector("span:last-child");
+      if (r.data.onDutyCount === 0) {
+        msgEl.textContent = "ตอนนี้ยังไม่มีไรเดอร์เปิดรับงานครับ หากสั่งตอนนี้อาจต้องรอนานกว่าปกติ";
+      } else {
+        msgEl.textContent = "ตอนนี้ไรเดอร์ทุกคนกำลังส่งงานอยู่ หากสั่งตอนนี้อาจต้องรอนานกว่าปกติครับ";
+      }
+      banner.classList.add("show");
+    } else {
+      banner.classList.remove("show");
+    }
+  } catch(e) {
+    // เงียบไว้ ไม่ให้กระทบการสั่งซื้อหลัก
+    console.error("checkRiderAvailability", e);
+  }
+}
+
+// เรียกตอนหน้าโหลด
+checkRiderAvailability();
+
+// แนะนำ: เรียกซ้ำทุก 30-60 วิ ระหว่างที่ลูกค้าเลือกเมนูอยู่ เผื่อสถานะเปลี่ยนระหว่างทาง
+setInterval(checkRiderAvailability, 45000);
+</script>

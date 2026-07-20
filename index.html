@@ -1956,6 +1956,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
   const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? netSubtotal+delivery : 0);
 
   pendingOrderData = {
+    clientOrderKey: (currentMember.memberId + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,8)),
     memberId: currentMember.memberId,
     restaurantId: currentShop.restaurantId,
     items: items.map(e => ({ menuId:e.menuId, name:e.name, price:e.price, qty:e.qty, variant:e.variant, optLabel:e.optLabel || "" })),

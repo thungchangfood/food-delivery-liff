@@ -509,7 +509,7 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
     <div style="background:#f5f5f5;border-radius:12px;padding:14px;font-size:13px;color:#888;">⚠️ ออเดอร์จะถูกยืนยันหลังจากแอดมินตรวจสอบสลิปแล้วเท่านั้นครับ</div>
   </div>
   <div class="bottom-bar">
-    <button class="btn-green" onclick="submitOrderWithDeposit()">✅ ยืนยันสั่งอาหาร</button>
+    <button class="btn-green" id="deposit-order-btn" onclick="submitOrderWithDeposit()">✅ ยืนยันสั่งอาหาร</button>
   </div>
 </div>
 
@@ -592,6 +592,7 @@ let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
 let trackTimer = null, countdownTimer = null, pendingOrderData = null;
+let isSubmittingOrder = false; // ✅ กันกดปุ่มสั่งอาหารซ้ำก่อนหน้าจอเปลี่ยน
 let promoApplied = false;
 let promoInfo = null; // { message, remaining, promoType, value } — promoType/value ตั้งค่าจากฝั่งแอดมิน (ชีท/หลังบ้าน)
 let bankAccount = "", bankName = "";
@@ -1872,6 +1873,7 @@ async function getLocation() {
 
 // ── SUBMIT ───────────────────────────────────────────
 async function submitOrder() {
+  if (isSubmittingOrder) return; // ✅ กันกดซ้ำ
   if (String(currentMember?.status || "").toLowerCase() === "block") {
     showPage("page-suspended"); return;
   }
@@ -1883,54 +1885,64 @@ async function submitOrder() {
   if (!address) { showToast("กรุณากรอกที่อยู่จัดส่งครับ"); return; }
   if (!userLat || !userLng) { showToast("กรุณาปักหมุดตำแหน่งก่อนครับ"); return; }
 
-  if (!bankAccount) {
-    try { const r=await apiGet("action=getSystemStatus"); bankAccount=r.data?.bankAccount||""; bankName=r.data?.bankName||""; } catch(_) {}
-  }
+  isSubmittingOrder = true;
+  const orderBtn = document.getElementById("order-btn");
+  if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = "กำลังส่งออเดอร์..."; }
 
-  const items = Object.values(cart);
-  const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
-  const foodDiscount = calcFoodDiscount(subtotal);
-  const smallFee = calcSmallOrderFee(subtotal, currentShop);
-  const netSubtotal = subtotal - foodDiscount + smallFee;
-  const delivery = calcDelivery(subtotal);
-  const total = netSubtotal + delivery;
-  const isSelfDelivery = currentShop?.gpPlan === "gp_self";
-  const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
-  const wantsTransfer = payment !== "cash";
-  const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? total : 0);
+  try {
+    if (!bankAccount) {
+      try { const r=await apiGet("action=getSystemStatus"); bankAccount=r.data?.bankAccount||""; bankName=r.data?.bankName||""; } catch(_) {}
+    }
 
-  if (needDeposit || wantsTransfer) {
-    document.getElementById("dep-items").innerHTML = items.map(e =>
-      `<div class="track-item-row" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 16px;"><span>${e.name} ×${e.qty}</span><span>฿${e.price*e.qty}</span></div>`
-    ).join("");
-    document.getElementById("dep-subtotal").textContent=`฿${subtotal}`;
-    const depFoodRow = document.getElementById("dep-food-discount-row");
-    if (foodDiscount > 0) {
-      depFoodRow.style.display = "flex";
-      document.getElementById("dep-food-discount").textContent = `-฿${foodDiscount}`;
-    } else {
-      depFoodRow.style.display = "none";
+    const items = Object.values(cart);
+    const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
+    const foodDiscount = calcFoodDiscount(subtotal);
+    const smallFee = calcSmallOrderFee(subtotal, currentShop);
+    const netSubtotal = subtotal - foodDiscount + smallFee;
+    const delivery = calcDelivery(subtotal);
+    const total = netSubtotal + delivery;
+    const isSelfDelivery = currentShop?.gpPlan === "gp_self";
+    const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
+    const wantsTransfer = payment !== "cash";
+    const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? total : 0);
+
+    if (needDeposit || wantsTransfer) {
+      document.getElementById("dep-items").innerHTML = items.map(e =>
+        `<div class="track-item-row" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 16px;"><span>${e.name} ×${e.qty}</span><span>฿${e.price*e.qty}</span></div>`
+      ).join("");
+      document.getElementById("dep-subtotal").textContent=`฿${subtotal}`;
+      const depFoodRow = document.getElementById("dep-food-discount-row");
+      if (foodDiscount > 0) {
+        depFoodRow.style.display = "flex";
+        document.getElementById("dep-food-discount").textContent = `-฿${foodDiscount}`;
+      } else {
+        depFoodRow.style.display = "none";
+      }
+      document.getElementById("dep-delivery").textContent=`฿${delivery}`;
+      document.getElementById("dep-total").textContent=`฿${total}`;
+      document.getElementById("dep-deposit-amount").textContent=`฿${depositAmount}`;
+      document.getElementById("dep-bank-account").textContent=bankAccount||"-";
+      document.getElementById("dep-bank-name").textContent=bankName||"-";
+      if (needDeposit) {
+        document.getElementById("dep-title").textContent="💸 กรุณาชำระ50%ของค่าอาหารก่อนครับ";
+        document.getElementById("dep-desc").textContent="เนื่องจากยอดสั่งเกิน ฿300 ชำระมัดจำ 50% ของค่าอาหารก่อนครับ สว่นที่เหลือชำระเมื่อได้รับสินค้าแล้วครับ";
+        document.getElementById("dep-amount-label").textContent="ยอดมัดจำ";
+      } else {
+        document.getElementById("dep-title").textContent="💸 กรุณาชำระเงิน";
+        document.getElementById("dep-desc").textContent="กรุณาโอนเงินตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์";
+        document.getElementById("dep-amount-label").textContent="ยอดที่ต้องโอน";
+      }
+      showPage("page-deposit"); return;
     }
-    document.getElementById("dep-delivery").textContent=`฿${delivery}`;
-    document.getElementById("dep-total").textContent=`฿${total}`;
-    document.getElementById("dep-deposit-amount").textContent=`฿${depositAmount}`;
-    document.getElementById("dep-bank-account").textContent=bankAccount||"-";
-    document.getElementById("dep-bank-name").textContent=bankName||"-";
-    if (needDeposit) {
-      document.getElementById("dep-title").textContent="💸 กรุณาชำระ50%ของค่าอาหารก่อนครับ";
-      document.getElementById("dep-desc").textContent="เนื่องจากยอดสั่งเกิน ฿300 ชำระมัดจำ 50% ของค่าอาหารก่อนครับ สว่นที่เหลือชำระเมื่อได้รับสินค้าแล้วครับ";
-      document.getElementById("dep-amount-label").textContent="ยอดมัดจำ";
-    } else {
-      document.getElementById("dep-title").textContent="💸 กรุณาชำระเงิน";
-      document.getElementById("dep-desc").textContent="กรุณาโอนเงินตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์";
-      document.getElementById("dep-amount-label").textContent="ยอดที่ต้องโอน";
-    }
-    showPage("page-deposit"); return;
+    await doCreateOrder(name, phone, address, note, payment, items);
+  } finally {
+    isSubmittingOrder = false;
+    if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
   }
-  await doCreateOrder(name, phone, address, note, payment, items);
 }
 
 async function submitOrderWithDeposit() {
+  if (isSubmittingOrder) return; // ✅ กันกดซ้ำ
   if (String(currentMember?.status || "").toLowerCase() === "block") {
     showPage("page-suspended"); return;
   }
@@ -1941,7 +1953,17 @@ async function submitOrderWithDeposit() {
   const payment = document.getElementById("f-payment").value;
   if (!address) { showToast("กรุณากรอกที่อยู่จัดส่งครับ"); showPage("page-cart"); return; }
   if (!userLat || !userLng) { showToast("กรุณาปักหมุดตำแหน่งก่อนครับ"); showPage("page-cart"); return; }
-  await doCreateOrder(name, phone, address, note, payment, Object.values(cart));
+
+  isSubmittingOrder = true;
+  const depBtn = document.getElementById("deposit-order-btn");
+  if (depBtn) { depBtn.disabled = true; depBtn.textContent = "กำลังส่งออเดอร์..."; }
+
+  try {
+    await doCreateOrder(name, phone, address, note, payment, Object.values(cart));
+  } finally {
+    isSubmittingOrder = false;
+    if (depBtn) { depBtn.disabled = false; depBtn.textContent = "✅ ยืนยันสั่งอาหาร"; }
+  }
 }
 
 async function doCreateOrder(name, phone, address, note, payment, items) {

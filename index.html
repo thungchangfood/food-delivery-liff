@@ -2307,8 +2307,11 @@ async function copySuccessBankAccount() {
   try { await navigator.clipboard.writeText(a); showToast("📋 คัดลอกเลขบัญชีแล้ว"); } catch(_) { showToast("คัดลอกไม่สำเร็จ"); }
 }
 
-if (new URLSearchParams(window.location.search).get("page") === "shop") {
+const _pageParam = new URLSearchParams(window.location.search).get("page");
+if (_pageParam === "shop") {
   window.location.replace("shop.html" + window.location.search);
+} else if (_pageParam === "rider") {
+  window.location.replace("rider.html" + window.location.search);
 } else {
   init();
 }

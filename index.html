@@ -319,7 +319,11 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       <div class="first-order-banner-sub">ไม่มีขั้นต่ำ สั่งได้เลยครับ</div>
     </div>
   </div>
-
+  
+  <div id="rider-warning-banner" style="display:none;margin:10px 16px 0;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:12px;padding:12px 14px;font-size:13px;color:#92400e;line-height:1.6;">
+  ⏳ ตอนนี้ไรเดอร์ไม่ว่างเลยครับ อาจใช้เวลารอนานกว่าปกติ แต่ยังสั่งได้ตามปกติครับ
+  </div>
+  
   <div class="search-wrap" style="margin-top:10px;">
     <input class="search-input" id="search-input" placeholder="🔍  ค้นหาร้านอาหาร..." oninput="filterShops()">
   </div>
@@ -748,6 +752,7 @@ async function loadInitialData(isRetry) {
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
+        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
@@ -786,6 +791,7 @@ async function loadInitialData(isRetry) {
       }
       currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
       renderFirstOrderBanner();
+      updateRiderWarningBanner();   
       prefetchAllMenus();
       // ── เช็ค ?page=track จาก Rich Menu ──
       const urlPage = new URLSearchParams(window.location.search).get("page");
@@ -840,7 +846,11 @@ function renderFirstOrderBanner() {
   if (!banner) return;
   banner.style.display = (firstOrderFreeEnabled && currentMember?.isFirstOrder) ? "flex" : "none";
 }
-
+function updateRiderWarningBanner() {
+  const el = document.getElementById("rider-warning-banner");
+  if (!el) return;
+  el.style.display = (availableRiderCount <= 0) ? "block" : "none";
+}
 function showRegisterPage() {
   if (lineProfile) {
     document.getElementById("reg-name").value = lineProfile.displayName || "";
@@ -888,6 +898,7 @@ async function refreshShopData(silent) {
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
+        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
@@ -932,6 +943,7 @@ async function refreshShopData(silent) {
     renderWeekly();
     renderFeaturedMenus();
     renderFirstOrderBanner();
+    updateRiderWarningBanner();   
     if (!silent) showToast("✅ อัปเดตข้อมูลล่าสุดแล้ว");
   } catch(e) {
     showToast("❌ รีเฟรชไม่สำเร็จ ลองใหม่อีกครั้งครับ");
@@ -953,6 +965,7 @@ async function checkAndLoadShops() {
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
+        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
@@ -984,6 +997,7 @@ async function checkAndLoadShops() {
     resetShopFilters(); // ✅ เริ่มดูร้านใหม่แบบไม่มีฟิลเตอร์ค้างจากรอบก่อน
     renderCategories();
     renderFirstOrderBanner();
+    updateRiderWarningBanner();   
     showPage("page-shops");
     prefetchAllMenus();
     restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน
@@ -1568,6 +1582,7 @@ function showShopMenuPage(shop) {
   }
 }
 let FREE_DELIVERY_THRESHOLD = 160; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
+let availableRiderCount = 1; // ค่าเริ่มต้น จะถูกอัปเดตจาก getSystemStatus
 
 // ✅ โปรโค้ดของระบบ: โค้ดเดียวกันสามารถให้ผลลัพธ์ต่างกันได้ตาม promoType ที่แอดมินตั้งไว้หลังบ้าน
 // promoType ที่รองรับ: "free_delivery" (ส่งฟรี, ค่า default ถ้าไม่ได้ส่ง promoType มา — เพื่อ backward compatible),

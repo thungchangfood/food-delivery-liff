@@ -828,7 +828,7 @@ function renderOrders() {
           <div class="section-label">ข้อมูลลูกค้า</div>
           <div class="info-row">
             <span class="info-key">ชื่อ</span>
-            <span class="info-val">${memberName}</span>
+            <span class="info-val">${escapeHtml(memberName)}</span>
           </div>
           <div class="info-row">
             <span class="info-key">เบอร์</span>
@@ -849,11 +849,11 @@ function renderOrders() {
           </div>
           <div class="info-row">
             <span class="info-key">ที่อยู่</span>
-            <span class="info-val">${o.address || "-"}<br>${mapLink}</span>
+            <span class="info-val">${escapeHtml(o.address) || "-"}<br>${mapLink}</span>
           </div>
           ${o.note ? `<div class="info-row">
             <span class="info-key">หมายเหตุ</span>
-            <span class="info-val" style="color:#b45309;">${o.note}</span>
+            <span class="info-val" style="color:#b45309;">${escapeHtml(o.note)}</span>
           </div>` : ""}
         </div>
 
@@ -863,7 +863,7 @@ function renderOrders() {
           <div class="items-list">
             ${items.map(i => `
               <div class="item-row">
-                <span class="item-name">${i.name}</span>
+                <span class="item-name">${escapeHtml(i.name)}</span>
                 <span class="item-qty">×${i.qty}</span>
                 <span class="item-price">฿${i.price * i.qty}</span>
               </div>`).join("")}
@@ -1006,6 +1006,15 @@ function parseItems(str) {
 function formatTime(d) {
   if (!d) return "-";
   return new Date(d).toLocaleString("th-TH", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" });
+}
+function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 function showToast(msg) {
   const t = document.getElementById("toast");

@@ -235,6 +235,11 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <button class="btn-toggle-close" id="btn-toggle" onclick="toggleSystem()">ปิดระบบ</button>
   </div>
 
+  <div class="system-bar" id="auto-confirm-bar" style="background:#eff6ff;">
+    <div class="system-status" id="auto-confirm-status-text" style="color:#1d4ed8;">🤖 ยืนยันอัตโนมัติ: ปิดอยู่</div>
+    <button class="btn-toggle-open" id="btn-toggle-auto-confirm" onclick="toggleAutoConfirm()">เปิดโหมดยืนยันอัตโนมัติ</button>
+  </div>
+  
   <div class="refresh-bar" id="refresh-bar">
     <span><span class="refresh-dot"></span>รีเฟรชอัตโนมัติทุก 10 วินาที</span>
     <span id="last-refresh">-</span>
@@ -485,6 +490,7 @@ let currentFilter = "all";
 let prevNewCount = 0;
 let refreshTimer = null;
 let systemOpen = true;
+let autoConfirmEnabled = false;
 let restaurantsMap = {};
 let restaurantGpPlanMap = {}; // restaurantId → gpPlan (ใช้เช็คร้าน gp_self)
 let membersMap = {};      // memberId → { name, phone }
@@ -589,6 +595,8 @@ async function loadSystemStatus() {
       if (res.data.deliveryDiscountThreshold != null) {
         deliveryDiscountThreshold = Number(res.data.deliveryDiscountThreshold);
       }
+      autoConfirmEnabled = !!res.data.autoConfirmEnabled;
+      updateAutoConfirmUI(autoConfirmEnabled);
     }
   } catch(_) {}
 }
@@ -610,6 +618,40 @@ function updateSystemUI(isOpen, reason) {
     if (reason) input.value = reason;
   }
 }
+
+function updateAutoConfirmUI(enabled) {
+  const bar = document.getElementById("auto-confirm-bar");
+  const txt = document.getElementById("auto-confirm-status-text");
+  const btn = document.getElementById("btn-toggle-auto-confirm");
+  if (enabled) {
+    bar.style.background = "#fdf4ff";
+    txt.style.color = "#7e22ce";
+    txt.textContent = "🤖 ยืนยันอัตโนมัติ: เปิดอยู่ (เงินสดเท่านั้น ไม่เกิน ฿300/ออเดอร์)";
+    btn.className = "btn-toggle-close";
+    btn.textContent = "ปิดโหมดยืนยันอัตโนมัติ";
+  } else {
+    bar.style.background = "#eff6ff";
+    txt.style.color = "#1d4ed8";
+    txt.textContent = "🤖 ยืนยันอัตโนมัติ: ปิดอยู่";
+    btn.className = "btn-toggle-open";
+    btn.textContent = "เปิดโหมดยืนยันอัตโนมัติ";
+  }
+}
+async function toggleAutoConfirm() {
+  const btn = document.getElementById("btn-toggle-auto-confirm");
+  const next = !autoConfirmEnabled;
+  if (next && !confirm("เปิดโหมดยืนยันอัตโนมัติ?\nออเดอร์ใหม่ทั้งหมดจะถูกยืนยันทันทีโดยไม่ต้องรอแอดมินกด รับเฉพาะเงินสดปลายทาง และจำกัดยอดไม่เกิน ฿300/ออเดอร์ครับ")) return;
+  btn.disabled = true;
+  try {
+    const res = await apiPost({ action:"setAutoConfirm", enabled: next });
+    if (!res.success) throw new Error(res.error);
+    autoConfirmEnabled = next;
+    updateAutoConfirmUI(autoConfirmEnabled);
+    showToast(autoConfirmEnabled ? "🤖 เปิดโหมดยืนยันอัตโนมัติแล้ว" : "ปิดโหมดยืนยันอัตโนมัติแล้ว");
+  } catch(e) { showToast("เกิดข้อผิดพลาด: " + e.message); }
+  btn.disabled = false;
+}
+
 async function toggleSystem() {
   const btn = document.getElementById("btn-toggle");
   btn.disabled = true;

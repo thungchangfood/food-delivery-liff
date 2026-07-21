@@ -7,240 +7,284 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link rel="preconnect" href="https://lh3.googleusercontent.com">
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+/* ══════════════════════════════════════════════
+   DESIGN TOKENS — ปรับตรงนี้ที่เดียว มีผลทั้งแอป
+   ══════════════════════════════════════════════ */
+:root{
+  --brand:#06C755;
+  --brand-dark:#059c44;
+  --brand-darker:#04833a;
+  --brand-soft:#E7F9EE;
+  --brand-soft2:#D3F5E0;
+  --ink:#16181C;
+  --ink-soft:#6B7280;
+  --ink-faint:#9AA1AC;
+  --line:#EDEFF2;
+  --line-soft:#F4F5F7;
+  --surface:#FFFFFF;
+  --bg:#F7F7F5;
+  --red:#E5484D;
+  --red-soft:#FDECEC;
+  --amber:#F5A524;
+  --amber-soft:#FEF6E7;
+  --blue:#3B82F6;
+  --blue-soft:#EEF4FF;
+
+  --radius-xs:8px;
+  --radius-sm:12px;
+  --radius-md:16px;
+  --radius-lg:22px;
+  --radius-pill:999px;
+
+  --shadow-xs:0 1px 2px rgba(20,20,30,.04);
+  --shadow-sm:0 2px 8px rgba(20,20,30,.06);
+  --shadow-md:0 8px 24px -6px rgba(20,20,30,.12);
+  --shadow-lift:0 10px 30px -8px rgba(6,199,85,.28);
+}
+
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width:480px;margin:0 auto;min-height:100vh;}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-width:480px;margin:0 auto;min-height:100vh;}
 .page{display:none;}.page.active{display:block;}
 .loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:14px;}
-.spinner{width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#06C755;border-radius:50%;animation:spin .8s linear infinite;}
+.spinner{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── Header ── */
-.header{background:#06C755;color:white;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);}
-.header-back{font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:20px;background:rgba(255,255,255,.15);color:white;}
-.header-back:active{transform:scale(.96);}
-.header-title{font-size:17px;font-weight:700;flex:1;}
-.cart-btn{position:relative;cursor:pointer;font-size:16px;display:flex;align-items:center;gap:5px;padding:7px 12px;border:1.5px solid rgba(255,255,255,.6);border-radius:20px;background:rgba(255,255,255,.15);font-weight:600;color:white;}
+.header{background:var(--surface);color:var(--ink);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;border-bottom:1px solid var(--line);}
+.header-back{font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;padding:8px 14px;border:none;border-radius:var(--radius-pill);background:var(--line-soft);color:var(--ink);}
+.header-back:active{transform:scale(.96);background:var(--line);}
+.header-title{font-size:17px;font-weight:800;flex:1;letter-spacing:-.2px;}
+.cart-btn{position:relative;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:5px;padding:8px 14px;border:none;border-radius:var(--radius-pill);background:var(--brand-soft);font-weight:700;color:var(--brand-darker);}
 .cart-btn:active{transform:scale(.96);}
-.cart-badge{position:absolute;top:-4px;right:-4px;background:#FF3B30;color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.cart-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:white;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--surface);}
 
 /* ── Register ── */
-.register-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
-.register-card{background:white;border-radius:16px;padding:28px;width:100%;max-width:360px;box-shadow:0 4px 20px rgba(0,0,0,.08);}
-.register-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 12px;display:block;border:3px solid #06C755;}
-.register-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:6px;}
-.register-sub{font-size:13px;color:#888;text-align:center;margin-bottom:20px;}
-.form-label{font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;}
-.form-input{width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;transition:.15s;}
-.form-input:focus{border-color:#06C755;}
-.btn-green{width:100%;background:#06C755;color:white;border:none;border-radius:14px;padding:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;}
+.register-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;position:relative;overflow:hidden;background:radial-gradient(120% 100% at 50% 0%,#0d3b22 0%,#06C755 42%,#0a2e1a 100%);}
+.register-wrap::before,.register-wrap::after{content:"";position:absolute;border-radius:50%;filter:blur(70px);opacity:.35;pointer-events:none;}
+.register-wrap::before{width:280px;height:280px;background:#ffffff;top:-110px;right:-90px;}
+.register-wrap::after{width:220px;height:220px;background:#04833a;bottom:-90px;left:-70px;}
+.register-card{position:relative;z-index:1;background:rgba(255,255,255,.98);backdrop-filter:blur(20px);border-radius:26px;padding:32px 26px;width:100%;max-width:360px;box-shadow:0 24px 60px -14px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.5);}
+.register-card .btn-green{border-radius:16px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));box-shadow:0 12px 26px -8px rgba(6,199,85,.5);}
+.register-avatar{width:82px;height:82px;border-radius:50%;margin:0 auto 14px;display:block;border:3px solid var(--surface);box-shadow:0 0 0 4px var(--brand-soft2),0 8px 20px rgba(6,199,85,.28);}
+.register-title{font-size:21px;font-weight:800;text-align:center;margin-bottom:6px;letter-spacing:-.4px;background:linear-gradient(90deg,#059c44,#06C755);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.register-sub{font-size:13.5px;color:var(--ink-soft);text-align:center;margin-bottom:22px;line-height:1.5;}
+.form-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;display:block;letter-spacing:.2px;}
+.form-input{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;font-size:14.5px;font-family:inherit;outline:none;margin-bottom:14px;transition:.2s;background:#FAFAFA;}
+.form-input:focus{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-soft);background:var(--surface);}
+.btn-green{width:100%;background:var(--brand);color:white;border:none;border-radius:var(--radius-sm);padding:14px;font-size:15.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;box-shadow:var(--shadow-lift);}
 .btn-green:active{transform:scale(.98);}
-.btn-green:disabled{background:#ccc;cursor:not-allowed;}
+.btn-green:disabled{background:var(--ink-faint);cursor:not-allowed;box-shadow:none;}
 
 /* ── Closed ── */
-.closed-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(180deg,#fef2f2,#fff 45%);}
-.closed-card{background:white;border-radius:24px;padding:36px 28px;width:100%;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.08);text-align:center;}
-.closed-icon-wrap{width:84px;height:84px;border-radius:50%;background:linear-gradient(135deg,#fef2f2,#fee2e2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
-.closed-icon{font-size:40px;}
-.closed-title{font-size:19px;font-weight:700;margin-bottom:8px;color:#1a1a1a;}
-.closed-msg{font-size:14px;color:#888;line-height:1.6;margin-bottom:20px;}
-.closed-hours{display:flex;align-items:center;gap:12px;background:#f9fafb;border:1px solid #eee;border-radius:14px;padding:14px 16px;margin-bottom:22px;text-align:left;}
+.closed-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(180deg,var(--red-soft),var(--bg) 45%);}
+.closed-card{background:var(--surface);border-radius:var(--radius-lg);padding:36px 28px;width:100%;max-width:340px;box-shadow:var(--shadow-md);text-align:center;}
+.closed-icon-wrap{width:84px;height:84px;border-radius:50%;background:var(--red-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.closed-icon{font-size:38px;}
+.closed-title{font-size:19px;font-weight:800;margin-bottom:8px;color:var(--ink);letter-spacing:-.3px;}
+.closed-msg{font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
+.closed-hours{display:flex;align-items:center;gap:12px;background:var(--line-soft);border:none;border-radius:var(--radius-md);padding:14px 16px;margin-bottom:22px;text-align:left;}
 .closed-hours-icon{font-size:22px;}
-.closed-hours-label{font-size:11px;color:#aaa;font-weight:600;}
-.closed-hours-time{font-size:15px;font-weight:700;color:#1a1a1a;}
+.closed-hours-label{font-size:11px;color:var(--ink-faint);font-weight:700;}
+.closed-hours-time{font-size:15px;font-weight:800;color:var(--ink);}
 
 /* ── Shop page ── */
-.search-wrap{background:white;padding:10px 16px;border-bottom:.5px solid #ececec;}
-.search-input{width:100%;background:#f5f5f5;border:none;border-radius:20px;padding:10px 16px;font-size:14px;font-family:inherit;outline:none;}
-.cat-scroll{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;background:white;border-bottom:.5px solid #ececec;}
+.search-wrap{background:var(--surface);padding:10px 16px;border-bottom:1px solid var(--line);}
+.search-input{width:100%;background:var(--line-soft);border:1.5px solid transparent;border-radius:var(--radius-pill);padding:11px 16px;font-size:14px;font-family:inherit;outline:none;transition:.15s;}
+.search-input:focus{border-color:var(--brand);background:var(--surface);box-shadow:var(--shadow-xs);}
+.cat-scroll{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--line);}
 .cat-scroll::-webkit-scrollbar{display:none;}
-.cat-chip{white-space:nowrap;padding:6px 14px;border-radius:20px;font-size:13px;font-family:inherit;border:1.5px solid #e0e0e0;background:white;cursor:pointer;transition:.15s;}
-.cat-chip.active{background:#06C755;color:white;border-color:#06C755;}
+.cat-chip{white-space:nowrap;padding:8px 16px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;font-family:inherit;border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);cursor:pointer;transition:.15s;}
+.cat-chip.active{background:var(--ink);color:white;border-color:var(--ink);}
 
 /* ── Weekly Picks ── */
-.weekly-section{padding:14px 0 4px;}
-.weekly-title{padding:0 16px 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.weekly-section{padding:18px 0 4px;}
+.weekly-title{padding:0 16px 12px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:6px;letter-spacing:-.2px;}
 .weekly-scroll{display:flex;flex-direction:column;gap:14px;padding:0 16px 14px;}
-.weekly-card{width:100%;background:white;border-radius:18px;overflow:hidden;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.10);position:relative;transition:.15s;display:flex;flex-direction:column;}
-.weekly-card:active{transform:scale(.98);}
-.weekly-badge{position:absolute;top:10px;right:10px;background:#F59E0B;color:white;font-size:11px;font-weight:700;padding:4px 9px;border-radius:10px;z-index:2;}
-.weekly-card-header{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;}
-.weekly-card-logo{flex-shrink:0;width:54px;height:54px;border-radius:12px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;}
+.weekly-card{width:100%;background:var(--surface);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;box-shadow:var(--shadow-sm);position:relative;transition:.15s;display:flex;flex-direction:column;}
+.weekly-card:active{transform:scale(.985);}
+.weekly-badge{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);color:var(--amber);font-size:11px;font-weight:800;padding:5px 10px;border-radius:var(--radius-pill);z-index:2;box-shadow:var(--shadow-xs);}
+.weekly-card-header{display:flex;align-items:center;gap:12px;padding:16px 16px 10px;}
+.weekly-card-logo{flex-shrink:0;width:54px;height:54px;border-radius:var(--radius-sm);background:var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;}
 .weekly-card-logo img{width:100%;height:100%;object-fit:cover;}
 .weekly-card-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-.weekly-card-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:54px;}
-.weekly-card-meta{font-size:12px;color:#888;}
-.weekly-card-address{font-size:11.5px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.weekly-menu-scroll{display:flex;gap:10px;padding:2px 16px 14px;overflow-x:auto;scrollbar-width:none;}
+.weekly-card-name{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:54px;letter-spacing:-.2px;}
+.weekly-card-meta{font-size:12px;color:var(--ink-soft);}
+.weekly-card-address{font-size:11.5px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.weekly-menu-scroll{display:flex;gap:10px;padding:4px 16px 16px;overflow-x:auto;scrollbar-width:none;}
 .weekly-menu-scroll::-webkit-scrollbar{display:none;}
 .weekly-menu-item{flex-shrink:0;width:84px;cursor:pointer;}
 .weekly-menu-item:active{transform:scale(.95);}
-.weekly-menu-item-img{width:84px;height:84px;border-radius:12px;overflow:hidden;background:#f0f0f0;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:24px;}
+.weekly-menu-item-img{width:84px;height:84px;border-radius:var(--radius-sm);overflow:hidden;background:var(--line-soft);box-shadow:var(--shadow-xs);display:flex;align-items:center;justify-content:center;font-size:24px;}
 /* ── เมนูแนะนำรวม (featured section) ── */
-.featured-card{flex-shrink:0;width:130px;background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);cursor:pointer;transition:.15s;}
+.featured-card{flex-shrink:0;width:132px;background:var(--surface);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:.15s;}
 .featured-card:active{transform:scale(.96);}
-.featured-card-img{width:130px;height:110px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
+.featured-card-img{width:132px;height:112px;background:var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
 .featured-card-img img{width:100%;height:100%;object-fit:cover;}
-.featured-card-info{padding:8px 10px 10px;}
+.featured-card-info{padding:9px 10px 11px;}
 .featured-card-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.featured-card-shop{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.featured-card-price{font-size:13px;font-weight:700;color:#06C755;margin-top:4px;}
+.featured-card-shop{font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.featured-card-price{font-size:13px;font-weight:800;color:var(--brand-darker);margin-top:4px;}
 #featured-scroll::-webkit-scrollbar{display:none;}
-.skeleton-card{flex-shrink:0;width:130px;background:white;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.09);}
-.skeleton-img{width:130px;height:110px;background:#e8e8e8;}
-.skeleton-line{height:10px;background:#e8e8e8;border-radius:4px;margin:8px 10px;}
+.skeleton-card{flex-shrink:0;width:132px;background:var(--surface);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-sm);}
+.skeleton-img{width:132px;height:112px;background:var(--line);}
+.skeleton-line{height:10px;background:var(--line);border-radius:4px;margin:8px 10px;}
 .skeleton-line.short{width:60%;}
 .skeleton-img,.skeleton-line{animation:skeleton-pulse 1.2s ease-in-out infinite;}
 @keyframes skeleton-pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
 /* ── เมนูแนะนำ ── */
-.weekly-menu-item.featured .weekly-menu-item-img{border:2px solid #06C755;box-shadow:0 2px 8px rgba(6,199,85,.2);}
-.weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:#1a1a1a;}
+.weekly-menu-item.featured .weekly-menu-item-img{border:2px solid var(--brand);box-shadow:0 3px 10px rgba(6,199,85,.18);}
+.weekly-menu-item.featured .weekly-menu-item-name{font-weight:700;color:var(--ink);}
 .weekly-menu-item.featured .weekly-menu-item-price{font-size:12px;}
-.featured-badge{display:inline-block;background:#06C755;color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:5px;margin-bottom:3px;}
-.discount-badge{display:inline-block;background:#EF4444;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:5px;vertical-align:middle;}
+.featured-badge{display:inline-block;background:var(--brand);color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;margin-bottom:3px;}
+.discount-badge{display:inline-block;background:var(--red);color:white;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;margin-left:5px;vertical-align:middle;}
 .weekly-menu-item-img img{width:100%;height:100%;object-fit:cover;}
-.weekly-menu-item-name{font-size:11px;color:#555;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;}
-.weekly-menu-item-price{font-size:11px;color:#06C755;font-weight:700;text-align:center;margin-top:1px;}
-.weekly-menu-empty{padding:0 16px 14px;font-size:12px;color:#bbb;}
+.weekly-menu-item-name{font-size:11px;color:var(--ink-soft);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;}
+.weekly-menu-item-price{font-size:11px;color:var(--brand-darker);font-weight:800;text-align:center;margin-top:1px;}
+.weekly-menu-empty{padding:0 16px 14px;font-size:12px;color:var(--ink-faint);}
 
 /* ── Shop grid ── */
-.section-title{padding:14px 16px 8px;font-size:15px;font-weight:700;}
+.section-title{padding:16px 16px 10px;font-size:16px;font-weight:800;letter-spacing:-.2px;}
 .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 16px;}
-.shop-card{background:white;border-radius:14px;overflow:hidden;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:.15s;}
+.shop-card{background:var(--surface);border-radius:var(--radius-md);overflow:hidden;cursor:pointer;box-shadow:var(--shadow-sm);transition:.15s;}
 .shop-card:active{transform:scale(.97);}
-.shop-img{width:100%;height:130px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;position:relative;}
+.shop-img{width:100%;height:130px;background:var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;position:relative;}
 .shop-img img{width:100%;height:130px;object-fit:cover;}
-.shop-info{padding:8px 8px 10px;}
-.shop-name{font-size:12.5px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.shop-meta{font-size:11px;color:#888;}
-.shop-open{position:absolute;top:6px;right:6px;background:#16a34a;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
-.shop-closed{position:absolute;top:6px;right:6px;background:#dc2626;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
-.shop-closing-soon{position:absolute;top:6px;right:6px;background:#F59E0B;color:white;font-size:10px;padding:3px 8px;border-radius:9px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.25);}
-.track-btn{margin:12px 16px 0;background:white;border:1.5px solid #06C755;color:#06C755;border-radius:12px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;}
+.shop-info{padding:10px 10px 12px;}
+.shop-name{font-size:13px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.shop-meta{font-size:11.5px;color:var(--ink-faint);}
+.shop-open{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);color:#16a34a;font-size:10.5px;padding:4px 9px;border-radius:var(--radius-pill);font-weight:800;box-shadow:var(--shadow-xs);}
+.shop-closed{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);color:var(--red);font-size:10.5px;padding:4px 9px;border-radius:var(--radius-pill);font-weight:800;box-shadow:var(--shadow-xs);}
+.shop-closing-soon{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);color:#b45309;font-size:10.5px;padding:4px 9px;border-radius:var(--radius-pill);font-weight:800;box-shadow:var(--shadow-xs);}
+.track-btn{margin:14px 16px 0;background:var(--surface);border:1.5px solid var(--line);color:var(--ink);border-radius:var(--radius-sm);padding:13px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;width:calc(100% - 32px);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow-xs);}
+.track-btn:active{transform:scale(.98);}
 
 /* ── First Order Banner (หน้าร้าน) ── */
-.first-order-banner{margin:10px 16px 0;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+.first-order-banner{margin:12px 16px 0;background:linear-gradient(120deg,var(--brand-soft),var(--brand-soft2));border:none;border-radius:var(--radius-md);padding:13px 15px;display:flex;align-items:center;gap:10px;}
 .first-order-banner-icon{font-size:28px;flex-shrink:0;}
 .first-order-banner-text{flex:1;}
-.first-order-banner-title{font-size:14px;font-weight:700;color:#15803d;}
-.first-order-banner-sub{font-size:12px;color:#16a34a;margin-top:2px;}
+.first-order-banner-title{font-size:14px;font-weight:800;color:var(--brand-darker);}
+.first-order-banner-sub{font-size:12px;color:var(--brand-dark);margin-top:2px;}
 
 /* ── Menu page ── */
-.shop-hero{height:200px;background:#fff;position:relative;overflow:hidden;}
-.shop-hero img{width:100%;height:100%;object-fit:contain;padding:4px;background:#fff;}
+.shop-hero{height:200px;background:var(--surface);position:relative;overflow:hidden;}
+.shop-hero img{width:100%;height:100%;object-fit:contain;padding:4px;background:var(--surface);}
 .shop-hero-emoji{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:64px;}
-.shop-hero-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.65));padding:14px 16px;}
-.shop-hero-name{color:white;font-size:20px;font-weight:700;}
-.shop-hero-address{color:rgba(255,255,255,.85);font-size:12px;margin-top:3px;display:flex;align-items:flex-start;gap:4px;line-height:1.4;}
-.shop-hero-sub{color:rgba(255,255,255,.8);font-size:13px;margin-top:2px;}
-.shop-hours-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:white;border-bottom:.5px solid #ececec;font-size:13px;}
-.shop-hours-bar .hb-time{color:#555;font-weight:600;}
-.shop-hours-bar .hb-status{margin-left:auto;font-weight:700;padding:3px 10px;border-radius:10px;font-size:11.5px;}
-.shop-hours-bar .hb-status.open{background:#dcfce7;color:#16a34a;}
-.shop-hours-bar .hb-status.soon{background:#fef3c7;color:#b45309;}
-.shop-hours-bar .hb-status.closed{background:#fee2e2;color:#dc2626;}
+.shop-hero-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.68));padding:16px 16px 14px;}
+.shop-hero-name{color:white;font-size:20px;font-weight:800;letter-spacing:-.3px;}
+.shop-hero-address{color:rgba(255,255,255,.88);font-size:12px;margin-top:3px;display:flex;align-items:flex-start;gap:4px;line-height:1.4;}
+.shop-hero-sub{color:rgba(255,255,255,.82);font-size:13px;margin-top:2px;}
+.shop-hours-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;margin:-14px 12px 0;position:relative;z-index:2;background:var(--surface);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);font-size:13px;}
+.shop-hours-bar .hb-time{color:var(--ink-soft);font-weight:600;}
+.shop-hours-bar .hb-status{margin-left:auto;font-weight:800;padding:4px 11px;border-radius:var(--radius-pill);font-size:11.5px;}
+.shop-hours-bar .hb-status.open{background:var(--brand-soft);color:#16a34a;}
+.shop-hours-bar .hb-status.soon{background:var(--amber-soft);color:#b45309;}
+.shop-hours-bar .hb-status.closed{background:var(--red-soft);color:var(--red);}
 
 /* ── Menu items ── */
-.menu-cat-title{padding:12px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;background:#f5f5f5;}
-.menu-item{display:flex;align-items:center;gap:12px;background:white;border-radius:14px;cursor:pointer;transition:.1s;padding:12px 14px;margin:0 16px 10px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.menu-item:active{background:#f9f9f9;}
-.menu-item-img-wrap{flex-shrink:0;width:90px;height:90px;overflow:hidden;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:28px;border-radius:12px;}
+.menu-cat-title{padding:16px 16px 6px;font-size:12px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.6px;background:var(--bg);position:sticky;top:57px;z-index:5;}
+.menu-item{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:var(--radius-md);cursor:pointer;transition:.1s;padding:12px 14px;margin:0 16px 10px;box-shadow:var(--shadow-xs);}
+.menu-item:active{background:var(--line-soft);}
+.menu-item-img-wrap{flex-shrink:0;width:90px;height:90px;overflow:hidden;background:var(--line-soft);display:flex;align-items:center;justify-content:center;font-size:28px;border-radius:var(--radius-sm);}
 .menu-item-img-wrap img{width:100%;height:100%;object-fit:cover;}
 .menu-item-body{flex:1;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0;}
-.menu-item-name{font-size:15px;font-weight:600;margin-bottom:3px;line-height:1.3;}
-.menu-item-desc{font-size:12px;color:#999;line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.menu-item-name{font-size:15px;font-weight:700;margin-bottom:3px;line-height:1.3;}
+.menu-item-desc{font-size:12px;color:var(--ink-faint);line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .menu-item-footer{display:flex;align-items:center;justify-content:space-between;}
-.menu-item-price{font-size:16px;font-weight:700;color:#06C755;}
-.btn-add{width:34px;height:34px;background:#06C755;border:none;border-radius:50%;color:white;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 2px 8px rgba(6,199,85,.4);transition:.15s;}
-.btn-add:active{transform:scale(.88);box-shadow:0 1px 4px rgba(6,199,85,.4);}
-.qty-ctrl{display:flex;align-items:center;gap:2px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:24px;padding:3px;}
-.qty-btn{width:26px;height:26px;border-radius:50%;border:none;background:white;color:#06C755;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:.15s;}
+.menu-item-price{font-size:16px;font-weight:800;color:var(--brand-darker);}
+.btn-add{width:34px;height:34px;background:var(--brand);border:none;border-radius:50%;color:white;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 3px 10px rgba(6,199,85,.28);transition:.15s;}
+.btn-add:active{transform:scale(.88);box-shadow:0 1px 4px rgba(6,199,85,.3);}
+.qty-ctrl{display:flex;align-items:center;gap:2px;background:var(--brand-soft);border:none;border-radius:var(--radius-pill);padding:3px;}
+.qty-btn{width:26px;height:26px;border-radius:50%;border:none;background:var(--surface);color:var(--brand-darker);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-xs);transition:.15s;}
 .qty-btn:active{transform:scale(.85);}
-.qty-btn.plus{background:#06C755;color:white;box-shadow:0 1px 3px rgba(6,199,85,.4);}
-.qty-num{font-size:14px;font-weight:700;min-width:26px;text-align:center;color:#1a1a1a;}
+.qty-btn.plus{background:var(--brand);color:white;box-shadow:0 2px 6px rgba(6,199,85,.35);}
+.qty-num{font-size:14px;font-weight:800;min-width:26px;text-align:center;color:var(--ink);}
 
 /* ── Options Bottom Sheet ── */
-.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:.25s;}
+.sheet-overlay{position:fixed;inset:0;background:rgba(15,15,20,.45);z-index:200;opacity:0;pointer-events:none;transition:.25s;}
 .sheet-overlay.show{opacity:1;pointer-events:all;}
-.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:white;border-radius:20px 20px 0 0;z-index:201;transition:.3s cubic-bezier(.32,.72,0,1);max-height:90vh;overflow-y:auto;}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:var(--surface);border-radius:24px 24px 0 0;z-index:201;transition:.32s cubic-bezier(.32,.72,0,1);max-height:90vh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.15);}
 .sheet.show{transform:translateX(-50%) translateY(0);}
-.sheet-handle{width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:10px auto 0;}
+.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:2px;margin:12px auto 0;}
 .sheet-header{padding:14px 16px 10px;}
-.sheet-title{font-size:17px;font-weight:700;margin-bottom:2px;}
-.sheet-price{font-size:15px;color:#06C755;font-weight:700;}
+.sheet-title{font-size:17px;font-weight:800;margin-bottom:3px;letter-spacing:-.2px;}
+.sheet-price{font-size:15px;color:var(--brand-darker);font-weight:800;}
 .sheet-section{padding:10px 16px;}
-.sheet-section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
-.sheet-optional-tag{text-transform:none;font-weight:500;color:#bbb;letter-spacing:0;}
+.sheet-section-label{font-size:12px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px;}
+.sheet-optional-tag{text-transform:none;font-weight:500;color:var(--ink-faint);letter-spacing:0;}
 .option-chips{display:flex;flex-wrap:wrap;gap:8px;}
-.option-chip{padding:7px 14px;border-radius:20px;border:1.5px solid #e0e0e0;background:white;font-size:13px;font-family:inherit;cursor:pointer;transition:.15s;font-weight:500;}
-.option-chip.selected{background:#06C755;color:white;border-color:#06C755;}
-.option-chip-extra{font-size:11px;opacity:.8;}
-.sheet-qty{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:.5px solid #f0f0f0;}
-.sheet-qty-label{font-size:14px;font-weight:600;}
-.sheet-add-btn{margin:12px 16px 24px;padding:14px;background:#06C755;color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;width:calc(100% - 32px);}
+.option-chip{padding:8px 15px;border-radius:var(--radius-pill);border:1.5px solid var(--line);background:var(--surface);font-size:13px;font-family:inherit;cursor:pointer;transition:.15s;font-weight:600;color:var(--ink-soft);}
+.option-chip.selected{background:var(--ink);color:white;border-color:var(--ink);}
+.option-chip-extra{font-size:11px;opacity:.85;}
+.sheet-qty{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-top:1px solid var(--line-soft);}
+.sheet-qty-label{font-size:14px;font-weight:700;}
+.sheet-add-btn{margin:14px 16px 24px;padding:15px;background:var(--brand);color:white;border:none;border-radius:var(--radius-sm);font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;width:calc(100% - 32px);box-shadow:var(--shadow-lift);}
 
 /* ── Cart page ── */
-.cart-section{background:white;margin-bottom:10px;}
-.cart-section-title{padding:14px 16px 8px;font-size:14px;font-weight:700;border-bottom:.5px solid #f0f0f0;}
-.cart-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:.5px solid #f5f5f5;}
+.cart-section{background:var(--surface);margin:0 12px 12px;border-radius:var(--radius-md);box-shadow:var(--shadow-xs);overflow:hidden;}
+.cart-section-title{padding:14px 16px 10px;font-size:14px;font-weight:800;border-bottom:1px solid var(--line-soft);letter-spacing:-.1px;}
+.cart-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line-soft);}
+.cart-item:last-child{border-bottom:none;}
 .cart-item-name{flex:1;font-size:14px;font-weight:600;line-height:1.4;}
-.cart-item-opt{font-size:12px;color:#888;font-weight:400;}
-.cart-item-price{font-size:15px;font-weight:700;min-width:60px;text-align:right;}
-.fg{padding:12px 16px;border-bottom:.5px solid #f0f0f0;}
-.fl{font-size:13px;font-weight:600;color:#555;margin-bottom:6px;display:block;}
-.fi{width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;transition:.15s;background:white;}
-.fi:focus{border-color:#06C755;}
-.fi[readonly]{background:#f9f9f9;color:#555;cursor:default;}
+.cart-item-opt{font-size:12px;color:var(--ink-faint);font-weight:400;}
+.cart-item-price{font-size:15px;font-weight:800;min-width:60px;text-align:right;}
+.fg{padding:12px 16px;border-bottom:1px solid var(--line-soft);}
+.fg:last-child{border-bottom:none;}
+.fl{font-size:13px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;display:block;}
+.fi{width:100%;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:.15s;background:var(--surface);}
+.fi:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);}
+.fi[readonly]{background:var(--line-soft);color:var(--ink-soft);cursor:default;}
 
 /* ── Payment method buttons ── */
 .payment-btns{display:flex;gap:10px;}
-.payment-btn{flex:1;border:2px solid #e0e0e0;border-radius:12px;padding:16px 10px;background:white;font-family:inherit;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.payment-btn{flex:1;border:1.5px solid var(--line);border-radius:var(--radius-sm);padding:16px 10px;background:var(--surface);font-family:inherit;cursor:pointer;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;}
 .payment-btn:active{transform:scale(.97);}
 .payment-btn-icon{font-size:26px;}
-.payment-btn-label{font-size:14px;font-weight:700;color:#555;}
-.payment-btn.selected{border-color:#06C755;background:#f0fdf4;}
-.payment-btn.selected .payment-btn-label{color:#06C755;}
-.summary-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:#555;}
-.summary-total{display:flex;justify-content:space-between;padding:14px 16px;font-size:17px;font-weight:700;border-top:.5px solid #ececec;}
-.deposit-notice{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;}
-.free-delivery-notice{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#1d4ed8;}
-.first-order-notice{background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px 14px;margin:10px 16px;font-size:13px;line-height:1.6;color:#15803d;font-weight:600;}
+.payment-btn-label{font-size:13.5px;font-weight:700;color:var(--ink-soft);}
+.payment-btn.selected{border-color:var(--brand);background:var(--brand-soft);}
+.payment-btn.selected::after{content:"✓";position:absolute;top:8px;right:8px;width:18px;height:18px;background:var(--brand);color:white;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.payment-btn.selected .payment-btn-label{color:var(--brand-darker);}
+.summary-row{display:flex;justify-content:space-between;padding:8px 16px;font-size:14px;color:var(--ink-soft);}
+.summary-total{display:flex;justify-content:space-between;padding:15px 16px;font-size:17px;font-weight:800;border-top:1px solid var(--line-soft);margin-top:2px;background:var(--line-soft);}
+.deposit-notice{background:var(--amber-soft);border:none;border-left:3px solid var(--amber);border-radius:var(--radius-sm);padding:12px 14px;margin:0 12px 12px;font-size:13px;line-height:1.6;}
+.free-delivery-notice{background:var(--blue-soft);border:none;border-left:3px solid var(--blue);border-radius:var(--radius-sm);padding:12px 14px;margin:0 12px 12px;font-size:13px;line-height:1.6;color:#1d4ed8;}
+.first-order-notice{background:var(--brand-soft);border:none;border-left:3px solid var(--brand);border-radius:var(--radius-sm);padding:12px 14px;margin:0 12px 12px;font-size:13px;line-height:1.6;color:var(--brand-darker);font-weight:600;}
 
 /* ── Track page ── */
 .track-wrap{padding:16px;}
-.track-card{background:white;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.track-order-id{font-size:16px;font-weight:700;margin-bottom:4px;}
-.track-restaurant{font-size:13px;color:#888;margin-bottom:12px;}
+.track-card{background:var(--surface);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.track-order-id{font-size:16px;font-weight:800;margin-bottom:4px;}
+.track-restaurant{font-size:13px;color:var(--ink-faint);margin-bottom:14px;}
 .progress-wrap{display:flex;align-items:center;margin-bottom:16px;}
 .progress-step{display:flex;flex-direction:column;align-items:center;flex:1;}
-.progress-dot{width:28px;height:28px;border-radius:50%;border:2px solid #e0e0e0;background:white;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.3s;}
-.progress-dot.active{background:#06C755;border-color:#06C755;}
-.progress-dot.done{background:#06C755;border-color:#06C755;}
-.progress-line{height:2px;flex:1;background:#e0e0e0;transition:.3s;}
-.progress-line.done{background:#06C755;}
-.progress-label{font-size:10px;color:#888;margin-top:4px;text-align:center;}
-.progress-label.active{color:#06C755;font-weight:600;}
-.track-items{background:#f9f9f9;border-radius:8px;padding:10px 12px;margin-bottom:10px;}
-.track-item-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
-.track-total{display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding-top:8px;border-top:.5px solid #e8e8e8;margin-top:4px;}
-.rider-info{background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:10px;}
+.progress-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;transition:.3s;}
+.progress-dot.active{background:var(--brand);border-color:var(--brand);box-shadow:0 0 0 5px var(--brand-soft);}
+.progress-dot.done{background:var(--brand);border-color:var(--brand);}
+.progress-line{height:2px;flex:1;background:var(--line);transition:.3s;}
+.progress-line.done{background:var(--brand);}
+.progress-label{font-size:10px;color:var(--ink-faint);margin-top:5px;text-align:center;}
+.progress-label.active{color:var(--brand-darker);font-weight:700;}
+.track-items{background:var(--line-soft);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:10px;}
+.track-item-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;}
+.track-total{display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid var(--line);margin-top:4px;}
+.rider-info{background:var(--brand-soft);border-radius:var(--radius-sm);padding:11px 12px;font-size:13px;margin-bottom:10px;color:var(--brand-darker);font-weight:600;}
 
 /* ── Deposit page ── */
 .dep-wrap{padding:16px;padding-bottom:100px;}
 
 /* ── Success page ── */
 .success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:32px;text-align:center;}
-.success-icon{font-size:72px;margin-bottom:16px;}
-.success-title{font-size:22px;font-weight:700;margin-bottom:8px;}
-.success-sub{font-size:15px;color:#888;line-height:1.6;margin-bottom:20px;}
-.order-id-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 24px;font-size:16px;font-weight:600;color:#15803d;margin-bottom:16px;}
-.payment-info{background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:14px 20px;font-size:14px;line-height:1.8;margin-bottom:16px;text-align:left;width:100%;}
+.success-icon{font-size:68px;margin-bottom:16px;}
+.success-title{font-size:22px;font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
+.success-sub{font-size:15px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
+.order-id-box{background:var(--brand-soft);border:none;border-radius:var(--radius-sm);padding:14px 24px;font-size:16px;font-weight:700;color:var(--brand-darker);margin-bottom:16px;}
+.payment-info{background:var(--amber-soft);border:none;border-left:3px solid var(--amber);border-radius:var(--radius-sm);padding:14px 20px;font-size:14px;line-height:1.8;margin-bottom:16px;text-align:left;width:100%;}
 
 /* ── Shared ── */
-.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;background:white;border-top:.5px solid #ececec;z-index:99;}
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,20,30,.05);z-index:99;}
 .pb-80{padding-bottom:80px;}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:white;padding:10px 20px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:white;padding:11px 20px;border-radius:var(--radius-pill);font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;box-shadow:var(--shadow-md);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
@@ -261,9 +305,9 @@ body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#1a1a1a;max-width
       <img id="reg-avatar" class="register-avatar" src="" style="display:none;">
       <div class="register-title">ยินดีต้อนรับ! 🎉</div>
       <div class="register-sub">กรอกข้อมูลเพื่อเริ่มสั่งอาหารครับ</div>
-      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:#92400e;line-height:1.6;">
-        ⚠️ <strong>ตรวจสอบชื่อและเบอร์โทรให้ถูกต้องก่อนกดยืนยัน</strong><br>
-        หากต้องการแก้ไขภายหลังกรุณาแจ้งแอดมินครับ
+      <div style="display:flex;gap:10px;align-items:flex-start;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1px solid #fde68a;border-radius:14px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#92400e;line-height:1.6;">
+        <span style="font-size:16px;line-height:1;">⚠️</span>
+        <span><strong>ตรวจสอบชื่อและเบอร์โทรให้ถูกต้องก่อนกดยืนยัน</strong><br>หากต้องการแก้ไขภายหลังกรุณาแจ้งแอดมินครับ</span>
       </div>
       <label class="form-label">ชื่อ-นามสกุล *</label>
       <input class="form-input" id="reg-name" placeholder="ชื่อ-นามสกุล">
@@ -592,9 +636,9 @@ let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
 let trackTimer = null, countdownTimer = null, pendingOrderData = null;
-let isSubmittingOrder = false; // ✅ กันกดปุ่มสั่งอาหารซ้ำก่อนหน้าจอเปลี่ยน
+let isSubmittingOrder = false;
 let promoApplied = false;
-let promoInfo = null; // { message, remaining, promoType, value } — promoType/value ตั้งค่าจากฝั่งแอดมิน (ชีท/หลังบ้าน)
+let promoInfo = null;
 let bankAccount = "", bankName = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
@@ -606,15 +650,14 @@ let menusLoaded = false;
 let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
 let businessHoursWeekday = { open: "09:00", close: "20:30" };
 let businessHoursWeekend = { open: "08:30", close: "21:00" };
-  
-// Sheet state
+
 let sheetMenu = null;
 let sheetQty = 1;
 let sheetSelections = {};
+let sheetItemNote = "";
 
-// ── Local state persistence (กู้คืนตะกร้า/ออเดอร์ค้าง ถ้าลูกค้าปัดแอปทิ้งกลางคัน) ──
 const LOCAL_STATE_KEY = "tc_delivery_pending_state";
-const LOCAL_STATE_MAX_AGE_MIN = 60; // ถ้าค้างเกิน 60 นาที ทิ้งไปเลย กันราคา/โปรที่อาจเปลี่ยนไปแล้ว
+const LOCAL_STATE_MAX_AGE_MIN = 60;
 
 function saveLocalState() {
   try {
@@ -637,14 +680,12 @@ function clearLocalState() {
   try { localStorage.removeItem(LOCAL_STATE_KEY); } catch(_) {}
 }
 
-// ✅ เรียกหลัง allShops โหลดเสร็จแล้ว — เช็คว่ามีตะกร้า/ออเดอร์ค้างจากครั้งก่อนไหม
 function restoreLocalStateIfAny() {
   const state = loadLocalState();
   if (!state) return;
   const ageMinutes = (Date.now() - (state.savedAt || 0)) / 60000;
   if (ageMinutes > LOCAL_STATE_MAX_AGE_MIN) { clearLocalState(); return; }
 
-  // ── กรณีที่ 1: มีออเดอร์ที่กำลังจะยืนยันตอนแอปถูกปิดกลางคัน (สำคัญที่สุด) ──
   if (state.pendingOrderData) {
     const shop = allShops.find(s => s.restaurantId === state.pendingOrderData.restaurantId);
     const shopName = shop ? shop.name : "ร้านค้า";
@@ -668,7 +709,6 @@ function restoreLocalStateIfAny() {
     return;
   }
 
-  // ── กรณีที่ 2: ไม่มีออเดอร์ค้าง แต่มีตะกร้าค้างอยู่ — กู้คืนให้เลย ──
   if (state.cart && Object.keys(state.cart).length && state.currentShopId) {
     const shop = allShops.find(s => s.restaurantId === state.currentShopId);
     if (shop && shop.status === "active") {
@@ -688,25 +728,20 @@ function getEffectivePrice(m) {
   return (discount > 0 && discount < original) ? discount : original;
 }
 
-// ── Drive thumbnail ──────────────────────────────────
 function driveThumb(url, w = 300) {
   if (!url) return "";
   let m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w${w}` : url;
 }
 
-// ── API ──────────────────────────────────────────────
 async function apiGet(p) { return (await fetch(`${API}?${p}`)).json(); }
 async function apiPost(body) {
   const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
   return JSON.parse(t);
 }
 
-// ── Menu Cache ───────────────────────────────────────
 const menuCache = {};
 
-// ── ตรวจสอบว่าใช้สิทธิ์ส่งฟรีออเดอร์แรกไปแล้วหรือยัง ──
-// รองรับค่าจาก Google Sheets ที่อาจเป็น string "true", boolean true, หรือ number 1
 function checkIsFirstOrder(memberData) {
   if (!firstOrderFreeEnabled) return false;
   const fod = memberData.firstOrderDone;
@@ -714,11 +749,9 @@ function checkIsFirstOrder(memberData) {
   return !alreadyUsed;
 }
 
-// ── INIT ─────────────────────────────────────────────
 async function init() {
   try {
     await liff.init({ liffId: LIFF_ID });
-    // ── บังคับเปิดใน LINE เท่านั้น ──
     if (!liff.isInClient()) {
       document.getElementById("page-loading").innerHTML = `
         <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
@@ -741,7 +774,6 @@ async function init() {
   await loadInitialData(false);
 }
 
-// ✅ แยกออกมาเป็นฟังก์ชันเดี่ยว เพื่อลองโหลดใหม่อัตโนมัติเวลาเน็ตสะดุด
 async function loadInitialData(isRetry) {
   try {
     const [memberRes, statusRes, shopsRes] = await Promise.all([
@@ -785,7 +817,6 @@ async function loadInitialData(isRetry) {
     renderCategories(); renderShops(allShops);
     if (memberRes.success) {
       currentMember = memberRes.data;
-      // ✅ เช็คสถานะระงับทันที ก่อนให้เข้าดูร้าน/สั่งอาหารเลย
       if (String(currentMember.status || "").toLowerCase() === "block") {
         showPage("page-suspended");
         return;
@@ -794,22 +825,20 @@ async function loadInitialData(isRetry) {
       renderFirstOrderBanner();
       updateRiderWarningBanner();   
       prefetchAllMenus();
-      // ── เช็ค ?page=track จาก Rich Menu ──
       const urlPage = new URLSearchParams(window.location.search).get("page");
       if (urlPage === "track") {
-        showPage("page-shops"); // render shops ไว้เพื่อให้ปุ่ม ← กลับได้
+        showPage("page-shops");
         goTrack();
       } else {
         showPage("page-shops");
       }
-      restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน (จะ override หน้าที่แสดงถ้าเจอ)
+      restoreLocalStateIfAny();
     } else {
       showRegisterPage();
     }
   } catch(e) {
     console.error("loadInitialData:", e);
     if (!isRetry) {
-      // เน็ตอาจสะดุดชั่วคราว ลองใหม่แบบเงียบๆ อีกครั้งก่อน
       setTimeout(() => loadInitialData(true), 1200);
     } else {
       document.getElementById("page-loading").innerHTML = `
@@ -828,7 +857,6 @@ async function prefetchAllMenus() {
   try {
     const r = await apiGet("action=getAllMenus");
     if (r.success) {
-      // ✅ เคลียร์ cache เก่าก่อนโหลดใหม่ ป้องกันเมนูซ้ำเวลาโหลดซ้ำหลายรอบ
       Object.keys(menuCache).forEach(k => delete menuCache[k]);
       r.data.forEach(item => {
         if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
@@ -841,7 +869,6 @@ async function prefetchAllMenus() {
   renderFeaturedMenus();
 }
 
-// ✅ แสดง/ซ่อนแบนเนอร์ออเดอร์แรกในหน้าร้าน — เฉพาะลูกค้าใหม่ที่ยังไม่เคยสั่ง
 function renderFirstOrderBanner() {
   const banner = document.getElementById("first-order-shop-banner");
   if (!banner) return;
@@ -872,7 +899,6 @@ async function registerMember() {
   try {
     const r = await apiPost({ action:"createMember", name, phone, lineUserId: lineProfile?.userId || "" });
     if (!r.success) throw new Error(r.error);
-    // สมาชิกใหม่ทั้งหมด = ยังไม่เคยสั่ง = isFirstOrder true เสมอ (ยกเว้นปิดฟีเจอร์)
     currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: firstOrderFreeEnabled };
     await checkAndLoadShops();
   } catch(e) {
@@ -881,7 +907,6 @@ async function registerMember() {
   }
 }
 
-// ── REFRESH (ปุ่มบน + pull-to-refresh) ───────────────
 let isRefreshing = false;
 async function refreshShopData(silent) {
   if (isRefreshing) return;
@@ -955,7 +980,6 @@ async function refreshShopData(silent) {
   }
 }
 
-// ── SYSTEM + SHOPS ───────────────────────────────────
 async function checkAndLoadShops() {
   try {
     const [statusRes, shopsRes] = await Promise.all([
@@ -995,17 +1019,16 @@ async function checkAndLoadShops() {
       }
     }
     allShops = shopsRes.data || [];
-    resetShopFilters(); // ✅ เริ่มดูร้านใหม่แบบไม่มีฟิลเตอร์ค้างจากรอบก่อน
+    resetShopFilters();
     renderCategories();
     renderFirstOrderBanner();
     updateRiderWarningBanner();   
     showPage("page-shops");
     prefetchAllMenus();
-    restoreLocalStateIfAny(); // ✅ เช็คตะกร้า/ออเดอร์ค้างจากครั้งก่อน
+    restoreLocalStateIfAny();
   } catch(e) { showToast("โหลดร้านไม่สำเร็จ"); showPage("page-shops"); }
 }
 
-// ✅ รีเซ็ตตัวกรองร้าน (หมวดหมู่ / เปิดอยู่ตอนนี้ / คำค้นหา) กลับเป็นค่าเริ่มต้น
 function resetShopFilters() {
   selectedCategory = "ทั้งหมด";
   openOnlyFilter = false;
@@ -1016,17 +1039,11 @@ function resetShopFilters() {
   applyFilters();
 }
 
-// ── Weekly picks ──────────────────────────────────────
-// ── เช็คว่าร้านเปิดอยู่หรือเปล่า (รองรับ open/close ใน sheet) ─────
-// open / close เป็น string "HH:MM" เช่น "09:00", "21:00"
-// ถ้าไม่มี field นี้ → ใช้ status === "active" เหมือนเดิม
-// ── เมนูแนะนำจากทุกร้านรวมกัน ─────────────────────────
 function renderFeaturedMenus() {
   const sec = document.getElementById("featured-section");
   const scroll = document.getElementById("featured-scroll");
   if (!sec || !scroll) return;
 
-  // รวบรวมเมนู featured จากทุกร้านที่โหลดแล้ว (กรองร้านปิดออกถ้าเปิดฟิลเตอร์อยู่)
   const featured = [];
   allShops.forEach(s => {
     if (openOnlyFilter && !isShopOpen(s)) return;
@@ -1039,7 +1056,6 @@ function renderFeaturedMenus() {
     });
   });
 
-  // ถ้ายังไม่มีเมนูแนะนำเลย (โหลดเสร็จแล้วแต่ไม่มีข้อมูลจริงๆ) ค่อยซ่อน
   if (!featured.length) {
     if (menusLoaded) sec.style.display = "none";
     return;
@@ -1067,12 +1083,10 @@ function renderFeaturedMenus() {
   }).join("");
 }
 
-// ✅ แปลงค่าเวลาที่มาจาก API ให้เป็น "HH:MM" เสมอ ไม่ว่าจะส่งมาเป็น string ปกติ
-// หรือเป็น Date string เต็มรูปแบบ (เช่นจาก Google Sheets: "Sat Dec 30 1899 08:30:00 GMT+0642...")
 function extractTime(val) {
   if (!val) return "";
   const s = String(val).trim();
-  if (/^\d{1,2}:\d{2}$/.test(s)) return s; // เป็น "HH:MM" อยู่แล้ว
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s;
   const d = new Date(s);
   if (!isNaN(d.getTime())) {
     const h = String(d.getHours()).padStart(2, "0");
@@ -1100,7 +1114,7 @@ function isShopOpen(shop) {
   if (String(shop.tempClosed).toLowerCase() === "true") return false;
   const open = String(shop.open || "").trim();
   const close = String(shop.close || "").trim();
-  if (!open || !close) return true; // ไม่ได้ตั้งเวลา = เปิดตลอด
+  if (!open || !close) return true;
   const now = new Date();
   const [oh, om] = open.split(":").map(Number);
   const [ch, cm] = close.split(":").map(Number);
@@ -1108,11 +1122,9 @@ function isShopOpen(shop) {
   const openMin = oh * 60 + om;
   const closeMin = ch * 60 + cm;
   if (closeMin > openMin) return nowMin >= openMin && nowMin < closeMin;
-  // ข้ามเที่ยงคืน เช่น 20:00 - 02:00
   return nowMin >= openMin || nowMin < closeMin;
 }
 
-// ✅ คืนสถานะร้านแบบละเอียด: เปิดอยู่ / ใกล้ปิด (เหลือ ≤30 นาที) / ปิดแล้ว
 function getShopStatus(shop) {
   if (String(shop.tempClosed).toLowerCase() === "true") {
     return { open: false, closingSoon: false, minutesLeft: null, label: "ปิดชั่วคราว" };
@@ -1131,7 +1143,6 @@ function getShopStatus(shop) {
   const openMin = oh * 60 + om;
   let closeMin = ch * 60 + cm;
 
-  // ✅ รองรับร้านที่ปิดข้ามเที่ยงคืน (เช่น เปิด 20:00 ปิด 02:00)
   let minutesLeft;
   if (closeMin > openMin) {
     minutesLeft = closeMin - nowMin;
@@ -1145,7 +1156,6 @@ function getShopStatus(shop) {
   return { open: true, closingSoon: false, minutesLeft, label: "เปิดอยู่" };
 }
 
-// ✅ แถบแสดงเวลาเปิด-ปิดร้าน ใต้รูปหน้าปกในหน้าเมนู
 function renderShopHoursBar(shop) {
   const bar = document.getElementById("menu-hours-bar");
   if (!bar) return;
@@ -1168,7 +1178,6 @@ function renderShopHoursBar(shop) {
 function getMenuScrollHtml(restaurantId) {
   const menus = menuCache[restaurantId];
   if (!menus || !menus.length) return `<div class="weekly-menu-empty">ยังไม่มีเมนูให้แสดงตัวอย่างครับ</div>`;
-  // ✅ เมนูแนะนำ (featured) ขึ้นก่อน, ที่เหลือตามปกติ
   const featured = menus.filter(m => m.featured === true || m.featured === "true" || m.featured === "TRUE" || m.featured === 1);
   const others = menus.filter(m => !featured.includes(m));
   const list = [...featured, ...others].slice(0, 10);
@@ -1278,7 +1287,6 @@ function renderShops(shops) {
   if (!shops.length) { grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#aaa;">ไม่พบร้านอาหาร</div>`; return; }
   grid.innerHTML = shops.map(s => {
     const img = s.imageUrl ? `<img src="${driveThumb(s.imageUrl,200)}" onerror="this.parentElement.innerHTML='🍜'" loading="lazy">` : `<span>🍜</span>`;
-    // ✅ ใช้ getShopStatus แทน isShopOpen เพื่อรองรับสถานะ "ใกล้ปิด"
     const st = getShopStatus(s);
     const badgeClass = !st.open ? "shop-closed" : (st.closingSoon ? "shop-closing-soon" : "shop-open");
     return `<div class="shop-card" onclick="openShop('${s.restaurantId}')">
@@ -1294,11 +1302,9 @@ function renderShops(shops) {
   }).join("");
 }
 
-// ── MENU ─────────────────────────────────────────────
 async function openShop(restaurantId) {
   let shop = allShops.find(s => s.restaurantId === restaurantId);
   if (!shop) {
-    // ✅ กันเคสหาร้านไม่เจอ (เช่นข้อมูล allShops ยังโหลดไม่เสร็จ) — ลองดึงร้านใหม่อีกครั้งก่อนยอมแพ้
     try {
       const r = await apiGet("action=getRestaurants");
       if (r.success) {
@@ -1392,7 +1398,6 @@ function renderMenus() {
   ).join("");
 }
 
-// ── OPTIONS SHEET ────────────────────────────────────
 function parseOptions(m) {
   if (!m.options) {
     if (m.priceSpecial && Number(m.priceSpecial) > 0) {
@@ -1414,15 +1419,10 @@ function openOptions(menuId) {
   const m = currentMenus.find(x => x.menuId === menuId);
   if (!m) return;
   const opts = parseOptions(m);
-  if (!opts.length) {
-    addDirectToCart(m);
-    return;
-  }
   sheetMenu = m;
   sheetQty = 1;
   sheetSelections = {};
-  // ✅ บังคับเลือก (required) จะมีค่าเริ่มต้นเป็นตัวเลือกแรกเสมอ
-  // ตัวเลือกไม่บังคับ (optional) จะเริ่มต้นแบบ "ไม่เลือก" จนกว่าจะกดเอง
+  sheetItemNote = "";
   opts.forEach(g => {
     if (g.required && g.choices && g.choices.length) sheetSelections[g.label] = g.choices[0];
   });
@@ -1449,14 +1449,19 @@ function renderSheet() {
           </div>`;
         }).join("")}
       </div>
-    </div>`).join("");
+    </div>`).join("") + `
+    <div class="sheet-section">
+      <div class="sheet-section-label">หมายเหตุถึงร้าน <span class="sheet-optional-tag">(ถ้ามี)</span></div>
+      <input type="text" id="sheet-item-note" value="${sheetItemNote.replace(/"/g,"&quot;")}" maxlength="200"
+        placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย" oninput="sheetItemNote=this.value"
+        style="width:100%;border:1.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;">
+    </div>`;
 
   updateSheetPrice();
 }
 
 function selectOption(groupLabel, choice, required) {
   if (!required && sheetSelections[groupLabel] === choice) {
-    // ✅ ตัวเลือกไม่บังคับ: กดซ้ำตัวที่เลือกอยู่ = ยกเลิกการเลือก (ไม่ใส่)
     delete sheetSelections[groupLabel];
   } else {
     sheetSelections[groupLabel] = choice;
@@ -1490,18 +1495,19 @@ function updateSheetPrice() {
 function addFromSheet() {
   if (!sheetMenu) return;
   const opts = parseOptions(sheetMenu);
-  // ✅ เช็คว่ากลุ่มที่บังคับเลือกถูกเลือกครบหรือยัง
   const missing = opts.find(g => g.required && !sheetSelections[g.label]);
   if (missing) { showToast(`กรุณาเลือก${missing.label}ก่อนครับ`); return; }
 
   const price = calcSheetPrice();
   const optParts = opts.map(g => sheetSelections[g.label]).filter(Boolean);
   const optLabel = optParts.join(" / ");
-  const optKey = optParts.join("_").replace(/\s/g, "") || "default";
+  const itemNote = (document.getElementById("sheet-item-note")?.value || sheetItemNote || "").trim();
+  const noteKeyPart = itemNote ? "_note" + itemNote.replace(/\s/g, "").slice(0, 20) : "";
+  const optKey = (optParts.join("_").replace(/\s/g, "") || "default") + noteKeyPart;
   const key = `${sheetMenu.menuId}_${optKey}`;
   const displayName = sheetMenu.menuName + (optLabel ? ` (${optLabel})` : "");
   if (!cart[key]) {
-    cart[key] = { menuId: sheetMenu.menuId, variant: optKey, name: displayName, price, qty: 0, optLabel, basePrice: Number(sheetMenu.price) };
+    cart[key] = { menuId: sheetMenu.menuId, variant: optKey, name: displayName, price, qty: 0, optLabel, itemNote, basePrice: Number(sheetMenu.price) };
   }
   cart[key].qty += sheetQty;
   saveLocalState();
@@ -1514,6 +1520,7 @@ function closeSheet() {
   document.getElementById("sheet-overlay").classList.remove("show");
   document.getElementById("options-sheet").classList.remove("show");
   sheetMenu = null;
+  sheetItemNote = "";
 }
 
 function addDirectToCart(m) {
@@ -1539,7 +1546,6 @@ function removeOneFromMenu(menuId) {
   renderMenus();
 }
 
-// ── CART PAGE ────────────────────────────────────────
 function goCart() {
   if (!Object.keys(cart).length) { showToast("ตะกร้าว่างอยู่ครับ"); return; }
   renderCart(); showPage("page-cart");
@@ -1552,8 +1558,6 @@ function goBackFromCart() {
   }
 }
 
-// ✅ แสดงหน้าเมนูร้าน โดยไม่เช็คเงื่อนไขปิด/เปิดร้าน ใช้ตอนกดกลับจากตะกร้า
-// (ลูกค้าเพิ่งอยู่ในร้านนี้มาหมาดๆ มีของในตะกร้าจากร้านนี้อยู่แล้ว ไม่ต้องเช็คซ้ำ)
 function showShopMenuPage(shop) {
   currentShop = shop;
   document.getElementById("menu-shop-name").textContent = shop.name;
@@ -1582,13 +1586,9 @@ function showShopMenuPage(shop) {
     }).catch(() => showToast("โหลดเมนูไม่สำเร็จครับ"));
   }
 }
-let FREE_DELIVERY_THRESHOLD = 160; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
-let availableRiderCount = 1; // ค่าเริ่มต้น จะถูกอัปเดตจาก getSystemStatus
+let FREE_DELIVERY_THRESHOLD = 160;
+let availableRiderCount = 1;
 
-// ✅ โปรโค้ดของระบบ: โค้ดเดียวกันสามารถให้ผลลัพธ์ต่างกันได้ตาม promoType ที่แอดมินตั้งไว้หลังบ้าน
-// promoType ที่รองรับ: "free_delivery" (ส่งฟรี, ค่า default ถ้าไม่ได้ส่ง promoType มา — เพื่อ backward compatible),
-// "delivery_percent" (ลด%ค่าส่ง, value=0-100), "delivery_fixed" (ลดค่าส่งเป็นจำนวนเงิน, value=บาท),
-// "food_percent" (ลด%ค่าอาหาร, value=0-100), "food_fixed" (ลดค่าอาหารเป็นจำนวนเงิน, value=บาท)
 function getPromoDeliveryDiscount(deliveryFee) {
   if (!promoApplied || !promoInfo) return 0;
   const type = promoInfo.promoType || "free_delivery";
@@ -1625,14 +1625,13 @@ function getSmallOrderThreshold(shop) {
 function calcSmallOrderFee(subtotal, shop) {
   if (!smallOrderFeeEnabled) return 0;
   if (subtotal <= 0) return 0;
-  if (shop?.gpPlan === "gp_self") return 0; // ✅ ร้านจัดส่งเอง ไม่เก็บค่าธรรมเนียมนี้ (ต้องตรงกับ server)
+  if (shop?.gpPlan === "gp_self") return 0;
   const threshold = getSmallOrderThreshold(shop);
   if (subtotal >= threshold) return 0;
   return smallOrderFeeAmount;
 }
 
 function renderCart() {
-  // ✅ ร้าน gp_self จัดส่งเอง — บังคับชำระเงินสดปลายทางอย่างเดียว ไม่ให้เลือกโอน
   const isSelfDeliveryShop = currentShop?.gpPlan === "gp_self";
   const paymentSelectWrap = document.getElementById("payment-select-wrap");
   const paymentFixedCash = document.getElementById("payment-fixed-cash");
@@ -1645,7 +1644,6 @@ function renderCart() {
     paymentFixedCash.style.display = "none";
   }
 
-  // ✅ ร้าน gp_self ไม่ให้ใช้โค้ดส่วนลด — ซ่อนช่องกรอก + เคลียร์โค้ดที่อาจค้างมาจากร้านก่อนหน้า
   const promoSection = document.getElementById("promo-section");
   if (isSelfDeliveryShop) {
     promoSection.style.display = "none";
@@ -1781,11 +1779,9 @@ function updateDepositNotice() {
   const isSelfDelivery = currentShop?.gpPlan === "gp_self";
 
   if (payment === "cash" && netSubtotal > 300 && !isSelfDelivery) {
-    // เงินสด ยอดเกิน 300 → มัดจำ 50% ก่อน (ยกเว้นร้านจัดส่งเอง)
     notice.style.display = "block";
     notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿300</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
   } else if (payment !== "cash") {
-    // พร้อมเพย์/โอนเงิน → ต้องโอนเต็มจำนวนก่อนเสมอ ไม่ว่ายอดเท่าไหร่
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     notice.style.display = "block";
@@ -1795,8 +1791,7 @@ function updateDepositNotice() {
   }
 }
 
-// ── PROMO ────────────────────────────────────────────
-let PROMO_MIN_SUBTOTAL = 65; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ — ตัวบังคับจริงอยู่ที่ server
+let PROMO_MIN_SUBTOTAL = 65;
 
 async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();
@@ -1824,10 +1819,8 @@ async function applyPromo() {
   btn.disabled=false; btn.textContent="ใช้โค้ด";
 }
 
-// ✅ แปลง promoType + value ที่แอดมินตั้งไว้หลังบ้าน ให้เป็นข้อความอ่านง่ายสำหรับลูกค้า
-// ถ้า backend ยังไม่ส่ง promoType มา (โค้ดเก่า) จะ fallback เป็น "ส่งฟรี" เหมือนเดิม
 function describePromo(data) {
-  if (data.message) return data.message; // ถ้าหลังบ้านส่งข้อความสำเร็จรูปมาให้แล้ว ใช้อันนั้นเลย
+  if (data.message) return data.message;
   const type = data.promoType || "free_delivery";
   const value = Number(data.value || 0);
   switch (type) {
@@ -1840,7 +1833,6 @@ function describePromo(data) {
   }
 }
 
-// ── LOCATION ─────────────────────────────────────────
 async function getLocation() {
   const btn=document.getElementById("loc-btn"), status=document.getElementById("loc-status");
   const mapDiv=document.getElementById("loc-map"), mapFrame=document.getElementById("map-frame");
@@ -1871,9 +1863,8 @@ async function getLocation() {
   btn.disabled=false;
 }
 
-// ── SUBMIT ───────────────────────────────────────────
 async function submitOrder() {
-  if (isSubmittingOrder) return; // ✅ กันกดซ้ำ
+  if (isSubmittingOrder) return;
   if (String(currentMember?.status || "").toLowerCase() === "block") {
     showPage("page-suspended"); return;
   }
@@ -1942,7 +1933,7 @@ async function submitOrder() {
 }
 
 async function submitOrderWithDeposit() {
-  if (isSubmittingOrder) return; // ✅ กันกดซ้ำ
+  if (isSubmittingOrder) return;
   if (String(currentMember?.status || "").toLowerCase() === "block") {
     showPage("page-suspended"); return;
   }
@@ -1981,7 +1972,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     clientOrderKey: (currentMember.memberId + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,8)),
     memberId: currentMember.memberId,
     restaurantId: currentShop.restaurantId,
-    items: items.map(e => ({ menuId:e.menuId, name:e.name, price:e.price, qty:e.qty, variant:e.variant, optLabel:e.optLabel || "" })),
+    items: items.map(e => ({ menuId:e.menuId, name:e.name, price:e.price, qty:e.qty, variant:e.variant, optLabel:e.optLabel || "", itemNote:e.itemNote || "" })),
     address, note,
     lat: userLat, lng: userLng,
     paymentType: payment,
@@ -1995,7 +1986,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     depositAmount,
     deliveryFee: delivery
   };
-  saveLocalState(); // ✅ เซฟไว้กันปัดแอปทิ้งระหว่าง countdown — เปิดใหม่จะถามว่าจะสั่งต่อไหม
+  saveLocalState();
 
   document.getElementById("success-order-id").textContent = "กำลังยืนยันออเดอร์...";
   document.getElementById("payment-info").style.display = "none";
@@ -2024,11 +2015,9 @@ async function startCountdown(sec) {
         const { orderId, total, needDeposit, depositAmount } = r.data;
         orderIdEl.textContent = `รหัสออเดอร์: ${orderId}`;
 
-        // ✅ ออเดอร์นี้ยิงสำเร็จแล้ว — ปิดสิทธิ์ส่งฟรีฝั่ง client ทันที
-        // (ฝั่ง server จะบันทึก firstOrderDone=true ลง Sheet ให้ตอนนี้แล้วด้วย)
         if (currentMember) currentMember.isFirstOrder = false;
         renderFirstOrderBanner();
-        clearLocalState(); // ✅ ออเดอร์เข้าระบบแล้วจริง ไม่ต้องเก็บสถานะค้างไว้อีก
+        clearLocalState();
 
         const pi = document.getElementById("payment-info");
         if (needDeposit) {
@@ -2054,14 +2043,11 @@ function cancelPendingOrder() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   pendingOrderData = null;
   clearLocalState();
-  // ยกเลิกก่อนยิง API จริง — ออเดอร์ยังไม่ถูกสร้าง ดังนั้นสิทธิ์ยังไม่ถูกใช้
-  // เช็คสถานะจริงจาก server แทนการเดา เพื่อกันกรณีลูกค้าเคยใช้สิทธิ์ไปแล้วก่อนหน้านี้
   refreshMemberFirstOrderStatus();
   showToast("ยกเลิกออเดอร์แล้วครับ");
   resetAndHome();
 }
 
-// ✅ ดึงสถานะสมาชิกล่าสุดจาก server มาอัปเดต isFirstOrder ให้ตรงความจริงเสมอ
 async function refreshMemberFirstOrderStatus() {
   if (!currentMember?.memberId) return;
   try {
@@ -2070,7 +2056,6 @@ async function refreshMemberFirstOrderStatus() {
   } catch(_) {}
 }
 
-// ── TRACK ────────────────────────────────────────────
 async function goTrack() {
   showPage("page-track"); await loadTrackOrders();
   if (trackTimer) clearInterval(trackTimer);
@@ -2084,8 +2069,8 @@ async function loadTrackOrders() {
     renderTrack(r.data.filter(o => o.status !== "DONE" && o.status !== "CANCEL"), r.data);
   } catch(_) { document.getElementById("track-wrap").innerHTML=`<div style="text-align:center;padding:40px;color:#aaa;">โหลดไม่สำเร็จครับ</div>`; }
 }
-let trackOrdersCache = []; // ✅ เก็บออเดอร์ทั้งหมดไว้ใช้ตอนกดดูรายละเอียดในประวัติ
-let trackOpenIds = new Set(); // ✅ จำว่าการ์ดไหนถูกเปิดดูรายละเอียดอยู่ จะได้ไม่หายตอน refresh อัตโนมัติ
+let trackOrdersCache = [];
+let trackOpenIds = new Set();
 
 function renderTrack(active, all) {
   trackOrdersCache = all;
@@ -2146,7 +2131,6 @@ function renderTrack(active, all) {
   document.getElementById("track-wrap").innerHTML = html;
 }
 
-// ── CANCEL ORDER ─────────────────────────────────────
 let cancelTargetOrderId = null;
 let cancelSelectedReason = null;
 
@@ -2214,7 +2198,6 @@ async function confirmCancelOrder() {
   }
 }
 
-// ── HELPERS ──────────────────────────────────────────
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -2265,7 +2248,6 @@ function buildHistDetailHtml(order) {
     </div>`;
 }
 
-// ✅ กดที่การ์ดประวัติออเดอร์
 function toggleHistDetail(orderId) {
   const detailEl = document.getElementById("hist-detail-" + orderId);
   const arrowEl = document.getElementById("hist-arrow-" + orderId);
@@ -2285,11 +2267,9 @@ function toggleHistDetail(orderId) {
   if (arrowEl) arrowEl.textContent = "⌄";
 }
 
-// ✅ แจ้งลูกค้าว่าแก้ชื่อ/เบอร์เองในแอปไม่ได้ ต้องติดต่อแอดมิน
 function showEditInfoNotice() {
   showToast("หากต้องการแก้ไขชื่อหรือเบอร์ กรุณาติดต่อแอดมินครับ");
 }
-// ✅ ปุ่ม "ติดต่อแอดมิน" ในหน้าแจ้งเตือนบัญชีถูกระงับ
 function contactAdminSuspended() {
   showToast("กรุณาปิดหน้านี้แล้วพิมพ์ \"ติดต่อแอดมิน\" ในแชทไลน์ได้เลยครับ");
 }

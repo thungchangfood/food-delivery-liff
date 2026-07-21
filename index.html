@@ -452,7 +452,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
     </div>
 
     <div id="auto-confirm-notice" style="display:none;" class="first-order-notice">
-      🤖 ช่วงนี้แอดมินไม่สะดวก ระบบยืนยันออเดอร์ให้อัตโนมัติ — <strong>รับเฉพาะเงินสดปลายทาง และยอดสั่งต้องไม่เกิน ฿300/ออเดอร์ครับ</strong>
+      ⚡ ขณะนี้ระบบโอนชำระขัดข้อง — <strong>รับเฉพาะออเดอร์ชำระปลายทาง และยอดสั่งออเดอร์ไม่เกิน ฿300/ออเดอร์ครับ</strong>
     </div>
      
     <div id="first-order-notice" style="display:none;" class="first-order-notice">
@@ -1748,7 +1748,33 @@ function renderCart() {
     document.getElementById("f-phone").value = formatPhone(currentMember.phone || "");
   }
   const acNotice = document.getElementById("auto-confirm-notice");
-  if (acNotice) acNotice.style.display = autoConfirmEnabled ? "block" : "none";
+  const orderBtnEl = document.getElementById("order-btn");
+  const netSubtotalForLimit = subtotal - foodDiscount + smallFee;
+  const overAutoConfirmLimit = autoConfirmEnabled && netSubtotalForLimit > 300;
+
+  if (acNotice) {
+    acNotice.style.display = autoConfirmEnabled ? "block" : "none";
+    if (overAutoConfirmLimit) {
+      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง — <strong style='color:#EF4444;'>⚠️ ยอดตะกร้าเกิน ฿300 (ยอดปัจจุบัน ฿" + netSubtotalForLimit + ") เกินยอดที่กำหนด กรุณาลดรายการก่อนสั่งครับ</strong>";
+    } else {
+      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำเงินระเงินปลายทาง — <strong>รับเฉพาะออเดอร์ชำระเงินปลายทาง และยอดสั่งไม่เกิน ฿300/ออเดอร์ครับ</strong>";
+    }
+  }
+
+  if (orderBtnEl) {
+    if (overAutoConfirmLimit) {
+      orderBtnEl.disabled = true;
+      orderBtnEl.textContent = "❌ ยอดเกิน ฿300 — สั่งไม่ได้ในช่วงนี้";
+      orderBtnEl.style.opacity = "0.5";
+      orderBtnEl.style.cursor = "not-allowed";
+    } else {
+      orderBtnEl.disabled = false;
+      orderBtnEl.textContent = "สั่งอาหาร";
+      orderBtnEl.style.opacity = "";
+      orderBtnEl.style.cursor = "";
+    }
+  }
+
   updateDepositNotice();
 }
 
@@ -1902,7 +1928,7 @@ async function submitOrder() {
     const smallFee = calcSmallOrderFee(subtotal, currentShop);
     const netSubtotal = subtotal - foodDiscount + smallFee;
     if (autoConfirmEnabled && netSubtotal > 300) {
-      showToast("ขณะนี้แอดมินไม่สะดวกยืนยันออเดอร์เองครับ ระบบจำกัดยอดสั่งไม่เกิน ฿300 กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
+      showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿300 กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
       return;
     }
     const delivery = calcDelivery(subtotal);

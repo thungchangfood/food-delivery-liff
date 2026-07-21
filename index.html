@@ -451,6 +451,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
       </div>
     </div>
 
+    <div id="auto-confirm-notice" style="display:none;" class="first-order-notice">
+      🤖 ช่วงนี้แอดมินไม่สะดวก ระบบยืนยันออเดอร์ให้อัตโนมัติ — <strong>รับเฉพาะเงินสดปลายทาง และยอดสั่งต้องไม่เกิน ฿300/ออเดอร์ครับ</strong>
+    </div>
+     
     <div id="first-order-notice" style="display:none;" class="first-order-notice">
       🎉 ออเดอร์แรกของคุณ! <strong>ส่งฟรีทันที ไม่มีขั้นต่ำ</strong>
     </div>
@@ -650,6 +654,7 @@ let menusLoaded = false;
 let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
 let businessHoursWeekday = { open: "09:00", close: "20:30" };
 let businessHoursWeekend = { open: "08:30", close: "21:00" };
+let autoConfirmEnabled = false; // 🤖 โหมดยืนยันอัตโนมัติ (แอดมินไม่สะดวก) — เงินสดเท่านั้น ไม่เกิน ฿300
 
 let sheetMenu = null;
 let sheetQty = 1;
@@ -799,6 +804,7 @@ async function loadInitialData(isRetry) {
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      autoConfirmEnabled = !!statusRes.data.autoConfirmEnabled;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
@@ -938,6 +944,7 @@ async function refreshShopData(silent) {
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      autoConfirmEnabled = !!statusRes.data.autoConfirmEnabled;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
@@ -1004,6 +1011,7 @@ async function checkAndLoadShops() {
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+      autoConfirmEnabled = !!statusRes.data.autoConfirmEnabled;
       retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
@@ -1633,9 +1641,10 @@ function calcSmallOrderFee(subtotal, shop) {
 
 function renderCart() {
   const isSelfDeliveryShop = currentShop?.gpPlan === "gp_self";
+  const forceCashOnly = isSelfDeliveryShop || autoConfirmEnabled;
   const paymentSelectWrap = document.getElementById("payment-select-wrap");
   const paymentFixedCash = document.getElementById("payment-fixed-cash");
-  if (isSelfDeliveryShop) {
+  if (forceCashOnly) {
     paymentSelectWrap.style.display = "none";
     paymentFixedCash.style.display = "block";
     document.getElementById("f-payment").value = "cash";
@@ -1738,6 +1747,8 @@ function renderCart() {
     document.getElementById("f-name").value = currentMember.name || "";
     document.getElementById("f-phone").value = formatPhone(currentMember.phone || "");
   }
+  const acNotice = document.getElementById("auto-confirm-notice");
+  if (acNotice) acNotice.style.display = autoConfirmEnabled ? "block" : "none";
   updateDepositNotice();
 }
 
@@ -1890,6 +1901,10 @@ async function submitOrder() {
     const foodDiscount = calcFoodDiscount(subtotal);
     const smallFee = calcSmallOrderFee(subtotal, currentShop);
     const netSubtotal = subtotal - foodDiscount + smallFee;
+    if (autoConfirmEnabled && netSubtotal > 300) {
+      showToast("ขณะนี้แอดมินไม่สะดวกยืนยันออเดอร์เองครับ ระบบจำกัดยอดสั่งไม่เกิน ฿300 กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
+      return;
+    }
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     const isSelfDelivery = currentShop?.gpPlan === "gp_self";

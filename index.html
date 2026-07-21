@@ -651,7 +651,7 @@ let smallOrderFeeEnabled = true;
 let smallOrderFeeAmount = 10;
 let smallOrderThresholds = { gp25: 65, gp21: 55, gp17: 45, default: 55 };
 let menusLoaded = false;
-let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะเก็บไว้ประมาณ 15 วัน หลังจากนั้นระบบจะเคลียร์ข้อมูลอัตโนมัติครับ";
+let retentionNoticeText = "ℹ️ ประวัติออเดอร์จะถูกเก็บไว้ประมาณไม่เกิน 15-30วัน แล้วจะถูกเคลียร์ข้อมูลครับ";
 let businessHoursWeekday = { open: "09:00", close: "20:30" };
 let businessHoursWeekend = { open: "08:30", close: "21:00" };
 let autoConfirmEnabled = false; // 🤖 โหมดยืนยันอัตโนมัติ (แอดมินไม่สะดวก) — เงินสดเท่านั้น ไม่เกิน ฿300
@@ -1757,7 +1757,7 @@ function renderCart() {
     if (overAutoConfirmLimit) {
       acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง — <strong style='color:#EF4444;'>⚠️ ยอดตะกร้าเกิน ฿300 (ยอดปัจจุบัน ฿" + netSubtotalForLimit + ") เกินยอดที่กำหนด กรุณาลดรายการก่อนสั่งครับ</strong>";
     } else {
-      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำเงินระเงินปลายทาง — <strong>รับเฉพาะออเดอร์ชำระเงินปลายทาง และยอดสั่งไม่เกิน ฿300/ออเดอร์ครับ</strong>";
+      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำเงินระเงินปลายทาง — <strong>ยอดสั่งไม่เกิน ฿300/ออเดอร์ครับ</strong>";
     }
   }
 
@@ -2137,6 +2137,8 @@ function renderTrack(active, all) {
         }).join("")}</div>
         <div class="track-items">
           ${its.map(i=>`<div class="track-item-row"><span>${i.name} ×${i.qty}</span><span>฿${i.price*i.qty}</span></div>`).join("")}
+          ${Number(o.smallOrderFee||0) > 0 ? `<div class="track-item-row" style="color:#dc2626;"><span>⚠️ ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>+฿${o.smallOrderFee}</span></div>` : ""}
+          <div class="track-item-row" style="color:#888;"><span>ค่าจัดส่ง</span><span>฿${o.deliveryFee||0}</span></div>
           <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
         </div>
         ${o.status==="DELIVERING"?`<div class="rider-info">🛵 ไรเดอร์กำลังมาส่งครับ!</div>`:""}
@@ -2164,6 +2166,7 @@ function renderTrack(active, all) {
           <span style="color:#bbb;font-size:18px;" id="hist-arrow-${o.orderId}">${isOpen ? "⌄" : "›"}</span>
         </div>
         ${o.cancelReason?`<div style="font-size:12px;color:#EF4444;margin-top:4px;">สาเหตุ: ${o.cancelReason}</div>`:""}
+        <button onclick="event.stopPropagation();reorderFromHistory('${o.orderId}')" style="margin-top:10px;width:100%;padding:9px;background:white;border:1.5px solid #06C755;color:#06C755;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">🔁 สั่งอีกครั้ง</button>
         <div id="hist-detail-${o.orderId}" style="display:${isOpen ? "block" : "none"};margin-top:10px;">${detailHtml}</div>
       </div>`;
     });
@@ -2307,7 +2310,63 @@ function toggleHistDetail(orderId) {
   detailEl.style.display = "block";
   if (arrowEl) arrowEl.textContent = "⌄";
 }
+async function reorderFromHistory(orderId) {
+  const order = trackOrdersCache.find(o => String(o.orderId) === String(orderId));
+  if (!order) { showToast("ไม่พบข้อมูลออเดอร์นี้ครับ"); return; }
 
+  const shop = allShops.find(s => s.restaurantId === order.restaurantId);
+  if (!shop) { showToast("ไม่พบร้านนี้แล้วครับ"); return; }
+  if (shop.status !== "active" || !isShopOpen(shop)) { showToast("ร้านนี้ปิดอยู่ครับ ลองใหม่ตอนร้านเปิดนะครับ"); return; }
+
+  let menus = menuCache[shop.restaurantId];
+  if (!menus) {
+    try {
+      const r = await apiGet("action=getMenus&restaurantId=" + shop.restaurantId);
+      if (r.success) { menuCache[shop.restaurantId] = r.data; menus = r.data; }
+    } catch(_) {}
+  }
+  if (!menus) { showToast("โหลดเมนูร้านไม่สำเร็จครับ"); return; }
+
+  const its = parseItems(order.Items);
+  if (!its.length) { showToast("ไม่พบรายการอาหารในออเดอร์นี้ครับ"); return; }
+
+  if (Object.keys(cart).length && currentShop?.restaurantId !== shop.restaurantId) {
+    if (!confirm(`ตะกร้ามีรายการจากร้าน "${currentShop.name}" อยู่แล้ว\nต้องการเปลี่ยนร้านไหมครับ?`)) return;
+    cart = {};
+  }
+
+  let addedCount = 0;
+  const skippedNames = [];
+  its.forEach(i => {
+    const m = menus.find(x => x.menuId === i.menuId);
+    if (!m) { skippedNames.push(i.name); return; }
+    const currentPrice = getEffectivePrice(m);
+    const key = `${i.menuId}_${i.variant || "default"}`;
+    if (!cart[key]) {
+      cart[key] = { menuId: i.menuId, variant: i.variant || "default", name: i.name, price: currentPrice, qty: 0, optLabel: i.optLabel || "", itemNote: i.itemNote || "", basePrice: Number(m.price) };
+    }
+    cart[key].qty += i.qty;
+    addedCount++;
+  });
+
+  if (!addedCount) {
+    alert(`ขออภัยครับ เมนูในออเดอร์นี้ไม่มีขายแล้วทั้งหมด:\n${skippedNames.join("\n")}`);
+    return;
+  }
+
+  currentShop = shop;
+  saveLocalState();
+  updateCartUI();
+
+  if (skippedNames.length) {
+    alert(`เพิ่มเมนูเดิมลงตะกร้าแล้วครับ\n\n⚠️ เมนูต่อไปนี้ไม่มีขายแล้ว จึงไม่ได้เพิ่มให้:\n${skippedNames.join("\n")}`);
+  } else {
+    showToast("เพิ่มเมนูเดิมลงตะกร้าแล้วครับ (ราคาปัจจุบัน)");
+  }
+
+  renderCart();
+  showPage("page-cart");
+}
 function showEditInfoNotice() {
   showToast("หากต้องการแก้ไขชื่อหรือเบอร์ กรุณาติดต่อแอดมินครับ");
 }

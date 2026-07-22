@@ -90,9 +90,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 .closed-hours-time{font-size:15px;font-weight:800;color:var(--ink);}
 
 /* ── Shop page ── */
-.search-wrap{background:var(--surface);padding:10px 16px;border-bottom:1px solid var(--line);}
+.search-wrap{background:var(--surface);padding:10px 16px;border-bottom:1px solid var(--line);position:relative;}
 .search-input{width:100%;background:var(--line-soft);border:1.5px solid transparent;border-radius:var(--radius-pill);padding:11px 16px;font-size:14px;font-family:inherit;outline:none;transition:.15s;}
 .search-input:focus{border-color:var(--brand);background:var(--surface);box-shadow:var(--shadow-xs);}
+.search-clear-btn{
+  position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;border-radius:50%;border:none;
+  background:var(--ink-faint);color:white;
+  display:none;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;transition:.15s;
+}
+.search-clear-btn:active{transform:translateY(-50%) scale(.9);}
+.search-clear-btn:hover{background:var(--ink-soft);}
+.search-clear-btn svg{width:12px;height:12px;pointer-events:none;}
 .cat-scroll{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--line);}
 .cat-scroll::-webkit-scrollbar{display:none;}
 .cat-chip{white-space:nowrap;padding:8px 16px;border-radius:var(--radius-pill);font-size:13px;font-weight:600;font-family:inherit;border:1.5px solid var(--line);background:var(--surface);color:var(--ink-soft);cursor:pointer;transition:.15s;}
@@ -370,6 +380,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
   
   <div class="search-wrap" style="margin-top:10px;">
     <input class="search-input" id="search-input" placeholder="🔍  ค้นหาร้านอาหาร..." oninput="filterShops()">
+    <button class="search-clear-btn" id="search-clear-btn" onclick="clearSearch()">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+  </svg>
+</button>
   </div>
   <div class="cat-scroll" id="cat-scroll"></div>
   <div style="padding:0 16px 8px;background:white;border-bottom:.5px solid #ececec;">
@@ -1287,9 +1302,18 @@ function selectCat(el, cat) {
   }
 }
 function filterShops() {
+  const btn = document.getElementById("search-clear-btn");
+  if (btn) btn.style.display = getSearchQuery() ? "flex" : "none";
   applyFilters();
   renderWeekly();
   renderFeaturedMenus();
+}
+
+function clearSearch() {
+  const input = document.getElementById("search-input");
+  if (input) input.value = "";
+  filterShops();
+  document.getElementById("search-input")?.focus();
 }
 function toggleOpenOnly() {
   openOnlyFilter = !openOnlyFilter;

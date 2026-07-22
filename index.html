@@ -739,6 +739,24 @@ function driveThumb(url, w = 300) {
   return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w${w}` : url;
 }
 
+function getSearchQuery() {
+  const el = document.getElementById("search-input");
+  return el ? el.value.trim().toLowerCase() : "";
+}
+
+function shopMatchesQuery(shop, q) {
+  if (!q) return true;
+  if (shop.name && shop.name.toLowerCase().includes(q)) return true;
+  const menus = menuCache[shop.restaurantId];
+  if (menus) {
+    return menus.some(m =>
+      (m.menuName && m.menuName.toLowerCase().includes(q)) ||
+      (m.description && m.description.toLowerCase().includes(q))
+    );
+  }
+  return false;
+}
+
 async function apiGet(p) { return (await fetch(`${API}?${p}`)).json(); }
 async function apiPost(body) {
   const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
@@ -1053,6 +1071,7 @@ function renderFeaturedMenus() {
   if (!sec || !scroll) return;
 
   const featured = [];
+  const featQ = getSearchQuery();
   allShops.forEach(s => {
     if (openOnlyFilter && !isShopOpen(s)) return;
     if (selectedCategory !== "ทั้งหมด" && s.category !== selectedCategory) return;
@@ -1060,7 +1079,9 @@ function renderFeaturedMenus() {
     if (!menus) return;
     menus.forEach(m => {
       const isFeatured = m.featured === true || m.featured === "true" || m.featured === "TRUE" || m.featured === 1 || m.featured === "1";
-      if (isFeatured) featured.push({ ...m, shopName: s.name, restaurantId: s.restaurantId });
+      if (!isFeatured) return;
+      if (featQ && !((m.menuName||"").toLowerCase().includes(featQ) || s.name.toLowerCase().includes(featQ))) return;
+      featured.push({ ...m, shopName: s.name, restaurantId: s.restaurantId });
     });
   });
 
@@ -1220,6 +1241,8 @@ function renderWeekly() {
   let picks = allShops.filter(s => s.status === "active").slice(0, weeklyPicksCount);
   if (selectedCategory !== "ทั้งหมด") picks = picks.filter(s => s.category === selectedCategory);
   if (openOnlyFilter) picks = picks.filter(s => isShopOpen(s));
+  const weeklyQ = getSearchQuery();
+  if (weeklyQ) picks = picks.filter(s => shopMatchesQuery(s, weeklyQ));
   if (!picks.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
   document.getElementById("weekly-scroll").innerHTML = picks.map(s => {
@@ -1265,6 +1288,8 @@ function selectCat(el, cat) {
 }
 function filterShops() {
   applyFilters();
+  renderWeekly();
+  renderFeaturedMenus();
 }
 function toggleOpenOnly() {
   openOnlyFilter = !openOnlyFilter;
@@ -1274,11 +1299,11 @@ function toggleOpenOnly() {
   renderFeaturedMenus();
 }
 function applyFilters() {
-  const q = document.getElementById("search-input").value.toLowerCase();
+  const q = getSearchQuery();
   let shops = allShops;
   if (selectedCategory !== "ทั้งหมด") shops = shops.filter(s => s.category === selectedCategory);
-  if (q) shops = shops.filter(s => s.name.toLowerCase().includes(q));
   if (openOnlyFilter) shops = shops.filter(s => isShopOpen(s));
+  if (q) shops = shops.filter(s => shopMatchesQuery(s, q));
   renderShops(shops);
 }
 function getWeeklyPickIds() {

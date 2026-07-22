@@ -16,6 +16,8 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-sm{background:#333;color:white;border:none;padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:.2s;}
 .btn-sm:hover{background:#444;}
 .btn-sm:disabled{background:#666;cursor:not-allowed;opacity:.6;}
+.btn-sm.active{background:#06C755;box-shadow:0 0 0 2px rgba(6,199,85,.3) inset;}
+.btn-sm.active:hover{background:#05b34c;}
 .btn-sm.spinning{position:relative;}
 @keyframes btn-spin{to{transform:rotate(360deg)}}
 .btn-sm.spinning .spin-icon{display:inline-block;animation:btn-spin .7s linear infinite;}
@@ -353,8 +355,8 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">📊 รายงานประจำวัน</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="report-date" class="close-reason-input" style="width:160px;" onchange="buildReport()">
-      <button class="btn-sm" onclick="setReportToday()">วันนี้</button>
+      <input type="date" id="report-date" class="close-reason-input" style="width:160px;" onchange="onReportDateManualChange()">
+      <button class="btn-sm active" id="report-today-btn" onclick="setReportToday()">วันนี้</button>
       <button class="btn-sm" onclick="buildReport()">🔄 โหลด</button>
       <button class="btn-sm" onclick="exportXLSX()">📊 Export Excel</button>
       <button class="btn-sm btn-close-day" onclick="closeDayAdmin()">📊 ปิดวัน</button>
@@ -444,11 +446,11 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">🧾 เก็บ GP ร้านค้า</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;">
+      <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive()">
       <span>ถึง</span>
-      <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;">
-      <button class="btn-sm" onclick="setGpRange(1)">🧾 รอบวันที่ 1</button>
-      <button class="btn-sm" onclick="setGpRange(16)">🧾 รอบวันที่ 16</button>
+      <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive()">
+      <button class="btn-sm" id="gp-range-1-btn" onclick="setGpRange(1)">🧾 รอบวันที่ 1</button>
+      <button class="btn-sm" id="gp-range-16-btn" onclick="setGpRange(16)">🧾 รอบวันที่ 16</button>
       <button class="btn-sm" onclick="loadGpSettlement()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportGpPrint()">📄 Export เอกสาร</button>
     </div>
@@ -461,13 +463,13 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">📈 สรุปผลประกอบการ</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="biz-start-date" class="close-reason-input" style="width:150px;">
+      <input type="date" id="biz-start-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive()">
       <span>ถึง</span>
-      <input type="date" id="biz-end-date" class="close-reason-input" style="width:150px;">
-      <button class="btn-sm" onclick="setBizRange('today')">วันนี้</button>
-      <button class="btn-sm" onclick="setBizRange('7days')">7 วันล่าสุด</button>
-      <button class="btn-sm" onclick="setBizRange('thisMonth')">เดือนนี้</button>
-      <button class="btn-sm" onclick="setBizRange('lastMonth')">เดือนที่แล้ว</button>
+      <input type="date" id="biz-end-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive()">
+      <button class="btn-sm" data-range="today" onclick="setBizRange('today')">วันนี้</button>
+      <button class="btn-sm" data-range="7days" onclick="setBizRange('7days')">7 วันล่าสุด</button>
+      <button class="btn-sm" data-range="thisMonth" onclick="setBizRange('thisMonth')">เดือนนี้</button>
+      <button class="btn-sm" data-range="lastMonth" onclick="setBizRange('lastMonth')">เดือนที่แล้ว</button>
       <button class="btn-sm" onclick="loadBizSummary()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportBizPrint()">📄 Export เอกสาร</button>
     </div>
@@ -1344,6 +1346,13 @@ function hideReport() {
 }
 function setReportToday() {
   document.getElementById("report-date").value = toLocalDateStr(new Date());
+  document.getElementById("report-today-btn").classList.add("active");
+  buildReport();
+}
+function onReportDateManualChange() {
+  // ✅ ถ้าผู้ใช้เลือกวันที่เองผ่าน date picker (ไม่ใช่กดปุ่ม "วันนี้") ให้เอา active ออกจากปุ่ม
+  const isToday = document.getElementById("report-date").value === toLocalDateStr(new Date());
+  document.getElementById("report-today-btn").classList.toggle("active", isToday);
   buildReport();
 }
 function getReportOrders() {
@@ -1748,6 +1757,12 @@ function setGpRange(collectDay) {
   }
   document.getElementById("gp-start-date").value = toLocalDateStr(start);
   document.getElementById("gp-end-date").value = toLocalDateStr(end);
+  document.getElementById("gp-range-1-btn").classList.toggle("active", collectDay === 1);
+  document.getElementById("gp-range-16-btn").classList.toggle("active", collectDay === 16);
+}
+function clearGpRangeActive() {
+  document.getElementById("gp-range-1-btn").classList.remove("active");
+  document.getElementById("gp-range-16-btn").classList.remove("active");
 }
 async function loadGpSettlement() {
   const start = document.getElementById("gp-start-date").value;
@@ -1993,6 +2008,12 @@ function setBizRange(kind) {
   }
   document.getElementById("biz-start-date").value = toLocalDateStr(start);
   document.getElementById("biz-end-date").value = toLocalDateStr(end);
+  document.querySelectorAll('[data-range]').forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.range === kind);
+  });
+}
+function clearBizRangeActive() {
+  document.querySelectorAll('[data-range]').forEach(btn => btn.classList.remove("active"));
 }
 async function loadBizSummary() {
   const start = document.getElementById("biz-start-date").value;

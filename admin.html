@@ -560,6 +560,7 @@ let allOrders = [];
 let currentFilter = "all";
 let prevNewCount = 0;
 let refreshTimer = null;
+let lastKnownUpdateTime = "";
 let systemOpen = true;
 let autoConfirmEnabled = false;
 let restaurantsMap = {};
@@ -602,7 +603,15 @@ let pauseRefresh = false;
 async function init() {
   await Promise.all([loadRestaurants(), loadMembers()]);
   await loadAll();
-  refreshTimer = setInterval(() => { if (!pauseRefresh) loadAll(); }, 10000);
+  // ตั้งค่า signature เริ่มต้นจากข้อมูลที่โหลดมาแล้ว กันไม่ให้ pulseCheck รอบแรกยิง loadOrders ซ้ำ
+  try {
+    const res = await apiGet("action=getOrderPulse");
+    if (res.success) lastKnownUpdateTime = res.data.signature;
+  } catch(_) {}
+
+  refreshTimer = setInterval(() => {
+    if (!pauseRefresh) pulseCheck();
+  }, 5000); // เช็ค pulse ถี่ขึ้นได้ เพราะ endpoint นี้เบามาก
 }
 
 async function loadRestaurants() {
@@ -642,7 +651,16 @@ async function loadAll() {
     if (btn) { btn.classList.remove("spinning"); btn.disabled = false; }
   }
 }
-
+async function pulseCheck() {
+  try {
+    const res = await apiGet("action=getOrderPulse");
+    if (!res.success) return;
+    if (res.data.signature !== lastKnownUpdateTime) {
+      lastKnownUpdateTime = res.data.signature;
+      await loadOrders();
+    }
+  } catch(_) {}
+}
 // ── API ────────────────────────────────────────────────
 async function apiGet(params) {
   const token = localStorage.getItem("admin_token") || "";

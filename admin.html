@@ -446,9 +446,9 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">🧾 เก็บ GP ร้านค้า</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive()">
+      <input type="date" id="gp-start-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive();loadGpSettlement()">
       <span>ถึง</span>
-      <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive()">
+      <input type="date" id="gp-end-date" class="close-reason-input" style="width:150px;" onchange="clearGpRangeActive();loadGpSettlement()">
       <button class="btn-sm" id="gp-range-1-btn" onclick="setGpRange(1)">🧾 รอบวันที่ 1</button>
       <button class="btn-sm" id="gp-range-16-btn" onclick="setGpRange(16)">🧾 รอบวันที่ 16</button>
       <button class="btn-sm" onclick="loadGpSettlement()">🔄 โหลด</button>
@@ -463,9 +463,9 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">📈 สรุปผลประกอบการ</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="biz-start-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive()">
+      <input type="date" id="biz-start-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive();loadBizSummary()">
       <span>ถึง</span>
-      <input type="date" id="biz-end-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive()">
+      <input type="date" id="biz-end-date" class="close-reason-input" style="width:150px;" onchange="clearBizRangeActive();loadBizSummary()">
       <button class="btn-sm" data-range="today" onclick="setBizRange('today')">วันนี้</button>
       <button class="btn-sm" data-range="7days" onclick="setBizRange('7days')">7 วันล่าสุด</button>
       <button class="btn-sm" data-range="thisMonth" onclick="setBizRange('thisMonth')">เดือนนี้</button>
@@ -1759,6 +1759,7 @@ function setGpRange(collectDay) {
   document.getElementById("gp-end-date").value = toLocalDateStr(end);
   document.getElementById("gp-range-1-btn").classList.toggle("active", collectDay === 1);
   document.getElementById("gp-range-16-btn").classList.toggle("active", collectDay === 16);
+  loadGpSettlement(); // ✅ โหลดทันทีไม่ต้องกดปุ่มซ้ำ
 }
 function clearGpRangeActive() {
   document.getElementById("gp-range-1-btn").classList.remove("active");
@@ -2011,6 +2012,7 @@ function setBizRange(kind) {
   document.querySelectorAll('[data-range]').forEach(btn => {
     btn.classList.toggle("active", btn.dataset.range === kind);
   });
+  loadBizSummary(); // ✅ โหลดทันทีไม่ต้องกดปุ่มซ้ำ
 }
 function clearBizRangeActive() {
   document.querySelectorAll('[data-range]').forEach(btn => btn.classList.remove("active"));

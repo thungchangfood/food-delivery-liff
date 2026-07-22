@@ -16,6 +16,9 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .btn-sm{background:#333;color:white;border:none;padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:.2s;}
 .btn-sm:hover{background:#444;}
 .btn-sm:disabled{background:#666;cursor:not-allowed;opacity:.6;}
+.btn-sm.spinning{position:relative;}
+@keyframes btn-spin{to{transform:rotate(360deg)}}
+.btn-sm.spinning .spin-icon{display:inline-block;animation:btn-spin .7s linear infinite;}
 .btn-step{display:inline-flex;align-items:center;gap:5px;}
 .step-num{
   display:inline-flex;align-items:center;justify-content:center;
@@ -250,7 +253,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
         <span class="rider-dot"></span>
         <span id="rider-duty-mini-text">กำลังโหลด...</span>
       </div>
-      <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
+      <button class="btn-sm" onclick="loadAll()" id="refresh-btn"><span class="spin-icon">🔄</span> รีเฟรช</button>
     </div>
   </div>
 
@@ -631,7 +634,13 @@ async function loadMembers() {
 }
 
 async function loadAll() {
-  await Promise.all([loadOrders(), loadSystemStatus(), loadRiderDutyStatus()]);
+  const btn = document.getElementById("refresh-btn");
+  if (btn) { btn.classList.add("spinning"); btn.disabled = true; }
+  try {
+    await Promise.all([loadOrders(), loadSystemStatus(), loadRiderDutyStatus()]);
+  } finally {
+    if (btn) { btn.classList.remove("spinning"); btn.disabled = false; }
+  }
 }
 
 // ── API ────────────────────────────────────────────────
@@ -829,8 +838,10 @@ async function loadOrders() {
     if (!res.success) throw new Error(res.error);
     allOrders = res.data;
     const newCount = allOrders.filter(o => o.status === "NEW").length;
-    if (newCount > prevNewCount && prevNewCount >= 0 && newCount > 0)
+    if (newCount > prevNewCount && prevNewCount >= 0 && newCount > 0) {
       showToast("🔔 มีออร์เดอร์ใหม่ " + newCount + " รายการ!");
+      playNewOrderSound();
+    }
     prevNewCount = newCount;
     const badge = document.getElementById("new-badge");
     badge.style.display = newCount > 0 ? "inline" : "none";
@@ -860,6 +871,7 @@ function filterOrders(status, el) {
 
 function renderOrders() {
   const wrap = document.getElementById("orders-wrap");
+  const scrollY = window.scrollY; // ✅ จำตำแหน่งสกอลล์ไว้ กันจอกระตุกเลื่อนกลับบนสุดตอน auto-refresh
   const openCards = new Set();
   document.querySelectorAll(".order-body.open").forEach(el => openCards.add(el.id.replace("body-","")));
 
@@ -1105,6 +1117,7 @@ function renderOrders() {
     const body = document.getElementById("body-" + orderId);
     if (body) body.classList.add("open");
   });
+  window.scrollTo(0, scrollY); // ✅ คืนตำแหน่งสกอลล์กลับที่เดิม
 }
 
 // ── ACTIONS ────────────────────────────────────────────
@@ -1215,6 +1228,21 @@ function showToast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2500);
+}
+function playNewOrderSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [880, 1046].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.25);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.25);
+    });
+  } catch(_) {}
 }
 
 // ── หน้าย่อย: ซ่อน/แสดงแถบสถิติหลักตอนสลับหน้า ──────────────

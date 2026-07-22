@@ -723,15 +723,32 @@ async function toggleAutoConfirm() {
 // ── RIDER DUTY STATUS (real-time) ──────────────────────
 let riderDutyPanelOpen = false;
 let lastRiderDutyData = null;
+let riderDutyLoading = false;
 
 async function loadRiderDutyStatus() {
+  riderDutyLoading = true;
+  updateRiderDutyMiniLoading();
   try {
     const res = await apiGet("action=getRidersDutyStatus");
-    if (!res.success) return;
+    if (!res.success) throw new Error(res.error || "โหลดไม่สำเร็จ");
     lastRiderDutyData = res.data;
+    riderDutyLoading = false;
     renderRiderDutyBar(res.data);
     if (riderDutyPanelOpen) renderRiderDutyPanel(res.data);
-  } catch(_) {}
+  } catch(e) {
+    riderDutyLoading = false;
+    if (!lastRiderDutyData) {
+      const miniTxt = document.getElementById("rider-duty-mini-text");
+      const mini = document.getElementById("rider-duty-mini");
+      if (miniTxt) { miniTxt.textContent = "โหลดไม่สำเร็จ · แตะเพื่อลองใหม่"; mini.classList.add("warn"); }
+    }
+  }
+}
+function updateRiderDutyMiniLoading() {
+  const miniTxt = document.getElementById("rider-duty-mini-text");
+  if (!miniTxt) return;
+  // มีข้อมูลเก่าอยู่แล้ว → ไม่ต้องขึ้น "กำลังโหลด" ทับ ให้ยอดเดิมค้างไว้เงียบๆ ระหว่างรีเฟรชพื้นหลัง
+  if (!lastRiderDutyData) miniTxt.textContent = "🔄 กำลังเช็คไรเดอร์...";
 }
 
 function renderRiderDutyBar(data) {
@@ -777,12 +794,16 @@ function renderRiderDutyPanel(data) {
 }
 
 function toggleRiderDutyPanel() {
+  if (!lastRiderDutyData && !riderDutyLoading) { loadRiderDutyStatus(); }
   riderDutyPanelOpen = !riderDutyPanelOpen;
   const panel = document.getElementById("rider-duty-panel");
-  const arrow = document.getElementById("rider-duty-arrow");
   panel.style.display = riderDutyPanelOpen ? "block" : "none";
-  arrow.textContent = riderDutyPanelOpen ? "ซ่อน ∧" : "ดูรายละเอียด ›";
-  if (riderDutyPanelOpen && lastRiderDutyData) renderRiderDutyPanel(lastRiderDutyData);
+  if (!riderDutyPanelOpen) return;
+  if (lastRiderDutyData) {
+    renderRiderDutyPanel(lastRiderDutyData);
+  } else {
+    panel.innerHTML = `<div style="text-align:center;padding:10px;color:#888;font-size:13px;">🔄 กำลังเช็คไรเดอร์...</div>`;
+  }
 }
 async function toggleSystem() {
   const btn = document.getElementById("btn-toggle");

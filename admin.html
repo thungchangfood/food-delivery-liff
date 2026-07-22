@@ -1580,13 +1580,9 @@ function renderGpSettlement(data) {
     <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:600;color:#92400e;">
       📅 รอบ ${data.startDate} ถึง ${data.endDate} · ยอด GP รวมทุกร้าน ฿${grandTotalGp.toLocaleString()}
     </div>` +
-    data.restaurants.map(r => {
+data.restaurants.map(r => {
       const isSelf = r.gpPlan === "gp_self";
       const restaurantOwesUs = Number(r.restaurantOwesUs || 0);
-      const weOweRestaurant = Number(r.weOweRestaurant || 0);
-      const headerAmount = isSelf
-        ? `ร้านเป็นหนี้เรา ฿${restaurantOwesUs.toLocaleString()}`
-        : `เก็บ GP ฿${r.totalGp.toLocaleString()}`;
       return `
     <div class="order-card" style="margin-bottom:12px;">
       <div class="order-head" style="cursor:default;">
@@ -1594,7 +1590,7 @@ function renderGpSettlement(data) {
           <div class="order-id">🏪 ${r.name}${isSelf ? " 🛵 (จัดส่งเอง)" : ""}</div>
           <div class="order-meta">${r.orderCount} ออเดอร์ · ยอดอาหารรวม ฿${r.totalSubtotal.toLocaleString()}</div>
         </div>
-        <div class="order-status s-DONE" style="font-size:14px;">${headerAmount}</div>
+        <div class="order-status s-DONE" style="font-size:14px;">ร้านเป็นหนี้เรา ฿${restaurantOwesUs.toLocaleString()}</div>
       </div>
       <div class="order-body open">
         <div class="order-section">
@@ -1602,14 +1598,9 @@ function renderGpSettlement(data) {
             <div class="money-group-title shop">🏪 ยอดขายร้าน</div>
             <div class="money-row"><span>ยอดอาหารรวม</span><span>฿${r.totalSubtotal.toLocaleString()}</span></div>
             ${r.totalMenuDiscount > 0 ? `<div class="money-row"><span>ส่วนลดเมนู (ร้านลดเอง)</span><span>-฿${r.totalMenuDiscount.toLocaleString()}</span></div>` : ""}
-            <div class="money-group-title income">📥 ที่ต้องเก็บเข้าระบบ (GP)</div>
-            ${isSelf ? `
-            <div class="money-row"><span>ยอด GP ที่ร้านเป็นหนี้ระบบ</span><span style="color:#16a34a;font-weight:600;">฿${restaurantOwesUs.toLocaleString()}</span></div>
-            <div class="money-row" style="color:#888;font-size:12px;">ร้านเก็บเงินลูกค้าเองทุกออเดอร์ (ปลายทาง/โอนตรงเข้าร้าน) ระบบมีหน้าที่แค่หาออเดอร์ให้ครับ</div>
-            ` : `
-            <div class="money-row"><span>หัก GP (${r.orderCount} ออเดอร์)</span><span style="color:#16a34a;">-฿${r.totalGp.toLocaleString()}</span></div>
-            <div class="money-row total"><span>ยอดที่ต้องเก็บจากร้าน (GP)</span><span style="color:#16a34a;">฿${r.totalGp.toLocaleString()}</span></div>
-            `}
+            <div class="money-group-title income">📥 ยอดที่ร้านเป็นหนี้ระบบ (GP)</div>
+            <div class="money-row" style="color:#888;font-size:12px;">ร้านได้รับเงินสดค่าอาหารเต็มจำนวนจากไรเดอร์ตอนรับอาหารไปแล้ว</div>
+            <div class="money-row total"><span>ยอด GP ที่ต้องเก็บจากร้าน (${r.orderCount} ออเดอร์)</span><span style="color:#16a34a;">฿${restaurantOwesUs.toLocaleString()}</span></div>
           </div>
         </div>
       </div>
@@ -1689,16 +1680,13 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
   const grandGp = d.restaurants.reduce((s,r)=>s+r.totalGp,0);
   const rows = d.restaurants.map(r => {
     const isSelf = r.gpPlan === "gp_self";
-    const netCol = isSelf
-      ? `ร้านเป็นหนี้เรา ฿${Number(r.restaurantOwesUs||0).toLocaleString()}`
-      : `฿${r.totalGp.toLocaleString()}`;
     return `
     <tr>
       <td>${r.name}${isSelf ? " (จัดส่งเอง)" : ""}</td>
       <td class="num">${r.orderCount}</td>
       <td class="num">฿${r.totalSubtotal.toLocaleString()}</td>
       <td class="num">${r.totalMenuDiscount>0 ? "-฿"+r.totalMenuDiscount.toLocaleString() : "-"}</td>
-      <td class="num">${netCol}</td>
+      <td class="num">฿${Number(r.restaurantOwesUs||0).toLocaleString()}</td>
       <td style="height:40px;"></td>
     </tr>`;
   }).join("");
@@ -1709,7 +1697,7 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
     <table>
       <thead><tr>
         <th>ร้านอาหาร</th><th class="num">จำนวนออเดอร์</th><th class="num">ยอดอาหารรวม</th>
-        <th class="num">ส่วนลดเมนู</th><th class="num">ยอดที่เก็บ/หนี้*</th><th>ลายเซ็นรับทราบ</th>
+        <th class="num">ส่วนลดเมนู</th><th class="num">ร้านเป็นหนี้เรา (GP)*</th><th>ลายเซ็นรับทราบ</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot>
@@ -1724,7 +1712,7 @@ const grandSubtotal = d.restaurants.reduce((s,r)=>s+r.totalSubtotal,0);
       </tfoot>
     </table>
     <div style="margin-top:8px;font-size:12px;color:#888;">
-      *ร้านทั่วไป = ยอด GP ที่หักจากค่าอาหารตามรอบ / ร้านจัดส่งเอง (gp_self) = ยอดที่ร้านต้องโอนให้ระบบ
+      *ร้านทุกแห่งได้รับเงินสดค่าอาหารเต็มจำนวนจากไรเดอร์ตอนรับอาหารไปแล้ว ยอดนี้คือ GP ที่ร้านต้องโอนคืนให้ระบบตามรอบ
     </div>
     <div class="doc-footer">
       <div class="sign-box"><div class="sign-line">ผู้จัดเก็บเงิน</div></div>

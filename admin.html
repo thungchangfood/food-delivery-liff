@@ -485,11 +485,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
         <button class="btn-sm" onclick="loadOrders().then(renderOrderHistoryList)">🔄 โหลด</button>
       </div>
       <div class="filter-wrap" id="history-filter-wrap">
-        <div class="filter-chip active" onclick="filterHistoryStatus('all',this)">ทั้งหมด</div>
-        <div class="filter-chip" onclick="filterHistoryStatus('DONE',this)">✅ ส่งสำเร็จ</div>
-        <div class="filter-chip" onclick="filterHistoryStatus('CANCEL',this)">❌ ยกเลิก</div>
-      </div>
-      <div class="orders-wrap" id="history-orders-wrap" style="padding-top:14px;"></div>
+      <div class="filter-chip active" onclick="filterHistoryStatus('all',this)">ทั้งหมด</div>
+      <div class="filter-chip" onclick="filterHistoryStatus('DONE',this)">✅ ส่งสำเร็จ</div>
+      <div class="filter-chip" onclick="filterHistoryStatus('CANCEL',this)">❌ ยกเลิก</div>
+    </div>
+    <div id="history-summary" style="padding:0 20px 10px;font-size:13px;color:#888;"></div>
+    <div class="orders-wrap" id="history-orders-wrap" style="padding-top:14px;"></div>
   </div>
   
   <div id="clear-archive-page" style="display:none;">
@@ -910,10 +911,11 @@ async function loadOrders() {
 }
 
 function updateStats() {
-  document.getElementById("sn-NEW").textContent = allOrders.filter(o => o.status === "NEW").length;
-  document.getElementById("sn-PROCESS").textContent = allOrders.filter(o => ["ASSIGNED","WAIT_RIDER","PICKED","DELIVERING"].includes(o.status)).length;
-  document.getElementById("sn-DONE").textContent = allOrders.filter(o => o.status === "DONE").length;
-  document.getElementById("sn-CANCEL").textContent = allOrders.filter(o => o.status === "CANCEL").length;
+  const orders = getMainListOrders(); // ✅ นับเฉพาะงานวันนี้ + งานเก่าที่ยังไม่จบ ไม่รวมประวัติเก่า
+  document.getElementById("sn-NEW").textContent = orders.filter(o => o.status === "NEW").length;
+  document.getElementById("sn-PROCESS").textContent = orders.filter(o => ["ASSIGNED","WAIT_RIDER","PICKED","DELIVERING"].includes(o.status)).length;
+  document.getElementById("sn-DONE").textContent = orders.filter(o => o.status === "DONE").length;
+  document.getElementById("sn-CANCEL").textContent = orders.filter(o => o.status === "CANCEL").length;
 }
 
 function filterOrders(status, el) {
@@ -2107,9 +2109,16 @@ function hideOrderHistory() {
 }
 function renderOrderHistoryList() {
   const dateStr = document.getElementById("history-date").value;
-  let orders = getHistoryOrders();
-  if (dateStr) orders = orders.filter(o => o.CreateAT && toLocalDateStr(new Date(o.CreateAT)) === dateStr);
-  if (historyStatusFilter !== "all") orders = orders.filter(o => o.status === historyStatusFilter);
+  let baseOrders = getHistoryOrders();
+  if (dateStr) baseOrders = baseOrders.filter(o => o.CreateAT && toLocalDateStr(new Date(o.CreateAT)) === dateStr);
+
+  // ✅ สรุปจำนวนตามสถานะ นับจากช่วงวันที่ที่เลือก (ก่อนกรองสถานะ) เพื่อให้เห็นภาพรวมเสมอ
+  const doneCount = baseOrders.filter(o => o.status === "DONE").length;
+  const cancelCount = baseOrders.filter(o => o.status === "CANCEL").length;
+  document.getElementById("history-summary").textContent =
+    `พบทั้งหมด ${baseOrders.length} รายการ · ✅ สำเร็จ ${doneCount} · ❌ ยกเลิก ${cancelCount}`;
+
+  let orders = historyStatusFilter !== "all" ? baseOrders.filter(o => o.status === historyStatusFilter) : baseOrders;
   orders.sort((a,b) => new Date(b.CreateAT) - new Date(a.CreateAT));
 
   const wrap = document.getElementById("history-orders-wrap");

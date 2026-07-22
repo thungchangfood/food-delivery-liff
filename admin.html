@@ -55,6 +55,21 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
 .close-reason-input{border:1.5px solid #e0e0e0;border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:200px;}
 .close-reason-input:focus{border-color:#EF4444;}
 
+.toolbar-steps{display:flex;align-items:center;gap:6px;padding:10px 20px;background:#fafafa;border-bottom:1px solid #eee;overflow-x:auto;scrollbar-width:none;}
+.toolbar-steps::-webkit-scrollbar{display:none;}
+.toolbar-group{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.toolbar-divider{width:1px;height:20px;background:#ddd;margin:0 8px;flex-shrink:0;}
+.toolbar-label{font-size:11px;color:#999;font-weight:700;margin-right:2px;white-space:nowrap;flex-shrink:0;}
+
+.status-strip{display:flex;gap:10px;padding:12px 20px;background:#f0f0f0;flex-wrap:wrap;}
+.status-card{flex:1;min-width:230px;background:white;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;border:1.5px solid #e8e8e8;transition:.15s;}
+.status-card.st-open{border-color:#86efac;background:#f0fdf4;}
+.status-card.st-closed{border-color:#fca5a5;background:#fef2f2;}
+.status-card.st-auto-on{border-color:#d8b4fe;background:#fdf4ff;}
+.status-card.st-rider-warn{border-color:#fca5a5;background:#fef2f2;}
+.status-card-body{flex:1;min-width:0;}
+.status-card-title{font-size:12.5px;font-weight:700;color:#444;line-height:1.4;}
+
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 20px;}
 .stat-card{background:white;border-radius:12px;padding:12px 14px;border:0.5px solid #e8e8e8;cursor:pointer;transition:.15s;}
 .stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
@@ -199,53 +214,61 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div class="header-title">🛵 TC Delivery</div>
     <div class="header-right">
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
+      <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
+      <button class="btn-logout" onclick="logout()">🚪 ออกจากระบบ</button>
+    </div>
+  </div>
 
-      <!-- งานประจำวัน เรียงตามลำดับที่ต้องทำ -->
+  <div class="toolbar-steps">
+    <span class="toolbar-label">ประจำวัน</span>
+    <div class="toolbar-group">
       <button class="btn-sm btn-step" onclick="showRiderSettle()" title="ทำทุกวัน — ก่อนปิดวัน">
         <span class="step-num">1</span>💰 เคลียร์ไรเดอร์
       </button>
       <button class="btn-sm btn-step" onclick="showReport()" title="ทำทุกวัน — ดูสรุป + กดปิดวัน">
-        <span class="step-num">2</span>📊 รายงาน / ปิดวัน
+        <span class="step-num">2</span>📊 รายงาน/ปิดวัน
       </button>
-
-      <span style="width:1px;height:22px;background:rgba(255,255,255,.25);margin:0 4px;"></span>
-
-      <!-- งานตามรอบ (จ่ายเงิน/รายเดือน) -->
+    </div>
+    <div class="toolbar-divider"></div>
+    <span class="toolbar-label">ตามรอบ</span>
+    <div class="toolbar-group">
       <button class="btn-sm btn-step" onclick="showGpSettle()" title="ทำรอบวันที่ 1 และ 16 เท่านั้น">
-        <span class="step-num">3</span>🧾 เก็บ GP ร้านค้า
+        <span class="step-num">3</span>🧾 เก็บ GP
       </button>
       <button class="btn-sm btn-step" onclick="showBizSummary()" title="ดูเมื่อไหร่ก็ได้ — ภาพรวมรายสัปดาห์/เดือน">
         <span class="step-num">4</span>📈 สรุปกิจการ
       </button>
       <button class="btn-sm btn-step" style="background:#7c2d12;" onclick="showClearArchive()" title="ทำเป็นครั้งคราวเมื่อข้อมูลเยอะ">
-        <span class="step-num">5</span>🗑 ล้างข้อมูลเก่า
+        <span class="step-num">5</span>🗑 ล้างข้อมูล
       </button>
-
-      <button class="btn-sm" onclick="loadAll()" id="refresh-btn">🔄 รีเฟรช</button>
-
-      <span style="width:20px;"></span>
-
-      <button class="btn-logout" onclick="logout()">🚪 ออกจากระบบ</button>
     </div>
   </div>
 
-  <div class="system-bar open" id="system-bar">
-    <div class="system-status open" id="system-status-text">🟢 ระบบเปิดรับออร์เดอร์</div>
-    <input class="close-reason-input" id="close-reason" placeholder="เหตุผลปิดระบบ..." style="display:none;">
-    <button class="btn-toggle-close" id="btn-toggle" onclick="toggleSystem()">ปิดระบบ</button>
-  </div>
+  <div class="status-strip">
+    <div class="status-card st-open" id="system-bar">
+      <div class="status-card-body">
+        <div class="status-card-title" id="system-status-text">🟢 ระบบเปิดรับออร์เดอร์</div>
+        <input class="close-reason-input" id="close-reason" placeholder="เหตุผลปิดระบบ..." style="display:none;margin-top:6px;width:100%;">
+      </div>
+      <button class="btn-toggle-close" id="btn-toggle" onclick="toggleSystem()">ปิดระบบ</button>
+    </div>
 
-  <div class="system-bar" id="auto-confirm-bar" style="background:#eff6ff;">
-    <div class="system-status" id="auto-confirm-status-text" style="color:#1d4ed8;">🤖 ยืนยันอัตโนมัติ: ปิดอยู่</div>
-    <button class="btn-toggle-open" id="btn-toggle-auto-confirm" onclick="toggleAutoConfirm()">เปิดโหมดยืนยันอัตโนมัติ</button>
-  </div>
+    <div class="status-card" id="auto-confirm-bar">
+      <div class="status-card-body">
+        <div class="status-card-title" id="auto-confirm-status-text">🤖 ยืนยันอัตโนมัติ: ปิดอยู่</div>
+      </div>
+      <button class="btn-toggle-open" id="btn-toggle-auto-confirm" onclick="toggleAutoConfirm()">เปิด</button>
+    </div>
 
-  <div class="system-bar" id="rider-duty-bar" style="background:#f5f3ff;cursor:pointer;" onclick="toggleRiderDutyPanel()">
-    <div class="system-status" id="rider-duty-status-text" style="color:#6d28d9;">🛵 ไรเดอร์: กำลังโหลด...</div>
-    <span style="color:#a78bfa;font-size:13px;font-weight:600;" id="rider-duty-arrow">ดูรายละเอียด ›</span>
+    <div class="status-card" id="rider-duty-bar" style="cursor:pointer;" onclick="toggleRiderDutyPanel()">
+      <div class="status-card-body">
+        <div class="status-card-title" id="rider-duty-status-text">🛵 ไรเดอร์: กำลังโหลด...</div>
+      </div>
+      <span style="color:#a78bfa;font-size:12px;font-weight:600;flex-shrink:0;" id="rider-duty-arrow">รายละเอียด ›</span>
+    </div>
   </div>
-  <div id="rider-duty-panel" style="display:none;background:white;border-bottom:1px solid #e8e8e8;padding:4px 20px 14px;"></div>
-  
+  <div id="rider-duty-panel" style="display:none;background:white;margin:0 20px 12px;border-radius:12px;padding:10px 14px;border:1px solid #e8e8e8;"></div>
+
   <div class="refresh-bar" id="refresh-bar">
     <span><span class="refresh-dot"></span>รีเฟรชอัตโนมัติทุก 10 วินาที</span>
     <span id="last-refresh">-</span>
@@ -612,12 +635,12 @@ function updateSystemUI(isOpen, reason) {
   const btn = document.getElementById("btn-toggle");
   const input = document.getElementById("close-reason");
   if (isOpen) {
-    bar.className = "system-bar open"; txt.className = "system-status open";
+    bar.className = "status-card st-open";
     txt.textContent = "🟢 ระบบเปิดรับออร์เดอร์";
     btn.className = "btn-toggle-close"; btn.textContent = "ปิดระบบ";
     input.style.display = "none";
   } else {
-    bar.className = "system-bar closed"; txt.className = "system-status closed";
+    bar.className = "status-card st-closed";
     txt.textContent = "🔴 ระบบปิดรับออร์เดอร์" + (reason ? " — " + reason : "");
     btn.className = "btn-toggle-open"; btn.textContent = "เปิดระบบ";
     input.style.display = "block";
@@ -674,13 +697,16 @@ async function loadRiderDutyStatus() {
 
 function renderRiderDutyBar(data) {
   const txt = document.getElementById("rider-duty-status-text");
+  const bar = document.getElementById("rider-duty-bar");
   if (!txt) return;
   if (data.onDutyCount === 0) {
-    txt.innerHTML = `🛵 ไรเดอร์: <strong style="color:#dc2626;">ยังไม่มีใครเปิดรับงาน</strong> (จากทั้งหมด ${data.total} คน)`;
+    bar.className = "status-card st-rider-warn";
+    txt.innerHTML = `🛵 ไรเดอร์: <strong style="color:#dc2626;">ยังไม่มีใครเปิดรับงาน</strong> (${data.total} คน)`;
   } else {
-    txt.innerHTML = `🛵 ไรเดอร์เปิดรับงาน <strong>${data.onDutyCount}</strong> คน` +
+    bar.className = "status-card";
+    txt.innerHTML = `🛵 เปิดรับงาน <strong>${data.onDutyCount}</strong>` +
       ` · 🟢 ว่าง <strong style="color:#16a34a;">${data.availableCount}</strong>` +
-      ` · 🟠 กำลังส่งงาน <strong style="color:#ea580c;">${data.busyCount}</strong>`;
+      ` · 🟠 ส่งงาน <strong style="color:#ea580c;">${data.busyCount}</strong>`;
   }
 }
 

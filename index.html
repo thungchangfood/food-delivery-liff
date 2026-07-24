@@ -2164,10 +2164,12 @@ let trackOpenIds = new Set();
 
 function renderTrack(active, all) {
   trackOrdersCache = all;
-  const steps = ["NEW","ASSIGNED","PICKED","DELIVERING","DONE"];
-  const emoji = {NEW:"⏳",ASSIGNED:"✅",PICKED:"👨‍🍳",DELIVERING:"🛵",DONE:"✅",CANCEL:"❌"};
-  const th = {NEW:"รอยืนยัน",ASSIGNED:"ยืนยันแล้ว",PICKED:"กำลังปรุง",DELIVERING:"กำลังส่ง",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
-  const lbl = ["รอยืนยัน","ยืนยัน","ปรุงอาหาร","กำลังส่ง","ส่งแล้ว"];
+  // ✅ ครบ 5 สถานะจริงตามที่ backend ใช้ (เดิมขาด WAIT_RIDER ทำให้แถบไม่ขึ้นตอนรอไรเดอร์
+  // และ PICKED ถูกเข้าใจผิดว่า "กำลังส่ง" ทั้งที่ไรเดอร์เพิ่งกดรับงาน ยังไม่ถึงร้านด้วยซ้ำ)
+  const steps = ["NEW","ASSIGNED","WAIT_RIDER","PICKED","DONE"];
+  const emoji = {NEW:"⏳",ASSIGNED:"✅",WAIT_RIDER:"👨‍🍳",PICKED:"🛵",DONE:"✅",CANCEL:"❌"};
+  const th = {NEW:"รอยืนยัน",ASSIGNED:"ร้านรับออเดอร์แล้ว",WAIT_RIDER:"รอไรเดอร์รับงาน",PICKED:"ไรเดอร์กำลังไปรับอาหาร",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
+  const lbl = ["รอยืนยัน","ร้านรับออเดอร์","รอไรเดอร์","ไรเดอร์รับงานแล้ว","ส่งสำเร็จ"];
   let html = "";
   if (active.length) {
     html += `<div style="font-size:14px;font-weight:700;margin-bottom:10px;">📦 กำลังดำเนินการ</div>`;
@@ -2190,7 +2192,7 @@ function renderTrack(active, all) {
           <div class="track-item-row" style="color:#888;"><span>ค่าจัดส่ง</span><span>฿${o.deliveryFee||0}</span></div>
           <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
         </div>
-        ${o.status==="DELIVERING"?`<div class="rider-info">🛵 ไรเดอร์กำลังมาส่งครับ!</div>`:""}
+        ${o.status==="PICKED"?`<div class="rider-info">🛵 ไรเดอร์รับงานแล้ว กำลังเดินทางไปรับอาหารที่ร้านครับ (ร้านอาจกำลังเตรียมอาหารอยู่)</div>`:""}
         ${(o.status==="NEW"||o.status==="ASSIGNED")?`
         <button onclick="event.stopPropagation();openCancelSheet('${o.orderId}')" style="margin-top:10px;width:100%;padding:10px;background:white;border:1.5px solid #EF4444;color:#EF4444;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">❌ ยกเลิกออเดอร์นี้</button>
         <div style="margin-top:6px;font-size:11px;color:#aaa;text-align:center;">หลังร้านค้ายืนยันออเดอร์แล้ว จะไม่สามารถยกเลิกออเดอร์ได้ครับ</div>

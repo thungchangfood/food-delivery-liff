@@ -252,6 +252,10 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
     <div class="header-right">
       <span class="badge-new" id="new-badge" style="display:none">0 ใหม่</span>
       <div class="rider-mini" id="rider-duty-mini" onclick="toggleRiderDutyPanel()">
+      <div class="rider-mini" id="system-status-mini" onclick="openSidebar()" style="font-weight:700;">
+        <span class="rider-dot" id="system-status-dot"></span>
+        <span id="system-status-mini-text">กำลังเช็ค...</span>
+      </div>
         <span class="rider-dot"></span>
         <span id="rider-duty-mini-text">กำลังโหลด...</span>
       </div>
@@ -750,6 +754,24 @@ function updateSystemUI(isOpen, reason) {
     btn.className = "btn-toggle-open"; btn.textContent = "เปิดระบบ";
     input.style.display = "block";
     if (reason) input.value = reason;
+  }
+  updateSystemStatusMini(isOpen, reason);
+}
+
+// ✅ ป้ายสถานะเปิด/ปิดระบบที่เห็นตลอดบนหัวจอ ไม่ต้องเปิดเมนูดู
+function updateSystemStatusMini(isOpen, reason) {
+  const mini = document.getElementById("system-status-mini");
+  const dot = document.getElementById("system-status-dot");
+  const txt = document.getElementById("system-status-mini-text");
+  if (!mini) return;
+  if (isOpen) {
+    mini.classList.remove("warn");
+    dot.style.background = "#22c55e";
+    txt.textContent = "เปิดรับออเดอร์";
+  } else {
+    mini.classList.add("warn");
+    dot.style.background = "#EF4444";
+    txt.textContent = "ปิดรับออเดอร์" + (reason ? " · " + reason : "");
   }
 }
 

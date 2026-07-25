@@ -294,8 +294,19 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 /* ── Shared ── */
 .bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,20,30,.05);z-index:99;}
 .pb-80{padding-bottom:80px;}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:white;padding:11px 20px;border-radius:var(--radius-pill);font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:300;box-shadow:var(--shadow-md);}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:white;padding:13px 18px;border-radius:var(--radius-md);font-size:13.5px;line-height:1.6;opacity:0;transition:.25s;pointer-events:none;z-index:300;box-shadow:var(--shadow-md);max-width:min(90%, 380px);width:max-content;text-align:left;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+/* ── Error Modal (สำหรับ error ที่บล็อกการทำงาน ต้องกดปิดเอง) ── */
+.error-modal-overlay{position:fixed;inset:0;background:rgba(15,15,20,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;}
+.error-modal-overlay.show{display:flex;}
+.error-modal{background:var(--surface);border-radius:var(--radius-lg);padding:30px 24px 24px;max-width:340px;width:100%;box-shadow:var(--shadow-md);text-align:center;animation:error-modal-in .22s cubic-bezier(.32,.72,0,1);}
+@keyframes error-modal-in{from{opacity:0;transform:scale(.9) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.error-modal-icon-wrap{width:64px;height:64px;border-radius:50%;background:var(--amber-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.error-modal-icon{font-size:30px;}
+.error-modal-title{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:8px;letter-spacing:-.2px;}
+.error-modal-msg{font-size:13.5px;color:var(--ink-soft);line-height:1.65;margin-bottom:22px;white-space:pre-line;}
+.error-modal-btn{width:100%;background:var(--amber);color:white;border:none;border-radius:var(--radius-sm);padding:13px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;}
+.error-modal-btn:active{transform:scale(.98);}
 </style>
 </head>
 <body>
@@ -643,6 +654,15 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="error-modal-overlay" id="error-modal-overlay">
+  <div class="error-modal">
+    <div class="error-modal-icon-wrap"><span class="error-modal-icon">⚠️</span></div>
+    <div class="error-modal-title">ไม่สามารถสั่งได้</div>
+    <div class="error-modal-msg" id="error-modal-msg"></div>
+    <button class="error-modal-btn" onclick="closeErrorModal()">เข้าใจแล้ว</button>
+  </div>
+</div>
 
 <script>
 const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
@@ -1993,7 +2013,7 @@ async function submitOrder() {
     }
     await doCreateOrder(name, phone, address, note, payment, items);
   } catch(e) {
-    showToast("❌ " + e.message);
+    showErrorModal(e.message);
   } finally {
     isSubmittingOrder = false;
     if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
@@ -2020,7 +2040,7 @@ async function submitOrderWithDeposit() {
   try {
     await doCreateOrder(name, phone, address, note, payment, Object.values(cart));
   } catch(e) {
-    showToast("❌ " + e.message);
+    showErrorModal(e.message);
   } finally {
     isSubmittingOrder = false;
     if (depBtn) { depBtn.disabled = false; depBtn.textContent = "✅ ยืนยันสั่งอาหาร"; }
@@ -2406,9 +2426,22 @@ function showEditInfoNotice() {
 function contactAdminSuspended() {
   showToast("กรุณาปิดหน้านี้แล้วพิมพ์ \"ติดต่อแอดมิน\" ในแชทไลน์ได้เลยครับ");
 }
+let toastHideTimer = null;
 function showToast(msg) {
-  const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2000);
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  if (toastHideTimer) clearTimeout(toastHideTimer);
+  // ✅ ข้อความยิ่งยาว ยิ่งแสดงนาน (ขั้นต่ำ 2.5 วิ, สูงสุด 7 วิ) กันข้อความ error ยาวๆ หายก่อนอ่านทัน
+  const duration = Math.min(7000, Math.max(2500, msg.length * 70));
+  toastHideTimer = setTimeout(() => t.classList.remove("show"), duration);
+}
+function showErrorModal(msg) {
+  document.getElementById("error-modal-msg").textContent = msg;
+  document.getElementById("error-modal-overlay").classList.add("show");
+}
+function closeErrorModal() {
+  document.getElementById("error-modal-overlay").classList.remove("show");
 }
 function resetAndHome() {
   currentShop = null; currentMenus = [];

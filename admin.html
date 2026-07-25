@@ -975,6 +975,7 @@ function renderOrders() {
 
   wrap.innerHTML = orders.map(o => {
     const isSelfDel = restaurantGpPlanMap[o.restaurantId] === "gp_self";
+    const noRidersAvailable = !isSelfDel && lastRiderDutyData && lastRiderDutyData.availableCount === 0;
     const statusLabel = (o.status === "PICKED" && isSelfDel)
       ? "🛵 ร้านกำลังจัดส่งเอง"
       : (statusTh[o.status] || o.status);
@@ -1059,20 +1060,23 @@ function renderOrders() {
     if (processingOrders.has(String(o.orderId))) {
       actions = `<div style="text-align:center;color:#888;padding:8px;font-weight:600;">⏳ กำลังดำเนินการ...</div>`;
     } else if (o.status === "NEW") {
+      const riderWarnHtml = noRidersAvailable
+        ? `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:12.5px;color:#991b1b;font-weight:600;margin-bottom:2px;">⚠️ ตอนนี้ไม่มีไรเดอร์ว่างเลยครับ — ถ้ายืนยันร้านจะเริ่มทำอาหารทันที อาจรอไรเดอร์นาน</div>`
+        : "";
       if (isPromptpay && !isPaid) {
-        actions = `
+        actions = riderWarnHtml + `
           <button class="btn-action btn-pay" onclick="confirmPayment('${o.orderId}')">💚 ยืนยันรับสลิป / รับเงินแล้ว</button>
           <button class="btn-action btn-confirm-disabled" disabled>✅ ยืนยันออร์เดอร์ (รอยืนยันสลิปก่อน)</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
       } else if (needDeposit && !depositPaid) {
-        actions = `
+        actions = riderWarnHtml + `
           <input class="deposit-input" id="deposit-note-${o.orderId}" placeholder="หมายเหตุ เช่น รับสลิปมัดจำ ฿${depositAmount} แล้ว"
             onfocus="pauseRefresh=true" onblur="pauseRefresh=false">
           <button class="btn-action btn-deposit" onclick="confirmDepositAndOrder('${o.orderId}')">💸 รับมัดจำ ฿${depositAmount} + ยืนยันออร์เดอร์</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
       } else {
-        actions = `
-          <button class="btn-action btn-confirm" onclick="confirmOrder('${o.orderId}')">✅ ยืนยันออร์เดอร์</button>
+        actions = riderWarnHtml + `
+          <button class="btn-action btn-confirm" onclick="confirmOrder('${o.orderId}')">${noRidersAvailable ? "⚠️ ยืนยันออร์เดอร์ (ไม่มีไรเดอร์ว่าง)" : "✅ ยืนยันออร์เดอร์"}</button>
           <button class="btn-action btn-cancel" onclick="cancelOrder('${o.orderId}')">❌ ยกเลิกออร์เดอร์</button>`;
       }
     } else if (o.status === "ASSIGNED" || o.status === "WAIT_RIDER") {

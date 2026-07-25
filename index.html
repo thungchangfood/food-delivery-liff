@@ -654,7 +654,7 @@ let openOnlyFilter = false;
 let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
-let trackTimer = null, countdownTimer = null, pendingOrderData = null;
+let trackTimer = null, countdownTimer = null, currentSuccessOrderId = null;
 let isSubmittingOrder = false;
 let promoApplied = false;
 let promoInfo = null;
@@ -684,7 +684,6 @@ function saveLocalState() {
     const state = {
       cart,
       currentShopId: currentShop?.restaurantId || null,
-      pendingOrderData,
       savedAt: Date.now()
     };
     localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
@@ -705,29 +704,6 @@ function restoreLocalStateIfAny() {
   if (!state) return;
   const ageMinutes = (Date.now() - (state.savedAt || 0)) / 60000;
   if (ageMinutes > LOCAL_STATE_MAX_AGE_MIN) { clearLocalState(); return; }
-
-  if (state.pendingOrderData) {
-    const shop = allShops.find(s => s.restaurantId === state.pendingOrderData.restaurantId);
-    const shopName = shop ? shop.name : "ร้านค้า";
-    const total = (Number(state.pendingOrderData.subtotal||0) - Number(state.pendingOrderData.foodDiscount||0)) + Number(state.pendingOrderData.deliveryFee||0);
-    const resume = confirm(`พบออเดอร์ที่ยังไม่ได้ยืนยันจากครั้งก่อน (${shopName})\nยอดรวม ฿${total}\n\nต้องการสั่งต่อเลยไหมครับ?`);
-    if (resume) {
-      pendingOrderData = state.pendingOrderData;
-      cart = {};
-      if (shop) currentShop = shop;
-      updateCartUI();
-      document.getElementById("success-order-id").textContent = "กำลังยืนยันออเดอร์...";
-      document.getElementById("payment-info").style.display = "none";
-      document.getElementById("cancel-order-btn").style.display = "";
-      document.getElementById("countdown-wrap").style.display = "";
-      showPage("page-success");
-      startCountdown(10);
-    } else {
-      clearLocalState();
-      showToast("ยกเลิกออเดอร์ค้างแล้วครับ");
-    }
-    return;
-  }
 
   if (state.cart && Object.keys(state.cart).length && state.currentShopId) {
     const shop = allShops.find(s => s.restaurantId === state.currentShopId);
@@ -2016,6 +1992,8 @@ async function submitOrder() {
       showPage("page-deposit"); return;
     }
     await doCreateOrder(name, phone, address, note, payment, items);
+  } catch(e) {
+    showToast("❌ " + e.message);
   } finally {
     isSubmittingOrder = false;
     if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
@@ -2041,6 +2019,8 @@ async function submitOrderWithDeposit() {
 
   try {
     await doCreateOrder(name, phone, address, note, payment, Object.values(cart));
+  } catch(e) {
+    showToast("❌ " + e.message);
   } finally {
     isSubmittingOrder = false;
     if (depBtn) { depBtn.disabled = false; depBtn.textContent = "✅ ยืนยันสั่งอาหาร"; }
@@ -2048,17 +2028,8 @@ async function submitOrderWithDeposit() {
 }
 
 async function doCreateOrder(name, phone, address, note, payment, items) {
-  const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
-  const foodDiscount = calcFoodDiscount(subtotal);
-  const smallFee = calcSmallOrderFee(subtotal, currentShop);
-  const netSubtotal = subtotal - foodDiscount + smallFee;
-  const delivery = calcDelivery(subtotal);
-  const isSelfDelivery = currentShop?.gpPlan === "gp_self";
-  const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
-  const wantsTransfer = payment !== "cash";
-  const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? netSubtotal+delivery : 0);
-
-  pendingOrderData = {
+  const orderPayload = {
+    action: "createOrder",
     clientOrderKey: (currentMember.memberId + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,8)),
     memberId: currentMember.memberId,
     restaurantId: currentShop.restaurantId,
@@ -2066,76 +2037,83 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     address, note,
     lat: userLat, lng: userLng,
     paymentType: payment,
-    promoCode: promoApplied ? (document.getElementById("promo-input")?.value.trim() || "") : "",
-    promoType: promoApplied ? (promoInfo?.promoType || "free_delivery") : "",
-    promoValue: promoApplied ? Number(promoInfo?.value || 0) : 0,
-    subtotal,
-    foodDiscount,
-    smallOrderFee: smallFee,
-    needDeposit: needDeposit || wantsTransfer,
-    depositAmount,
-    deliveryFee: delivery
+    promoCode: promoApplied ? (document.getElementById("promo-input")?.value.trim() || "") : ""
   };
-  saveLocalState();
 
-  document.getElementById("success-order-id").textContent = "กำลังยืนยันออเดอร์...";
-  document.getElementById("payment-info").style.display = "none";
-  document.getElementById("cancel-order-btn").style.display = "";
-  document.getElementById("countdown-wrap").style.display = "";
+  // ✅ ยิงออเดอร์เข้า server ทันที รอผลจริงก่อน — กันเคส error (เช่น ระยะทางเกิน) แต่ลูกค้าเห็นหน้าสำเร็จไปก่อนแล้ว
+  const r = await apiPost(orderPayload);
+  if (!r.success) throw new Error(r.error || "สั่งอาหารไม่สำเร็จ กรุณาลองใหม่ครับ");
+
+  const { orderId, total, needDeposit, depositAmount } = r.data;
+
+  if (currentMember) currentMember.isFirstOrder = false;
+  renderFirstOrderBanner();
+  clearLocalState();
   cart = {}; updateCartUI();
+
+  currentSuccessOrderId = orderId;
+  document.getElementById("success-order-id").textContent = "รหัสออเดอร์: " + orderId;
+  document.getElementById("cancel-order-btn").style.display = "";
+  document.getElementById("cancel-order-btn").disabled = false;
+  document.getElementById("cancel-order-btn").textContent = "❌ ยกเลิกออเดอร์";
+  document.getElementById("countdown-wrap").style.display = "";
+
+  const pi = document.getElementById("payment-info");
+  pi.style.display = "none";
+  if (needDeposit) {
+    pi.style.display = "block";
+    pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
+      <div style="margin-top:10px;background:white;padding:10px;border-radius:8px;">
+        <div style="font-size:12px;color:#666;">โอนไปที่</div>
+        <div id="success-bank-account" style="font-size:16px;font-weight:700;">${bankAccount}</div>
+        <div style="font-size:13px;color:#666;">${bankName}</div>
+        <button onclick="copySuccessBankAccount()" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#06C755;color:white;font-size:14px;font-weight:600;cursor:pointer;">📋 คัดลอกเลขบัญชี</button>
+      </div>`;
+  } else if (payment === "promptpay") {
+    pi.style.display = "block";
+    pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
+  }
+
   showPage("page-success");
-  startCountdown(10);
+  startCancelCountdown(10);
 }
 
-async function startCountdown(sec) {
+function startCancelCountdown(sec) {
   const countEl = document.getElementById("countdown-sec");
   const cancelBtn = document.getElementById("cancel-order-btn");
-  const orderIdEl = document.getElementById("success-order-id");
   let rem = sec; countEl.textContent = rem;
-  countdownTimer = setInterval(async() => {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
     rem--; countEl.textContent = rem;
     if (rem <= 0) {
       clearInterval(countdownTimer); countdownTimer = null;
       cancelBtn.style.display = "none";
       document.getElementById("countdown-wrap").style.display = "none";
-      orderIdEl.textContent = "กำลังส่งออเดอร์...";
-      try {
-        const r = await apiPost({ action:"createOrder", ...pendingOrderData });
-        if (!r.success) throw new Error(r.error);
-        const { orderId, total, needDeposit, depositAmount } = r.data;
-        orderIdEl.textContent = `รหัสออเดอร์: ${orderId}`;
-
-        if (currentMember) currentMember.isFirstOrder = false;
-        renderFirstOrderBanner();
-        clearLocalState();
-
-        const pi = document.getElementById("payment-info");
-        if (needDeposit) {
-          pi.style.display = "block";
-          pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
-            <div style="margin-top:10px;background:white;padding:10px;border-radius:8px;">
-              <div style="font-size:12px;color:#666;">โอนไปที่</div>
-              <div id="success-bank-account" style="font-size:16px;font-weight:700;">${bankAccount}</div>
-              <div style="font-size:13px;color:#666;">${bankName}</div>
-              <button onclick="copySuccessBankAccount()" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#06C755;color:white;font-size:14px;font-weight:600;cursor:pointer;">📋 คัดลอกเลขบัญชี</button>
-            </div>`;
-        } else if (pendingOrderData?.paymentType === "promptpay") {
-          pi.style.display = "block";
-          pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
-        }
-        pendingOrderData = null;
-      } catch(e) { orderIdEl.textContent = "เกิดข้อผิดพลาด กรุณาลองใหม่"; showToast(e.message); }
     }
   }, 1000);
 }
 
-function cancelPendingOrder() {
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-  pendingOrderData = null;
-  clearLocalState();
-  refreshMemberFirstOrderStatus();
-  showToast("ยกเลิกออเดอร์แล้วครับ");
-  resetAndHome();
+async function cancelPendingOrder() {
+  if (!currentSuccessOrderId || !currentMember) return;
+  const btn = document.getElementById("cancel-order-btn");
+  btn.disabled = true; btn.textContent = "กำลังยกเลิก...";
+  try {
+    const r = await apiPost({
+      action: "cancelOrder",
+      orderId: currentSuccessOrderId,
+      memberId: currentMember.memberId,
+      reason: "ลูกค้ายกเลิกเอง (ภายใน 10 วินาทีแรก)"
+    });
+    if (!r.success) throw new Error(r.error || "ยกเลิกไม่สำเร็จ");
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    currentSuccessOrderId = null;
+    await refreshMemberFirstOrderStatus();
+    showToast("ยกเลิกออเดอร์แล้วครับ");
+    resetAndHome();
+  } catch(e) {
+    showToast("❌ " + e.message);
+    btn.disabled = false; btn.textContent = "❌ ยกเลิกออเดอร์";
+  }
 }
 
 async function refreshMemberFirstOrderStatus() {
@@ -2451,7 +2429,7 @@ function resetAndHome() {
 }
 function safeResetAndHome() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-  pendingOrderData = null;
+  currentSuccessOrderId = null;
   resetAndHome();
 }
 async function copyBankAccount() {

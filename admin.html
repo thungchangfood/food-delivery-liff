@@ -591,6 +591,7 @@ let refreshTimer = null;
 let lastKnownUpdateTime = "";
 let systemOpen = true;
 let autoConfirmEnabled = false;
+let maxDeliveryDistanceKm = 5;
 let restaurantsMap = {};
 let restaurantGpPlanMap = {}; // restaurantId → gpPlan (ใช้เช็คร้าน gp_self)
 let membersMap = {};      // memberId → { name, phone }
@@ -734,6 +735,7 @@ async function loadSystemStatus() {
         deliveryDiscountThreshold = Number(res.data.deliveryDiscountThreshold);
       }
       autoConfirmEnabled = !!res.data.autoConfirmEnabled;
+      maxDeliveryDistanceKm = Number(res.data.maxDeliveryDistanceKm ?? 5);
       updateAutoConfirmUI(autoConfirmEnabled);
     }
   } catch(_) {}
@@ -782,7 +784,7 @@ function updateAutoConfirmUI(enabled) {
   if (enabled) {
     bar.style.background = "#fdf4ff";
     txt.style.color = "#7e22ce";
-    txt.textContent = "🤖 ยืนยันอัตโนมัติ: เปิดอยู่ (เงินสดเท่านั้น ไม่เกิน ฿300/ออเดอร์)";
+    txt.textContent = "🤖 ยืนยันอัตโนมัติ: เปิดอยู่ (เงินสดเท่านั้น ไม่เกิน ฿300/ออเดอร์ · ระยะทางไม่เกิน " + maxDeliveryDistanceKm + " กม.)";
     btn.className = "btn-toggle-close";
     btn.textContent = "ปิดโหมดยืนยันอัตโนมัติ";
   } else {

@@ -627,12 +627,12 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
         <path class="success-check-path" d="M14 27L22 35L38 17" stroke="var(--brand-darker)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="success-title">สั่งอาหารสำเร็จ!</div>
-    <div class="success-sub">ทางร้านจะยืนยันออเดอร์เร็วๆ นี้<br>ติดตามสถานะได้ที่หน้าหลักครับ</div>
+    <div class="success-title" id="success-title">สั่งอาหารสำเร็จ!</div>
+    <div class="success-sub" id="success-sub">ทางร้านจะยืนยันออเดอร์เร็วๆ นี้<br>ติดตามสถานะได้ที่หน้าหลักครับ</div>
     <div class="order-id-box" id="success-order-id"></div>
 
     <div id="countdown-wrap" class="countdown-ring-wrap">
-      <div class="countdown-ring-label">สามารถยกเลิกได้ภายใน</div>
+      <div class="countdown-ring-label" id="countdown-ring-label">ยืนยันออเดอร์ในอีก</div>
       <div class="countdown-ring">
         <svg viewBox="0 0 120 120">
           <circle class="countdown-ring-bg" cx="60" cy="60" r="54"/>
@@ -645,11 +645,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
       </div>
     </div>
 
-    <button id="cancel-order-btn" class="btn-cancel-order" onclick="cancelPendingOrder()">
-      ❌ ยกเลิกออเดอร์
+    <button id="cancel-order-btn" class="btn-cancel-order" onclick="cancelPendingOrderBeforeCreate()">
+      ❌ ยกเลิก
     </button>
     <div id="payment-info" style="display:none;" class="payment-info"></div>
-    <button class="btn-green" onclick="safeResetAndHome()">กลับหน้าหลัก</button>
+    <button class="btn-green" id="success-home-btn" onclick="safeResetAndHome()">กลับหน้าหลัก</button>
   </div>
 </div>
 
@@ -720,16 +720,8 @@ let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
 let trackTimer = null, countdownTimer = null, currentSuccessOrderId = null;
-let finalizeTimer = null;
-const FINALIZE_BUFFER_SEC = 13; // ปุ่มยกเลิกโชว์ 10 วิ + เผื่อเวลาเน็ตช้าอีก 3 วิ
-
-function scheduleFinalizeOrder(orderId) {
-  if (finalizeTimer) clearTimeout(finalizeTimer);
-  finalizeTimer = setTimeout(() => {
-    apiPost({ action: "finalizeOrder", orderId }).catch(() => {});
-    finalizeTimer = null;
-  }, FINALIZE_BUFFER_SEC * 1000);
-}
+let pendingOrderData = null, pendingConfirmTimer = null, isFinalizingOrder = false;
+const PENDING_CONFIRM_SEC = 10;
 let isSubmittingOrder = false;
 let promoApplied = false;
 let promoInfo = null;
@@ -2104,7 +2096,7 @@ async function submitOrder() {
       }
       showPage("page-deposit"); return;
     }
-    await doCreateOrder(name, phone, address, note, payment, items);
+    beginPendingOrder(name, phone, address, note, payment, items);
   } catch(e) {
     showErrorModal(e.message);
   } finally {
@@ -2131,7 +2123,7 @@ async function submitOrderWithDeposit() {
   if (depBtn) { depBtn.disabled = true; depBtn.textContent = "กำลังส่งออเดอร์..."; }
 
   try {
-    await doCreateOrder(name, phone, address, note, payment, Object.values(cart));
+    beginPendingOrder(name, phone, address, note, payment, Object.values(cart));
   } catch(e) {
     showErrorModal(e.message);
   } finally {
@@ -2140,7 +2132,70 @@ async function submitOrderWithDeposit() {
   }
 }
 
-async function doCreateOrder(name, phone, address, note, payment, items) {
+const COUNTDOWN_RING_CIRCUMFERENCE = 339.292; // 2 * π * 54
+
+// ✅ ยังไม่สร้างออเดอร์จริง แค่เก็บข้อมูลไว้รอ แล้วขึ้นหน้ารอยืนยัน 10 วิ
+function beginPendingOrder(name, phone, address, note, payment, items) {
+  pendingOrderData = { name, phone, address, note, payment, items: items.map(e => ({...e})) };
+  isFinalizingOrder = false;
+
+  document.getElementById("success-title").textContent = "กำลังยืนยันออเดอร์...";
+  document.getElementById("success-sub").innerHTML = "กรุณารอสักครู่ หรือกดยกเลิกได้หากยังไม่พร้อมครับ";
+  document.getElementById("success-order-id").textContent = "ยังไม่ได้สร้างออเดอร์";
+  document.getElementById("payment-info").style.display = "none";
+  document.getElementById("success-home-btn").style.display = "none";
+  document.getElementById("cancel-order-btn").style.display = "";
+  document.getElementById("cancel-order-btn").disabled = false;
+  document.getElementById("cancel-order-btn").textContent = "❌ ยกเลิก";
+  document.getElementById("countdown-wrap").style.display = "";
+  const ringLabel = document.getElementById("countdown-ring-label");
+  if (ringLabel) ringLabel.textContent = "ยืนยันออเดอร์ในอีก";
+
+  updateSuccessPageLogo();
+  showPage("page-success");
+  startPendingCountdown(PENDING_CONFIRM_SEC);
+}
+
+function startPendingCountdown(sec) {
+  const countEl = document.getElementById("countdown-sec");
+  const ringFg = document.getElementById("countdown-ring-fg");
+  let rem = sec; countEl.textContent = rem;
+  if (ringFg) ringFg.style.strokeDashoffset = "0";
+  if (pendingConfirmTimer) clearInterval(pendingConfirmTimer);
+  pendingConfirmTimer = setInterval(() => {
+    rem--; countEl.textContent = rem;
+    if (ringFg) {
+      const offset = COUNTDOWN_RING_CIRCUMFERENCE * (1 - rem / sec);
+      ringFg.style.strokeDashoffset = String(offset);
+    }
+    if (rem <= 0) {
+      clearInterval(pendingConfirmTimer); pendingConfirmTimer = null;
+      finalizePendingOrder();
+    }
+  }, 1000);
+}
+
+// ✅ ยกเลิกก่อนครบ 10 วิ — ไม่มีอะไรถูกสร้างในระบบเลย ไม่ต้องยิง API
+function cancelPendingOrderBeforeCreate() {
+  if (isFinalizingOrder) { showToast("กำลังสร้างออเดอร์ ไม่สามารถยกเลิกได้แล้วครับ"); return; }
+  if (pendingConfirmTimer) { clearInterval(pendingConfirmTimer); pendingConfirmTimer = null; }
+  pendingOrderData = null;
+  showToast("ยกเลิกแล้วครับ");
+  resetAndHome();
+}
+
+// ✅ ครบ 10 วิแล้ว (ไม่ถูกยกเลิก) ค่อยสร้างออเดอร์จริงตอนนี้
+async function finalizePendingOrder() {
+  if (!pendingOrderData || isFinalizingOrder) return;
+  isFinalizingOrder = true;
+
+  document.getElementById("cancel-order-btn").style.display = "none";
+  document.getElementById("countdown-wrap").style.display = "none";
+  document.getElementById("success-title").textContent = "กำลังส่งออเดอร์...";
+  document.getElementById("success-sub").innerHTML = "กรุณารอสักครู่ครับ";
+
+  const { address, note, payment, items } = pendingOrderData;
+
   const orderPayload = {
     action: "createOrder",
     clientOrderKey: (currentMember.memberId + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,8)),
@@ -2153,89 +2208,44 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     promoCode: promoApplied ? (document.getElementById("promo-input")?.value.trim() || "") : ""
   };
 
-  // ✅ ยิงออเดอร์เข้า server ทันที รอผลจริงก่อน — กันเคส error (เช่น ระยะทางเกิน) แต่ลูกค้าเห็นหน้าสำเร็จไปก่อนแล้ว
-  const r = await apiPost(orderPayload);
-  if (!r.success) throw new Error(r.error || "สั่งอาหารไม่สำเร็จ กรุณาลองใหม่ครับ");
-
-  const { orderId, total, needDeposit, depositAmount } = r.data;
-
-  if (currentMember) currentMember.isFirstOrder = false;
-  renderFirstOrderBanner();
-  clearLocalState();
-  cart = {}; updateCartUI();
-
-  currentSuccessOrderId = orderId;
-  scheduleFinalizeOrder(orderId);
-  document.getElementById("success-order-id").textContent = "รหัสออเดอร์: " + orderId;
-  document.getElementById("cancel-order-btn").style.display = "";
-  document.getElementById("cancel-order-btn").disabled = false;
-  document.getElementById("cancel-order-btn").textContent = "❌ ยกเลิกออเดอร์";
-  document.getElementById("countdown-wrap").style.display = "";
-
-  const pi = document.getElementById("payment-info");
-  pi.style.display = "none";
-  if (needDeposit) {
-    pi.style.display = "block";
-    pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
-      <div style="margin-top:10px;background:white;padding:10px;border-radius:8px;">
-        <div style="font-size:12px;color:#666;">โอนไปที่</div>
-        <div id="success-bank-account" style="font-size:16px;font-weight:700;">${bankAccount}</div>
-        <div style="font-size:13px;color:#666;">${bankName}</div>
-        <button onclick="copySuccessBankAccount()" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#06C755;color:white;font-size:14px;font-weight:600;cursor:pointer;">📋 คัดลอกเลขบัญชี</button>
-      </div>`;
-  } else if (payment === "promptpay") {
-    pi.style.display = "block";
-    pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
-  }
-
-  updateSuccessPageLogo();
-  showPage("page-success");
-  startCancelCountdown(10);
-}
-
-const COUNTDOWN_RING_CIRCUMFERENCE = 339.292; // 2 * π * 54
-function startCancelCountdown(sec) {
-  const countEl = document.getElementById("countdown-sec");
-  const cancelBtn = document.getElementById("cancel-order-btn");
-  const ringFg = document.getElementById("countdown-ring-fg");
-  let rem = sec; countEl.textContent = rem;
-  if (ringFg) ringFg.style.strokeDashoffset = "0";
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    rem--; countEl.textContent = rem;
-    if (ringFg) {
-      const offset = COUNTDOWN_RING_CIRCUMFERENCE * (1 - rem / sec);
-      ringFg.style.strokeDashoffset = String(offset);
-    }
-    if (rem <= 0) {
-      clearInterval(countdownTimer); countdownTimer = null;
-      cancelBtn.style.display = "none";
-      document.getElementById("countdown-wrap").style.display = "none";
-    }
-  }, 1000);
-}
-
-async function cancelPendingOrder() {
-  if (!currentSuccessOrderId || !currentMember) return;
-  const btn = document.getElementById("cancel-order-btn");
-  btn.disabled = true; btn.textContent = "กำลังยกเลิก...";
   try {
-    const r = await apiPost({
-      action: "cancelOrder",
-      orderId: currentSuccessOrderId,
-      memberId: currentMember.memberId,
-      reason: "ลูกค้ายกเลิกเอง (ภายใน 10 วินาทีแรก)"
-    });
-    if (!r.success) throw new Error(r.error || "ยกเลิกไม่สำเร็จ");
-    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-    if (finalizeTimer) { clearTimeout(finalizeTimer); finalizeTimer = null; }
-    currentSuccessOrderId = null;
-    await refreshMemberFirstOrderStatus();
-    showToast("ยกเลิกออเดอร์แล้วครับ");
-    resetAndHome();
+    const r = await apiPost(orderPayload);
+    if (!r.success) throw new Error(r.error || "สั่งอาหารไม่สำเร็จ กรุณาลองใหม่ครับ");
+
+    const { orderId, total, needDeposit, depositAmount } = r.data;
+
+    if (currentMember) currentMember.isFirstOrder = false;
+    renderFirstOrderBanner();
+    clearLocalState();
+    cart = {}; updateCartUI();
+    pendingOrderData = null;
+
+    document.getElementById("success-title").textContent = "สั่งอาหารสำเร็จ!";
+    document.getElementById("success-sub").innerHTML = "ทางร้านจะยืนยันออเดอร์เร็วๆ นี้<br>ติดตามสถานะได้ที่หน้าหลักครับ";
+    document.getElementById("success-order-id").textContent = "รหัสออเดอร์: " + orderId;
+    document.getElementById("success-home-btn").style.display = "";
+
+    const pi = document.getElementById("payment-info");
+    pi.style.display = "none";
+    if (needDeposit) {
+      pi.style.display = "block";
+      pi.innerHTML = `💸 <strong>กรุณาส่งสลิปมัดจำ ฿${depositAmount} มาในไลน์ OA ครับ</strong><br>
+        <div style="margin-top:10px;background:white;padding:10px;border-radius:8px;">
+          <div style="font-size:12px;color:#666;">โอนไปที่</div>
+          <div id="success-bank-account" style="font-size:16px;font-weight:700;">${bankAccount}</div>
+          <div style="font-size:13px;color:#666;">${bankName}</div>
+          <button onclick="copySuccessBankAccount()" style="margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#06C755;color:white;font-size:14px;font-weight:600;cursor:pointer;">📋 คัดลอกเลขบัญชี</button>
+        </div>`;
+    } else if (payment === "promptpay") {
+      pi.style.display = "block";
+      pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
+    }
   } catch(e) {
-    showToast("❌ " + e.message);
-    btn.disabled = false; btn.textContent = "❌ ยกเลิกออเดอร์";
+    pendingOrderData = null;
+    showPage("page-cart");
+    showErrorModal(e.message);
+  } finally {
+    isFinalizingOrder = false;
   }
 }
 
@@ -2565,6 +2575,7 @@ function resetAndHome() {
 }
 function safeResetAndHome() {
   if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  if (pendingConfirmTimer) { clearInterval(pendingConfirmTimer); pendingConfirmTimer = null; pendingOrderData = null; }
   currentSuccessOrderId = null;
   resetAndHome();
 }

@@ -2252,7 +2252,7 @@ async function finalizePendingOrder() {
 async function refreshMemberFirstOrderStatus() {
   if (!currentMember?.memberId) return;
   try {
-    const r = await apiGet("action=getMember&memberId=" + currentMember.memberId);
+    const r = await apiGet("action=getMember&memberId=" + currentMember.memberId + "&lineUserId=" + (lineProfile?.userId || ""));
     if (r.success) currentMember.isFirstOrder = checkIsFirstOrder(r.data);
   } catch(_) {}
 }

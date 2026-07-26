@@ -80,7 +80,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 /* ── Closed ── */
 .closed-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(180deg,var(--red-soft),var(--bg) 45%);}
 .closed-card{background:var(--surface);border-radius:var(--radius-lg);padding:36px 28px;width:100%;max-width:340px;box-shadow:var(--shadow-md);text-align:center;}
-.closed-icon-wrap{width:84px;height:84px;border-radius:50%;background:var(--red-soft);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.closed-icon-wrap{width:84px;height:84px;border-radius:50%;background:var(--red-soft, #fef2f2);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;overflow:hidden;}
+.closed-icon-wrap img{width:100%;height:100%;object-fit:cover;}
 .closed-icon{font-size:38px;}
 .closed-title{font-size:19px;font-weight:800;margin-bottom:8px;color:var(--ink);letter-spacing:-.3px;}
 .closed-msg{font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
@@ -679,6 +680,7 @@ let isSubmittingOrder = false;
 let promoApplied = false;
 let promoInfo = null;
 let bankAccount = "", bankName = "";
+let shopLogoUrl = "";
 let weeklyPicksEnabled = true;
 let weeklyPicksCount = 5;
 let firstOrderFreeEnabled = true;
@@ -826,10 +828,12 @@ async function loadInitialData(isRetry) {
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
         renderClosedPageHours();
+        updateClosedPageLogo();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
       bankName    = statusRes.data.bankName    || "";
+      shopLogoUrl = statusRes.data.shopLogoUrl || "";
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
@@ -966,10 +970,12 @@ async function refreshShopData(silent) {
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
         renderClosedPageHours();
+        updateClosedPageLogo();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
       bankName = statusRes.data.bankName || "";
+      shopLogoUrl = statusRes.data.shopLogoUrl || "";
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
@@ -1033,10 +1039,12 @@ async function checkAndLoadShops() {
       if (!statusRes.data.open) {
         document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
         renderClosedPageHours();
+        updateClosedPageLogo();
         showPage("page-closed"); return;
       }
       bankAccount = statusRes.data.bankAccount || "";
       bankName    = statusRes.data.bankName    || "";
+      shopLogoUrl = statusRes.data.shopLogoUrl || "";
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
       weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
       firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
@@ -1148,6 +1156,13 @@ function renderClosedPageHours() {
     `<div style="font-size:11px;color:#aaa;font-weight:400;margin-top:4px;">` +
     `จ-ศ ${businessHoursWeekday.open}-${businessHoursWeekday.close} น. · ส-อา ${businessHoursWeekend.open}-${businessHoursWeekend.close} น.` +
     `</div>`;
+}
+function updateClosedPageLogo() {
+  const wrap = document.querySelector("#page-closed .closed-icon-wrap");
+  if (!wrap) return;
+  wrap.innerHTML = shopLogoUrl
+    ? `<img src="${driveThumb(shopLogoUrl, 200)}" onerror="this.parentElement.innerHTML='<span class=closed-icon>🌙</span>'">`
+    : `<span class="closed-icon">🌙</span>`;
 }
 function isShopOpen(shop) {
   if (shop.status !== "active") return false;

@@ -720,6 +720,16 @@ let cart = {};
 let lineProfile = null, currentMember = null;
 let userLat = null, userLng = null;
 let trackTimer = null, countdownTimer = null, currentSuccessOrderId = null;
+let finalizeTimer = null;
+const FINALIZE_BUFFER_SEC = 13; // ปุ่มยกเลิกโชว์ 10 วิ + เผื่อเวลาเน็ตช้าอีก 3 วิ
+
+function scheduleFinalizeOrder(orderId) {
+  if (finalizeTimer) clearTimeout(finalizeTimer);
+  finalizeTimer = setTimeout(() => {
+    apiPost({ action: "finalizeOrder", orderId }).catch(() => {});
+    finalizeTimer = null;
+  }, FINALIZE_BUFFER_SEC * 1000);
+}
 let isSubmittingOrder = false;
 let promoApplied = false;
 let promoInfo = null;
@@ -2155,6 +2165,7 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
   cart = {}; updateCartUI();
 
   currentSuccessOrderId = orderId;
+  scheduleFinalizeOrder(orderId);
   document.getElementById("success-order-id").textContent = "รหัสออเดอร์: " + orderId;
   document.getElementById("cancel-order-btn").style.display = "";
   document.getElementById("cancel-order-btn").disabled = false;
@@ -2217,6 +2228,7 @@ async function cancelPendingOrder() {
     });
     if (!r.success) throw new Error(r.error || "ยกเลิกไม่สำเร็จ");
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    if (finalizeTimer) { clearTimeout(finalizeTimer); finalizeTimer = null; }
     currentSuccessOrderId = null;
     await refreshMemberFirstOrderStatus();
     showToast("ยกเลิกออเดอร์แล้วครับ");

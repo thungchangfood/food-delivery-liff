@@ -291,13 +291,34 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 .dep-wrap{padding:16px;padding-bottom:100px;}
 
 /* ── Success page ── */
-.success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;padding:32px;text-align:center;}
-.success-icon{font-size:68px;margin-bottom:16px;}
-.success-title{font-size:22px;font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
-.success-sub{font-size:15px;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;}
-.order-id-box{background:var(--brand-soft);border:none;border-radius:var(--radius-sm);padding:14px 24px;font-size:16px;font-weight:700;color:var(--brand-darker);margin-bottom:16px;}
+.success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:36px 24px;text-align:center;background:linear-gradient(180deg,var(--brand-soft) 0%,var(--bg) 35%);}
+.success-logo-wrap{width:64px;height:64px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow-sm);border:3px solid var(--surface);}
+.success-logo-wrap img{width:100%;height:100%;object-fit:cover;}
+.success-check-wrap{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand-dark));display:flex;align-items:center;justify-content:center;margin-bottom:22px;box-shadow:0 14px 32px -10px rgba(6,199,85,.5);position:relative;animation:success-pop .5s cubic-bezier(.34,1.56,.64,1);}
+.success-check-wrap svg{width:44px;height:44px;overflow:visible;}
+.success-check-path{stroke-dasharray:40;stroke-dashoffset:40;animation:success-draw .5s ease-out .25s forwards;}
+@keyframes success-draw{to{stroke-dashoffset:0;}}
+@keyframes success-pop{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1);opacity:1;}}
+.success-check-ring{position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--brand);opacity:0;animation:success-ring-pulse 1.1s ease-out .15s;}
+@keyframes success-ring-pulse{0%{transform:scale(.85);opacity:.55;}100%{transform:scale(1.35);opacity:0;}}
+.success-title{font-size:23px;font-weight:800;margin-bottom:8px;letter-spacing:-.3px;}
+.success-sub{font-size:14.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:18px;}
+.order-id-box{background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius-pill);padding:10px 22px;font-size:15px;font-weight:700;color:var(--brand-darker);margin-bottom:22px;box-shadow:var(--shadow-xs);}
 .payment-info{background:var(--amber-soft);border:none;border-left:3px solid var(--amber);border-radius:var(--radius-sm);padding:14px 20px;font-size:14px;line-height:1.8;margin-bottom:16px;text-align:left;width:100%;}
 
+.countdown-ring-wrap{margin-bottom:22px;display:flex;flex-direction:column;align-items:center;}
+.countdown-ring-label{font-size:12.5px;color:var(--ink-faint);font-weight:600;margin-bottom:10px;}
+.countdown-ring{position:relative;width:120px;height:120px;}
+.countdown-ring svg{width:120px;height:120px;transform:rotate(-90deg);}
+.countdown-ring-bg{fill:none;stroke:var(--line);stroke-width:7;}
+.countdown-ring-fg{fill:none;stroke:var(--amber);stroke-width:7;stroke-linecap:round;stroke-dasharray:339.292;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear;}
+.countdown-ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.countdown-ring-text #countdown-sec{font-size:34px;font-weight:800;color:var(--amber);line-height:1;}
+.countdown-ring-unit{font-size:11px;color:var(--ink-faint);margin-top:2px;font-weight:600;}
+
+.btn-cancel-order{margin-bottom:16px;padding:12px 28px;background:var(--surface);border:1.5px solid var(--red);color:var(--red);border-radius:var(--radius-pill);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:.15s;box-shadow:var(--shadow-xs);}
+.btn-cancel-order:active{transform:scale(.96);background:var(--red-soft);}
+.btn-cancel-order:disabled{opacity:.5;cursor:not-allowed;}
 /* ── Shared ── */
 .bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(20,20,30,.05);z-index:99;}
 .pb-80{padding-bottom:80px;}
@@ -599,17 +620,32 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 <!-- SUCCESS -->
 <div class="page" id="page-success">
   <div class="success-wrap">
-    <div class="success-icon">✅</div>
+    <div class="success-logo-wrap" id="success-logo-wrap" style="display:none;"><img src="" alt=""></div>
+    <div class="success-check-wrap">
+      <div class="success-check-ring"></div>
+      <svg viewBox="0 0 52 52" fill="none">
+        <path class="success-check-path" d="M14 27L22 35L38 17" stroke="white" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
     <div class="success-title">สั่งอาหารสำเร็จ!</div>
     <div class="success-sub">ทางร้านจะยืนยันออเดอร์เร็วๆ นี้<br>ติดตามสถานะได้ที่หน้าหลักครับ</div>
     <div class="order-id-box" id="success-order-id"></div>
-    <div id="countdown-wrap" style="margin-bottom:16px;text-align:center;">
-      <div style="font-size:13px;color:#888;margin-bottom:8px;">สามารถยกเลิกได้ภายใน</div>
-      <div style="font-size:36px;font-weight:700;color:#F59E0B;" id="countdown-sec">10</div>
-      <div style="font-size:12px;color:#aaa;">วินาที</div>
+
+    <div id="countdown-wrap" class="countdown-ring-wrap">
+      <div class="countdown-ring-label">สามารถยกเลิกได้ภายใน</div>
+      <div class="countdown-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="countdown-ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="countdown-ring-fg" id="countdown-ring-fg" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="countdown-ring-text">
+          <span id="countdown-sec">10</span>
+          <span class="countdown-ring-unit">วินาที</span>
+        </div>
+      </div>
     </div>
-    <button id="cancel-order-btn" onclick="cancelPendingOrder()"
-      style="margin-bottom:16px;padding:10px 24px;background:white;border:2px solid #EF4444;color:#EF4444;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;">
+
+    <button id="cancel-order-btn" class="btn-cancel-order" onclick="cancelPendingOrder()">
       ❌ ยกเลิกออเดอร์
     </button>
     <div id="payment-info" style="display:none;" class="payment-info"></div>
@@ -1185,6 +1221,16 @@ function updateClosedPageLogo() {
   wrap.innerHTML = shopLogoUrl
     ? `<img src="${driveThumb(shopLogoUrl, 200)}" onerror="this.parentElement.innerHTML='<span class=closed-icon>🌙</span>'">`
     : `<span class="closed-icon">🌙</span>`;
+}
+function updateSuccessPageLogo() {
+  const wrap = document.getElementById("success-logo-wrap");
+  if (!wrap) return;
+  if (shopLogoUrl) {
+    wrap.querySelector("img").src = driveThumb(shopLogoUrl, 150);
+    wrap.style.display = "flex";
+  } else {
+    wrap.style.display = "none";
+  }
 }
 function isShopOpen(shop) {
   if (shop.status !== "active") return false;
@@ -2131,17 +2177,25 @@ async function doCreateOrder(name, phone, address, note, payment, items) {
     pi.innerHTML = `💸 ชำระผ่านพร้อมเพย์ <strong>฿${total}</strong><br>ส่งสลิปในไลน์ OA ครับ`;
   }
 
+  updateSuccessPageLogo();
   showPage("page-success");
   startCancelCountdown(10);
 }
 
+const COUNTDOWN_RING_CIRCUMFERENCE = 339.292; // 2 * π * 54
 function startCancelCountdown(sec) {
   const countEl = document.getElementById("countdown-sec");
   const cancelBtn = document.getElementById("cancel-order-btn");
+  const ringFg = document.getElementById("countdown-ring-fg");
   let rem = sec; countEl.textContent = rem;
+  if (ringFg) ringFg.style.strokeDashoffset = "0";
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
     rem--; countEl.textContent = rem;
+    if (ringFg) {
+      const offset = COUNTDOWN_RING_CIRCUMFERENCE * (1 - rem / sec);
+      ringFg.style.strokeDashoffset = String(offset);
+    }
     if (rem <= 0) {
       clearInterval(countdownTimer); countdownTimer = null;
       cancelBtn.style.display = "none";

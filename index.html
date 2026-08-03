@@ -888,6 +888,7 @@ async function loadInitialData(isRetry) {
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
@@ -1030,6 +1031,7 @@ async function refreshShopData(silent) {
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
@@ -1113,6 +1115,7 @@ async function checkAndLoadShops() {
       smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
       smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+      FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
@@ -1746,7 +1749,7 @@ function getPromoFoodDiscount(subtotal) {
 }
 
 function calcDelivery(subtotal) {
-  if (firstOrderFreeEnabled && currentMember?.isFirstOrder) return 0;
+  if (firstOrderFreeEnabled && currentMember?.isFirstOrder && subtotal >= FIRST_ORDER_MIN_SUBTOTAL) return 0;
   let d = currentShop?.deliveryFee || 0;
   if (subtotal >= FREE_DELIVERY_THRESHOLD) { d -= currentShop?.gpPlan === "gp25" ? 4 : 5; if (d < 0) d = 0; }
   d -= getPromoDeliveryDiscount(d);
@@ -1812,7 +1815,7 @@ function renderCart() {
     : `<div style="padding:20px;text-align:center;color:#aaa;">ยังไม่มีรายการ</div>`;
 
   const subtotal = entries.reduce((s, e) => s + e.price * e.qty, 0);
-  const isFirst = firstOrderFreeEnabled && currentMember?.isFirstOrder;
+  const isFirst = firstOrderFreeEnabled && currentMember?.isFirstOrder && subtotal >= FIRST_ORDER_MIN_SUBTOTAL;
   const origDel = currentShop?.deliveryFee || 0;
   const delivery = calcDelivery(subtotal);
   const foodDiscount = calcFoodDiscount(subtotal);
@@ -1858,6 +1861,11 @@ function renderCart() {
     }
 
     firstOrderNotice.style.display = "none";
+    if (firstOrderFreeEnabled && currentMember?.isFirstOrder && !isFirst && subtotal > 0) {
+      const remain = FIRST_ORDER_MIN_SUBTOTAL - subtotal;
+      fdNotice.style.display = "block";
+      fdNotice.innerHTML = `🎉 สั่งอีก <strong>฿${remain}</strong> เพื่อรับสิทธิ์ <strong>ส่งฟรีออเดอร์แรก!</strong>`;
+    }
     const isSelfDeliveryCart = currentShop?.gpPlan === "gp_self";
     const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
     if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
@@ -1959,7 +1967,7 @@ function updateDepositNotice() {
 }
 
 let PROMO_MIN_SUBTOTAL = 65;
-
+let FIRST_ORDER_MIN_SUBTOTAL = 40;
 async function applyPromo() {
   const code = document.getElementById("promo-input").value.trim();
   const msg = document.getElementById("promo-msg");

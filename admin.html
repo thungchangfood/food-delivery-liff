@@ -1630,21 +1630,42 @@ function showRiderSettle() {
   document.getElementById("biz-summary-page").style.display = "none";
   document.getElementById("clear-archive-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "block";
-  const dateInput = document.getElementById("settle-date");
-  if (!dateInput.value) dateInput.value = toLocalDateStr(new Date());
+  if (!document.getElementById("settle-start-date").value) setSettleRange("today");
   loadRiderSettlement();
 }
 function hideRiderSettle() {
   exitSubpage();
   document.getElementById("rider-settle-page").style.display = "none";
 }
+function setSettleRange(kind) {
+  const now = new Date();
+  let start, end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (kind === "today") {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (kind === "3days") {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+  } else if (kind === "7days") {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  }
+  document.getElementById("settle-start-date").value = toLocalDateStr(start);
+  document.getElementById("settle-end-date").value = toLocalDateStr(end);
+  document.querySelectorAll('[data-settle-range]').forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.settleRange === kind);
+  });
+  loadRiderSettlement();
+}
+function clearSettleRangeActive() {
+  document.querySelectorAll('[data-settle-range]').forEach(btn => btn.classList.remove("active"));
+}
 
 async function loadRiderSettlement() {
-  const date = document.getElementById("settle-date").value;
+  const start = document.getElementById("settle-start-date").value;
+  const end = document.getElementById("settle-end-date").value;
+  if (!start || !end) { showToast("กรุณาเลือกช่วงวันที่ก่อนครับ"); return; }
   const list = document.getElementById("rider-settle-list");
   list.innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>`;
   try {
-    const res = await apiGet("action=getRiderSettlement&date=" + date);
+    const res = await apiGet("action=getRiderSettlement&startDate=" + start + "&endDate=" + end);
     if (!res.success) throw new Error(res.error);
     lastRiderData = res.data;
     renderRiderSettlement(res.data);
@@ -1653,8 +1674,13 @@ async function loadRiderSettlement() {
 
 function renderRiderSettlement(data) {
   const list = document.getElementById("rider-settle-list");
-  if (!data.riders.length) { list.innerHTML = `<div class="empty">ไม่มีออเดอร์ที่ต้องเคลียร์ในวันนี้</div>`; return; }
-  list.innerHTML = data.riders.map(r => `
+  if (!data.riders.length) { list.innerHTML = `<div class="empty">ไม่มีออเดอร์ที่ต้องเคลียร์ในช่วงนี้</div>`; return; }
+  const grandTotal = data.riders.reduce((s,r) => s + r.totalDue, 0);
+  const rangeHeader = `
+    <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:14px;font-weight:600;color:#92400e;">
+      📅 รอบ ${data.startDate} ถึง ${data.endDate} · รวมทุกไรเดอร์ ฿${grandTotal.toLocaleString()}
+    </div>`;
+  list.innerHTML = rangeHeader + data.riders.map(r => `
     <div class="order-card" style="margin-bottom:14px;">
       <div class="order-head" onclick="toggleRiderCard('${r.riderId}')">
         <div class="order-head-left">
@@ -1966,9 +1992,10 @@ function exportRiderPrint() {
     showToast("ยังไม่มีข้อมูลให้ export ครับ กด 'โหลด' ก่อน");
     return;
   }
-  const selectedDate = document.getElementById("settle-date").value;
-  if (lastRiderData.date !== selectedDate) {
-    if (!confirm("⚠️ ข้อมูลที่แสดงอยู่เป็นของวันที่ " + lastRiderData.date + " แต่ช่องวันที่เลือกไว้คือ " + selectedDate + "\nต้องการ export ต่อไหม? (แนะนำกด 'โหลด' ก่อน)")) return;
+  const selStart = document.getElementById("settle-start-date").value;
+  const selEnd = document.getElementById("settle-end-date").value;
+  if (lastRiderData.startDate !== selStart || lastRiderData.endDate !== selEnd) {
+    if (!confirm("⚠️ ข้อมูลที่แสดงอยู่เป็นช่วง " + lastRiderData.startDate + " ถึง " + lastRiderData.endDate + " แต่ช่องวันที่เลือกไว้คือ " + selStart + " ถึง " + selEnd + "\nต้องการ export ต่อไหม? (แนะนำกด 'โหลด' ก่อน)")) return;
   }
   const d = lastRiderData;
   const grandFood = d.riders.reduce((s,r)=>s+r.totalFoodReimburse,0);
@@ -1985,7 +2012,7 @@ function exportRiderPrint() {
     </tr>`).join("");
   const body = `
     <div style="margin-bottom:10px;font-size:14px;">
-      <strong>วันที่เคลียร์ยอด:</strong> ${d.date}
+      <strong>รอบเคลียร์ยอด:</strong> ${d.startDate} ถึง ${d.endDate}
     </div>
     <table>
       <thead><tr>

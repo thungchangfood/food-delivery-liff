@@ -738,6 +738,7 @@ let retentionNoticeText = "ℹ️ ประวัติออเดอร์จ�
 let businessHoursWeekday = { open: "09:00", close: "20:30" };
 let businessHoursWeekend = { open: "08:30", close: "21:00" };
 let autoConfirmEnabled = false; // 🤖 โหมดยืนยันอัตโนมัติ (แอดมินไม่สะดวก) — เงินสดเท่านั้น ไม่เกิน ฿300
+let systemOpenCached = true; // ✅ เก็บสถานะร้านล่าสุดไว้ ใช้ตอนสมัครสมาชิกเสร็จโดยไม่ต้องยิง API ซ้ำ
 
 let sheetMenu = null;
 let sheetQty = 1;
@@ -867,6 +868,7 @@ async function loadInitialData(isRetry) {
     // ✅ ตั้งค่า config จาก statusRes เสมอ ไม่ว่าร้านจะเปิดหรือปิด
     // (ย้าย if (!statusRes.data.open) { ...; return; } ออกจากตรงนี้ไปเช็คทีหลัง)
     if (statusRes.success) {
+      systemOpenCached = statusRes.data.open !== false;
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
@@ -903,6 +905,9 @@ async function loadInitialData(isRetry) {
     // ✅ 1) เช็คสมาชิกก่อนเสมอ — ยังไม่ใช่สมาชิกให้ไปหน้า register ทันที ไม่ว่าร้านจะเปิดหรือปิด
     if (!memberRes.success) {
       showRegisterPage();
+      // ✅ โหลดเมนูทุกร้านไว้เบื้องหลังระหว่างที่ลูกค้ากำลังกรอกฟอร์มอยู่
+      // พอสมัครเสร็จจะได้เข้าหน้าร้านได้ทันที ไม่ต้องรอโหลดซ้ำ
+      prefetchAllMenus();
       return;
     }
 
@@ -997,7 +1002,20 @@ async function registerMember() {
     const r = await apiPost({ action:"createMember", name, phone, lineUserId: lineProfile?.userId || "" });
     if (!r.success) throw new Error(r.error);
     currentMember = { memberId: r.data.memberId, name, phone, isFirstOrder: firstOrderFreeEnabled };
-    await checkAndLoadShops();
+
+    // ✅ ร้าน + เมนูถูกโหลดไว้แล้วตั้งแต่ตอนกรอกฟอร์ม (ดู loadInitialData) ไม่ต้องยิง API ซ้ำ
+    // เข้าหน้าร้านได้ทันที ถ้าระบบยังปิดอยู่ค่อยเด้งไปหน้า closed
+    currentMember.isFirstOrder = checkIsFirstOrder(currentMember);
+    resetShopFilters();
+    renderFirstOrderBanner();
+    updateRiderWarningBanner();
+
+    if (systemOpenCached === false) {
+      showPage("page-closed");
+    } else {
+      showPage("page-shops");
+    }
+    restoreLocalStateIfAny();
   } catch(e) {
     showToast("เกิดข้อผิดพลาด: " + e.message);
     btn.disabled = false; btn.textContent = "เริ่มใช้งาน →";

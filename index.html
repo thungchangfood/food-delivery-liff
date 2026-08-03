@@ -863,6 +863,9 @@ async function loadInitialData(isRetry) {
       apiGet("action=getSystemStatus"),
       apiGet("action=getRestaurants")
     ]);
+
+    // ✅ ตั้งค่า config จาก statusRes เสมอ ไม่ว่าร้านจะเปิดหรือปิด
+    // (ย้าย if (!statusRes.data.open) { ...; return; } ออกจากตรงนี้ไปเช็คทีหลัง)
     if (statusRes.success) {
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
@@ -872,12 +875,6 @@ async function loadInitialData(isRetry) {
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
       shopLogoUrl = statusRes.data.shopLogoUrl || "";
-      if (!statusRes.data.open) {
-        document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
-        renderClosedPageHours();
-        updateClosedPageLogo();
-        showPage("page-closed"); return;
-      }
       bankAccount = statusRes.data.bankAccount || "";
       bankName    = statusRes.data.bankName    || "";
       weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
@@ -899,29 +896,43 @@ async function loadInitialData(isRetry) {
         } catch(_) {}
       }
     }
+
     allShops = shopsRes.data || [];
     renderCategories(); renderShops(allShops);
-    if (memberRes.success) {
-      currentMember = memberRes.data;
-      if (String(currentMember.status || "").toLowerCase() === "block") {
-        showPage("page-suspended");
-        return;
-      }
-      currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
-      renderFirstOrderBanner();
-      updateRiderWarningBanner();   
-      prefetchAllMenus();
-      const urlPage = new URLSearchParams(window.location.search).get("page");
-      if (urlPage === "track") {
-        showPage("page-shops");
-        goTrack();
-      } else {
-        showPage("page-shops");
-      }
-      restoreLocalStateIfAny();
-    } else {
+
+    // ✅ 1) เช็คสมาชิกก่อนเสมอ — ยังไม่ใช่สมาชิกให้ไปหน้า register ทันที ไม่ว่าร้านจะเปิดหรือปิด
+    if (!memberRes.success) {
       showRegisterPage();
+      return;
     }
+
+    currentMember = memberRes.data;
+    if (String(currentMember.status || "").toLowerCase() === "block") {
+      showPage("page-suspended");
+      return;
+    }
+
+    // ✅ 2) เป็นสมาชิกแล้ว (และไม่ถูกระงับ) ค่อยเช็คสถานะร้านต่อ
+    if (statusRes.success && !statusRes.data.open) {
+      document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+      renderClosedPageHours();
+      updateClosedPageLogo();
+      showPage("page-closed");
+      return;
+    }
+
+    currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
+    renderFirstOrderBanner();
+    updateRiderWarningBanner();
+    prefetchAllMenus();
+    const urlPage = new URLSearchParams(window.location.search).get("page");
+    if (urlPage === "track") {
+      showPage("page-shops");
+      goTrack();
+    } else {
+      showPage("page-shops");
+    }
+    restoreLocalStateIfAny();
   } catch(e) {
     console.error("loadInitialData:", e);
     if (!isRetry) {

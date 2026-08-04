@@ -499,7 +499,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-toolbar">
         <input type="date" id="history-date" class="close-reason-input" style="width:160px;" onchange="renderOrderHistoryList()">
         <button class="btn-sm" onclick="document.getElementById('history-date').value='';renderOrderHistoryList()">แสดงทั้งหมด</button>
-        <button class="btn-sm" onclick="loadOrders().then(renderOrderHistoryList)">🔄 โหลด</button>
+        <button class="btn-sm" onclick="loadOrderHistory().then(renderOrderHistoryList)">🔄 โหลด</button>
       </div>
       <div class="filter-wrap" id="history-filter-wrap">
       <div class="filter-chip active" onclick="filterHistoryStatus('all',this)">ทั้งหมด</div>
@@ -611,6 +611,7 @@ let lastGpData = null;
 let lastRiderData = null;
 let lastBizData = null;
 let archiveExportedCutoff = null;
+let allHistoryOrders = []; // ✅ ข้อมูลประวัติเก่า (จาก OrdersArchive) โหลดแยกต่างหาก ไม่ปนกับ dashboard หลัก
 
 // ✅ เช็คว่าออเดอร์นี้สร้างวันนี้ไหม
 function isOrderToday(order) {
@@ -623,9 +624,9 @@ function isOrderToday(order) {
 function getMainListOrders() {
   return allOrders.filter(o => isOrderToday(o) || !["DONE","CANCEL"].includes(o.status));
 }
-// ✅ ประวัติ = ออเดอร์ที่จบแล้ว (DONE/CANCEL) และไม่ใช่ของวันนี้
+// ✅ ประวัติ = ออเดอร์ที่จบแล้ว (DONE/CANCEL) และไม่ใช่ของวันนี้ — ดึงจาก allHistoryOrders ที่โหลดแยกต่างหาก
 function getHistoryOrders() {
-  return allOrders.filter(o => !isOrderToday(o) && ["DONE","CANCEL"].includes(o.status));
+  return allHistoryOrders.filter(o => !isOrderToday(o) && ["DONE","CANCEL"].includes(o.status));
 }
 // ── LOGIN ──────────────────────────────────────────────
 async function doLogin() {
@@ -710,6 +711,18 @@ async function loadMembers() {
       };
     });
   } catch(e) { console.error("loadMembers", e); }
+}
+
+async function loadOrderHistory() {
+  try {
+    const res = await apiGet("action=getOrders&includeArchive=true");
+    if (!res.success) throw new Error(res.error);
+    allHistoryOrders = res.data;
+    return true;
+  } catch(e) {
+    showToast("โหลดประวัติไม่สำเร็จ: " + e.message);
+    return false;
+  }
 }
 
 async function loadAll() {
@@ -852,7 +865,8 @@ let riderDutyPanelOpen = false;
 let lastRiderDutyData = null;
 let riderDutyLoading = false;
 
-async function loadRiderDutyStatus() {
+async function loadRiderDutyStatus(_retryCount) {
+  const retryCount = _retryCount || 0;
   riderDutyLoading = true;
   updateRiderDutyMiniLoading();
   try {
@@ -864,6 +878,11 @@ async function loadRiderDutyStatus() {
     if (riderDutyPanelOpen) renderRiderDutyPanel(res.data);
   } catch(e) {
     riderDutyLoading = false;
+    // ✅ ลองใหม่อัตโนมัติสูงสุด 2 ครั้งก่อน (เผื่อ Apps Script ช้าชั่วคราว) ไม่ต้องให้ผู้ใช้แตะเอง
+    if (retryCount < 2) {
+      setTimeout(() => loadRiderDutyStatus(retryCount + 1), 1500);
+      return;
+    }
     if (!lastRiderDutyData) {
       const miniTxt = document.getElementById("rider-duty-mini-text");
       const mini = document.getElementById("rider-duty-mini");
@@ -2220,7 +2239,7 @@ function filterHistoryStatus(status, el) {
   renderOrderHistoryList();
 }
 
-function showOrderHistory() {
+async function showOrderHistory() {
   enterSubpage();
   document.getElementById("report-page").style.display = "none";
   document.getElementById("rider-settle-page").style.display = "none";
@@ -2234,6 +2253,9 @@ function showOrderHistory() {
   document.querySelectorAll("#history-filter-wrap .filter-chip").forEach((c,i) => c.classList.toggle("active", i === 0));
   document.getElementById("history-date").value = "";
 
+  // ✅ แสดง loading ระหว่างรอโหลด archive (ก้อนใหญ่ อาจใช้เวลาสักครู่)
+  document.getElementById("history-orders-wrap").innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลดประวัติ...</div>`;
+  await loadOrderHistory();
   renderOrderHistoryList();
 }
 function hideOrderHistory() {

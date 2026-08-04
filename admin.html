@@ -656,9 +656,24 @@ function logout() {
 // ── INIT ──────────────────────────────────────────────
 let pauseRefresh = false;
 async function init() {
-  await Promise.all([loadRestaurants(), loadMembers()]);
-  await loadAll();
-  // ตั้งค่า signature เริ่มต้นจากข้อมูลที่โหลดมาแล้ว กันไม่ให้ pulseCheck รอบแรกยิง loadOrders ซ้ำ
+  const btn = document.getElementById("refresh-btn");
+  if (btn) { btn.classList.add("spinning"); btn.disabled = true; }
+
+  // ✅ ยิงทุกอย่างพร้อมกันตั้งแต่แรก ไม่ต้องรอ restaurants/members เสร็จก่อนค่อยเริ่ม orders
+  await Promise.all([
+    loadRestaurants(),
+    loadMembers(),
+    loadOrders(),
+    loadSystemStatus(),
+    loadRiderDutyStatus()
+  ]);
+
+  if (btn) { btn.classList.remove("spinning"); btn.disabled = false; }
+
+  // renderOrders ไปแล้วรอบนึงตอน loadOrders (อาจจะยังไม่มี restaurantsMap/membersMap ทัน)
+  // เรียกซ้ำอีกทีตอนนี้ให้ชื่อร้าน/ชื่อลูกค้าขึ้นครบถูกต้อง
+  renderOrders();
+
   try {
     const res = await apiGet("action=getOrderPulse");
     if (res.success) lastKnownUpdateTime = res.data.signature;
@@ -666,7 +681,7 @@ async function init() {
 
   refreshTimer = setInterval(() => {
     if (!pauseRefresh) pulseCheck();
-  }, 5000); // เช็ค pulse ถี่ขึ้นได้ เพราะ endpoint นี้เบามาก
+  }, 5000);
 }
 
 async function loadRestaurants() {

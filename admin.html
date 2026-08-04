@@ -2021,7 +2021,9 @@ function exportRiderPrint() {
   const grandFood = d.riders.reduce((s,r)=>s+r.totalFoodReimburse,0);
   const grandFee = d.riders.reduce((s,r)=>s+r.totalRiderFee,0);
   const grandDue = d.riders.reduce((s,r)=>s+r.totalDue,0);
-  const rows = d.riders.map(r => `
+  const rows = d.riders.map(r => {
+    const orderIdList = r.orders.map(o => "#" + o.orderId).join(", ");
+    return `
     <tr>
       <td>${r.name}</td>
       <td class="num">${r.orders.length}</td>
@@ -2029,7 +2031,13 @@ function exportRiderPrint() {
       <td class="num">฿${r.totalRiderFee.toLocaleString()}</td>
       <td class="num">฿${r.totalDue.toLocaleString()}</td>
       <td style="height:40px;"></td>
-    </tr>`).join("");
+    </tr>
+    <tr>
+      <td colspan="6" style="font-size:10px;color:#888;padding:4px 10px 10px;border-top:none;line-height:1.6;">
+        รายการออเดอร์: ${orderIdList}
+      </td>
+    </tr>`;
+  }).join("");
   const body = `
     <div style="margin-bottom:10px;font-size:14px;">
       <strong>รอบเคลียร์ยอด:</strong> ${d.startDate} ถึง ${d.endDate}

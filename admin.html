@@ -661,7 +661,8 @@ async function init() {
   if (btn) { btn.classList.add("spinning"); btn.disabled = true; }
 
   // ✅ ยิงทุกอย่างพร้อมกันตั้งแต่แรก ไม่ต้องรอ restaurants/members เสร็จก่อนค่อยเริ่ม orders
-  await Promise.all([
+  // ✅ ใช้ allSettled แทน all — ถ้าตัวไหนตัวหนึ่ง fail/ค้าง ตัวอื่นที่สำเร็จแล้วยังแสดงผลได้ ปุ่มรีเฟรชก็เลิกหมุนแน่นอน
+  await Promise.allSettled([
     loadRestaurants(),
     loadMembers(),
     loadOrders(),
@@ -729,7 +730,7 @@ async function loadAll() {
   const btn = document.getElementById("refresh-btn");
   if (btn) { btn.classList.add("spinning"); btn.disabled = true; }
   try {
-    await Promise.all([loadOrders(), loadSystemStatus(), loadRiderDutyStatus()]);
+    await Promise.allSettled([loadOrders(), loadSystemStatus(), loadRiderDutyStatus()]);
   } finally {
     if (btn) { btn.classList.remove("spinning"); btn.disabled = false; }
   }
@@ -748,8 +749,18 @@ async function pulseCheck() {
 async function apiGet(params, _isRetry) {
   const token = localStorage.getItem("admin_token") || "";
   const url = `${API}?${params}${params ? "&" : ""}adminToken=${encodeURIComponent(token)}`;
-  const r = await fetch(url);
-  const txt = await r.text();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000); // ✅ กันค้างเกิน 15 วิ
+  let r, txt;
+  try {
+    r = await fetch(url, { signal: controller.signal });
+    txt = await r.text();
+  } catch(e) {
+    clearTimeout(timeoutId);
+    if (e.name === "AbortError") throw new Error("เชื่อมต่อช้าเกินไป ลองรีเฟรชอีกครั้งครับ");
+    throw new Error("เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่ครับ");
+  }
+  clearTimeout(timeoutId);
   try {
     return JSON.parse(txt);
   } catch(e) {
@@ -788,7 +799,16 @@ async function loadSystemStatus() {
       maxDeliveryDistanceKm = Number(res.data.maxDeliveryDistanceKm ?? 5);
       updateAutoConfirmUI(autoConfirmEnabled);
     }
-  } catch(_) {}
+  } catch(e) {
+    // ✅ ถ้ายังไม่เคยโหลดสำเร็จเลย (ข้อความยังเป็น default "กำลังเช็ค...") ให้ขึ้น fallback แจ้งผู้ใช้
+    // ถ้าเคยโหลดสำเร็จมาก่อนแล้ว ปล่อยให้ข้อความเดิมค้างไว้เงียบๆ ไม่ต้องทับ (เหมือน rider duty)
+    const txt = document.getElementById("system-status-mini-text");
+    const mini = document.getElementById("system-status-mini");
+    if (txt && txt.textContent === "กำลังเช็ค...") {
+      txt.textContent = "โหลดไม่สำเร็จ · แตะเพื่อลองใหม่";
+      mini.classList.add("warn");
+    }
+  }
 }
 function updateSystemUI(isOpen, reason) {
   const bar = document.getElementById("system-bar");

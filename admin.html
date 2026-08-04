@@ -1694,13 +1694,23 @@ async function loadRiderSettlement() {
   const end = document.getElementById("settle-end-date").value;
   if (!start || !end) { showToast("กรุณาเลือกช่วงวันที่ก่อนครับ"); return; }
   const list = document.getElementById("rider-settle-list");
-  list.innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>`;
+  const hadDataBefore = !!lastRiderData; // ✅ จำไว้ว่าก่อนหน้านี้เคยมีข้อมูลแสดงอยู่ไหม
+  if (!hadDataBefore) {
+    list.innerHTML = `<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>`;
+  }
   try {
     const res = await apiGet("action=getRiderSettlement&startDate=" + start + "&endDate=" + end);
     if (!res.success) throw new Error(res.error);
     lastRiderData = res.data;
     renderRiderSettlement(res.data);
-  } catch(e) { list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`; }
+  } catch(e) {
+    // ✅ ถ้าเคยมีข้อมูลอยู่แล้ว ไม่ลบทิ้ง แค่แจ้งเตือนเงียบๆ แล้วให้ลองโหลดใหม่เอง
+    if (hadDataBefore) {
+      showToast("โหลดข้อมูลล่าสุดไม่สำเร็จ (ยังแสดงข้อมูลเดิมอยู่) กด 🔄 โหลด อีกครั้งได้ครับ");
+    } else {
+      list.innerHTML = `<div class="empty">โหลดไม่สำเร็จ: ${e.message}</div>`;
+    }
+  }
 }
 
 function renderRiderSettlement(data) {

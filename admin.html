@@ -443,7 +443,12 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
       <div class="page-title">💰 เคลียร์ยอดไรเดอร์</div>
     </div>
     <div class="page-toolbar">
-      <input type="date" id="settle-date" class="close-reason-input" style="width:160px;" onchange="loadRiderSettlement()">
+      <input type="date" id="settle-start-date" class="close-reason-input" style="width:150px;" onchange="clearSettleRangeActive();loadRiderSettlement()">
+      <span>ถึง</span>
+      <input type="date" id="settle-end-date" class="close-reason-input" style="width:150px;" onchange="clearSettleRangeActive();loadRiderSettlement()">
+      <button class="btn-sm" data-settle-range="today" onclick="setSettleRange('today')">วันนี้</button>
+      <button class="btn-sm" data-settle-range="3days" onclick="setSettleRange('3days')">3 วันล่าสุด</button>
+      <button class="btn-sm" data-settle-range="7days" onclick="setSettleRange('7days')">7 วันล่าสุด</button>
       <button class="btn-sm" onclick="loadRiderSettlement()">🔄 โหลด</button>
       <button class="btn-sm" style="background:#1a1a1a;" onclick="exportRiderPrint()">📄 Export เอกสาร</button>
     </div>

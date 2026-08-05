@@ -817,10 +817,29 @@ function shopMatchesQuery(shop, q) {
   return false;
 }
 
-async function apiGet(p) { return (await fetch(`${API}?${p}`)).json(); }
-async function apiPost(body) {
+async function apiGet(p, _isRetry) {
+  const txt = await (await fetch(`${API}?${p}`)).text();
+  try {
+    return JSON.parse(txt);
+  } catch(e) {
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 600));
+      return apiGet(p, true);
+    }
+    throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้งครับ");
+  }
+}
+async function apiPost(body, _isRetry) {
   const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
-  return JSON.parse(t);
+  try {
+    return JSON.parse(t);
+  } catch(e) {
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 600));
+      return apiPost(body, true);
+    }
+    throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้งครับ");
+  }
 }
 
 const menuCache = {};

@@ -2312,12 +2312,13 @@ let trackOpenIds = new Set();
 
 function renderTrack(active, all) {
   trackOrdersCache = all;
-  // ✅ ครบ 5 สถานะจริงตามที่ backend ใช้ (เดิมขาด WAIT_RIDER ทำให้แถบไม่ขึ้นตอนรอไรเดอร์
-  // และ PICKED ถูกเข้าใจผิดว่า "กำลังส่ง" ทั้งที่ไรเดอร์เพิ่งกดรับงาน ยังไม่ถึงร้านด้วยซ้ำ)
-  const steps = ["NEW","ASSIGNED","WAIT_RIDER","PICKED","DONE"];
-  const emoji = {NEW:"⏳",ASSIGNED:"✅",WAIT_RIDER:"👨‍🍳",PICKED:"🛵",DONE:"✅",CANCEL:"❌"};
-  const th = {NEW:"รอยืนยัน",ASSIGNED:"ร้านรับออเดอร์แล้ว",WAIT_RIDER:"รอไรเดอร์รับงาน",PICKED:"ไรเดอร์กำลังไปรับอาหาร",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
-  const lbl = ["รอยืนยัน","ร้านรับออเดอร์","รอไรเดอร์","ไรเดอร์รับงานแล้ว","ส่งสำเร็จ"];
+  // ✅ ครบ 6 สถานะจริงตามที่ backend ใช้ — เพิ่ม DELIVERING แยกจาก PICKED
+  // PICKED = ไรเดอร์รับงานแล้ว กำลังไปหาที่ร้าน (ยังไม่ได้อาหาร)
+  // DELIVERING = ไรเดอร์รับอาหารจากร้านแล้ว กำลังเดินทางไปส่งลูกค้า
+  const steps = ["NEW","ASSIGNED","WAIT_RIDER","PICKED","DELIVERING","DONE"];
+  const emoji = {NEW:"⏳",ASSIGNED:"✅",WAIT_RIDER:"👨‍🍳",PICKED:"🛵",DELIVERING:"🛵",DONE:"✅",CANCEL:"❌"};
+  const th = {NEW:"รอยืนยัน",ASSIGNED:"ร้านรับออเดอร์แล้ว",WAIT_RIDER:"รอไรเดอร์รับงาน",PICKED:"ไรเดอร์กำลังไปรับอาหาร",DELIVERING:"ไรเดอร์กำลังไปส่งอาหาร",DONE:"ส่งสำเร็จ",CANCEL:"ยกเลิก"};
+  const lbl = ["รอยืนยัน","ร้านรับออเดอร์","รอไรเดอร์","ไรเดอร์รับอาหาร","กำลังไปส่ง","ส่งสำเร็จ"];
   let html = "";
   if (active.length) {
     html += `<div style="font-size:14px;font-weight:700;margin-bottom:10px;">📦 กำลังดำเนินการ</div>`;
@@ -2341,6 +2342,7 @@ function renderTrack(active, all) {
           <div class="track-total"><span>รวม</span><span>฿${o.total}</span></div>
         </div>
         ${o.status==="PICKED"?`<div class="rider-info">🛵 ไรเดอร์รับงานแล้ว กำลังเดินทางไปรับอาหารที่ร้านครับ (ร้านอาจกำลังเตรียมอาหารอยู่)</div>`:""}
+        ${o.status==="DELIVERING"?`<div class="rider-info">🛵 ไรเดอร์รับอาหารจากร้านเรียบร้อยแล้ว กำลังเดินทางมาส่งครับ ใกล้ถึงแล้วนะครับ!</div>`:""}
         ${(o.status==="NEW"||o.status==="ASSIGNED")?`
         <button onclick="event.stopPropagation();openCancelSheet('${o.orderId}')" style="margin-top:10px;width:100%;padding:10px;background:white;border:1.5px solid #EF4444;color:#EF4444;border-radius:10px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">❌ ยกเลิกออเดอร์นี้</button>
         <div style="margin-top:6px;font-size:11px;color:#aaa;text-align:center;">หลังร้านค้ายืนยันออเดอร์แล้ว จะไม่สามารถยกเลิกออเดอร์ได้ครับ</div>

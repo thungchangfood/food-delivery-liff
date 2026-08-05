@@ -272,7 +272,7 @@ body{font-family:'Sarabun',sans-serif;background:#f0f0f0;color:#1a1a1a;}
   <div id="rider-duty-panel" style="display:none;background:white;margin:10px 20px 0;border-radius:12px;padding:10px 14px;border:1px solid #e8e8e8;"></div>
 
   <div class="refresh-bar" id="refresh-bar">
-    <span><span class="refresh-dot"></span>รีเฟรชอัตโนมัติทุก 5 วินาที</span>
+    <span><span class="refresh-dot"></span>รีเฟรชอัตโนมัติทุก 8 วินาที</span>
     <span id="last-refresh">-</span>
   </div>
 
@@ -656,6 +656,20 @@ function logout() {
 
 // ── INIT ──────────────────────────────────────────────
 let pauseRefresh = false;
+
+// ✅ หยุด poll อัตโนมัติเมื่อสลับแท็บ/ย่อหน้าต่าง ประหยัด request ตอนไม่ได้มองหน้าจอ
+// และ pull ข้อมูลล่าสุดทันทีตอนกลับมาโฟกัส (เผื่อพลาดออเดอร์ระหว่างที่ปิดไป)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    pauseRefresh = true;
+  } else {
+    pauseRefresh = false;
+    if (document.getElementById("dashboard")?.style.display !== "none") {
+      pulseCheck();
+    }
+  }
+});
+
 async function init() {
   const btn = document.getElementById("refresh-btn");
   if (btn) { btn.classList.add("spinning"); btn.disabled = true; }
@@ -683,7 +697,7 @@ async function init() {
 
   refreshTimer = setInterval(() => {
     if (!pauseRefresh) pulseCheck();
-  }, 5000);
+  }, 8000);
 }
 
 async function loadRestaurants() {

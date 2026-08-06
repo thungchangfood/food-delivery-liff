@@ -1626,8 +1626,8 @@ function exportXLSX() {
     if (!confirm("ไม่มีออเดอร์ในวันที่เลือกเลยครับ ต้องการ export ไฟล์เปล่าต่อไหม?")) return;
   }
 
-  const headers = ["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"];
-  const numericCols = new Set(["Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","Total","GPPercent","GPAmount","RiderFee","DepositAmount","PromoValue","PromoCost"]);
+  const headers = ["OrderID","Date","RestaurantID","Restaurant","CustomerName","CustomerPhone","RiderID","Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","DeliveryDiscount","Total","GPPercent","GPAmount","RiderFee","DepositAmount","DepositPaid","PaymentType","PaymentStatus","PromoCode","PromoType","PromoValue","PromoCost","Status","DeliveredAt"];
+  const numericCols = new Set(["Subtotal","FoodDiscount","SmallOrderFee","DeliveryFee","DeliveryDiscount","Total","GPPercent","GPAmount","RiderFee","DepositAmount","PromoValue","PromoCost"]);
 
   const rows = dayOrders.map(o => {
     const m = membersMap[o.memberId] || {};
@@ -1636,7 +1636,7 @@ function exportXLSX() {
       o.restaurantId, restaurantsMap[o.restaurantId] || o.restaurantId,
       m.name || "", m.phone || "",
       o.riderId || "",
-      Number(o.subtotal || 0), Number(o.foodDiscount || 0), Number(o.smallOrderFee || 0), Number(o.deliveryFee || 0), Number(o.total || 0),
+      Number(o.subtotal || 0), Number(o.foodDiscount || 0), Number(o.smallOrderFee || 0), Number(o.deliveryFee || 0), Number(o.deliveryDiscount || 0), Number(o.total || 0),
       Number(o.gpPercent || 0), Number(o.gpAmount || 0), Number(o.riderFee || 0),
       Number(o.depositAmount || 0), o.depositPaid || "",
       o.paymentType || "", o.paymentStatus || "",

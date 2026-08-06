@@ -553,7 +553,8 @@ const GP_PLANS = {
   gp17: { deliveryFee: 19, gpPercent: 17 },
 };
 const DEFAULT_DELIVERY_FEE = 19;
-let deliveryDiscountThreshold = 160; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
+let deliveryDiscountThreshold = 125; // ค่าเริ่มต้น จะถูกอัปเดตจาก Config อัตโนมัติ
+let fullFreeDeliveryThreshold = 210; 
 
 function getPromoNote(o) {
   if (!o.promoCode) return null;
@@ -582,15 +583,27 @@ function getDeliveryNote(o) {
   const originalFee = plan ? plan.deliveryFee : DEFAULT_DELIVERY_FEE;
   const actualFee = Number(o.deliveryFee || 0);
   const promoCost = Number(o.promoCost || 0);
+  const discountAmount = Number(o.deliveryDiscount || 0);
+
+  // ✅ ใช้ threshold ที่บันทึกไว้จริงตอนสั่ง ถ้ามี (ออเดอร์ใหม่หลังอัปเดตนี้)
+  // ออเดอร์เก่าที่ยังไม่มีคอลัมน์นี้ จะ fallback ไปใช้ค่าปัจจุบันแทน (คลาดเคลื่อนได้บ้างถ้า config เคยถูกแก้)
+  const partialThreshold = (o.deliveryDiscountThreshold !== undefined && o.deliveryDiscountThreshold !== "")
+    ? Number(o.deliveryDiscountThreshold) : deliveryDiscountThreshold;
+  const fullFreeThreshold = (o.freeDeliveryThreshold !== undefined && o.freeDeliveryThreshold !== "")
+    ? Number(o.freeDeliveryThreshold) : fullFreeDeliveryThreshold;
 
   if (o.promoCode && promoCost > 0) {
     return `🎟 ใช้โค้ด ${o.promoCode} (ส่งฟรี)`;
   }
   if (actualFee === 0 && originalFee > 0) {
+    // ✅ แยกกรณี "ยอดครบส่งฟรี" ออกจาก "ออเดอร์แรกลูกค้าใหม่" ให้ถูกต้อง
+    if (discountAmount > 0) {
+      return `🎉 ยอดครบ ฿${fullFreeThreshold} (ส่งฟรี)`;
+    }
     return `🎉 ออเดอร์แรกลูกค้าใหม่ (ส่งฟรี)`;
   }
   if (actualFee < originalFee) {
-    return `🛵 ยอดครบ ฿${deliveryDiscountThreshold} ลดค่าส่ง ฿${originalFee - actualFee} (เหลือ ฿${actualFee})`;
+    return `🛵 ยอดครบ ฿${partialThreshold} ลดค่าส่ง ฿${originalFee - actualFee} (เหลือ ฿${actualFee})`;
   }
   return `ค่าส่งปกติ ฿${actualFee}`;
 }
@@ -808,6 +821,9 @@ async function loadSystemStatus() {
       updateSystemUI(systemOpen, res.data.reason);
       if (res.data.deliveryDiscountThreshold != null) {
         deliveryDiscountThreshold = Number(res.data.deliveryDiscountThreshold);
+      }
+      if (res.data.freeDeliveryThreshold != null) {
+        fullFreeDeliveryThreshold = Number(res.data.freeDeliveryThreshold);
       }
       autoConfirmEnabled = !!res.data.autoConfirmEnabled;
       maxDeliveryDistanceKm = Number(res.data.maxDeliveryDistanceKm ?? 5);

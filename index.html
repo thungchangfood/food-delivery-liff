@@ -981,6 +981,7 @@ async function loadInitialData(isRetry) {
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
+      FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1160,6 +1161,7 @@ async function refreshShopData(silent) {
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
+      FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1244,6 +1246,7 @@ async function checkAndLoadShops() {
       PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
+      FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1861,7 +1864,8 @@ function showShopMenuPage(shop) {
     }).catch(() => showToast("โหลดเมนูไม่สำเร็จครับ"));
   }
 }
-let FREE_DELIVERY_THRESHOLD = 160;
+let FREE_DELIVERY_THRESHOLD = 125;
+let FULL_FREE_DELIVERY_THRESHOLD = 210;
 let availableRiderCount = 1;
 
 function getPromoDeliveryDiscount(deliveryFee) {
@@ -1885,7 +1889,12 @@ function getPromoFoodDiscount(subtotal) {
 function calcDelivery(subtotal) {
   if (firstOrderFreeEnabled && currentMember?.isFirstOrder && subtotal >= FIRST_ORDER_MIN_SUBTOTAL) return 0;
   let d = currentShop?.deliveryFee || 0;
-  if (subtotal >= FREE_DELIVERY_THRESHOLD) { d -= currentShop?.gpPlan === "gp25" ? 4 : 5; if (d < 0) d = 0; }
+  if (subtotal >= FULL_FREE_DELIVERY_THRESHOLD) {
+    d = 0;
+  } else if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+    d -= currentShop?.gpPlan === "gp25" ? 4 : 5;
+    if (d < 0) d = 0;
+  }
   d -= getPromoDeliveryDiscount(d);
   if (d < 0) d = 0;
   return d;
@@ -1988,6 +1997,8 @@ function renderCart() {
   } else {
     if (promoApplied && (promoInfo?.promoType || "free_delivery") === "free_delivery") {
       document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! (โค้ดส่งฟรี) 🎉</span>`;
+    } else if (delivery === 0 && origDel > 0) {
+      document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">ฟรี! 🎉</span>`;
     } else if (delivery < origDel) {
       document.getElementById("s-delivery").innerHTML = `<span style="text-decoration:line-through;color:#999;margin-right:6px;">฿${origDel}</span><span style="color:#06C755;font-weight:bold;">฿${delivery}</span>`;
     } else {
@@ -2002,15 +2013,20 @@ function renderCart() {
     }
     const isSelfDeliveryCart = currentShop?.gpPlan === "gp_self";
     const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
-    if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FREE_DELIVERY_THRESHOLD) {
-      const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
-      const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
-      fdNotice.style.display = "block";
-      fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+    if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FULL_FREE_DELIVERY_THRESHOLD) {
+      if (subtotal < FREE_DELIVERY_THRESHOLD) {
+        const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+        const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
+        fdNotice.style.display = "block";
+        fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+      } else {
+        const remaining = FULL_FREE_DELIVERY_THRESHOLD - subtotal;
+        fdNotice.style.display = "block";
+        fdNotice.innerHTML = `🎉 สั่งอีก <strong>฿${remaining}</strong> รับ <strong>ส่งฟรี!</strong> ครับ (ยอดครบ ฿${FULL_FREE_DELIVERY_THRESHOLD} ส่งฟรีทันที)`;
+      }
     } else {
       fdNotice.style.display = "none";
     }
-  }
 
   document.getElementById("s-total").textContent = `฿${subtotal - foodDiscount + delivery + smallFee}`;
   document.getElementById("s-total-sticky").textContent = `฿${subtotal - foodDiscount + delivery + smallFee}`;

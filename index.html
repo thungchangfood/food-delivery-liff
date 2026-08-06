@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>สั่งอาหาร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://static.line-scdn.net">
+<link rel="preconnect" href="https://food-delivery-api.thungchangfood.workers.dev" crossorigin>
+<link rel="dns-prefetch" href="https://food-delivery-api.thungchangfood.workers.dev">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link rel="preconnect" href="https://lh3.googleusercontent.com">
 <link rel="dns-prefetch" href="https://lh3.googleusercontent.com">
@@ -817,8 +822,27 @@ function shopMatchesQuery(shop, q) {
   return false;
 }
 
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function apiGet(p, _isRetry) {
-  const txt = await (await fetch(`${API}?${p}`)).text();
+  let txt;
+  try {
+    txt = await (await fetchWithTimeout(`${API}?${p}`, {}, 15000)).text();
+  } catch(e) {
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 600));
+      return apiGet(p, true);
+    }
+    throw new Error("เชื่อมต่อช้าเกินไป กรุณาเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่ครับ");
+  }
   try {
     return JSON.parse(txt);
   } catch(e) {
@@ -830,7 +854,16 @@ async function apiGet(p, _isRetry) {
   }
 }
 async function apiPost(body, _isRetry) {
-  const t = await (await fetch(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })).text();
+  let t;
+  try {
+    t = await (await fetchWithTimeout(API, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) }, 15000)).text();
+  } catch(e) {
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 600));
+      return apiPost(body, true);
+    }
+    throw new Error("เชื่อมต่อช้าเกินไป กรุณาเช็คสัญญาณอินเทอร์เน็ตแล้วลองใหม่ครับ");
+  }
   try {
     return JSON.parse(t);
   } catch(e) {
@@ -844,6 +877,26 @@ async function apiPost(body, _isRetry) {
 
 const menuCache = {};
 
+const SHOP_CACHE_KEY = "tc_delivery_shops_cache";
+const MENU_CACHE_KEY = "tc_delivery_menus_cache";
+const CACHE_MAX_AGE_MIN = 30; // cache เก่าเกิน 30 นาทีไม่ใช้แล้ว
+
+function saveDataCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() }));
+  } catch(_) {}
+}
+function loadDataCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const ageMin = (Date.now() - parsed.savedAt) / 60000;
+    if (ageMin > CACHE_MAX_AGE_MIN) return null;
+    return parsed.data;
+  } catch(_) { return null; }
+}
+
 function checkIsFirstOrder(memberData) {
   if (!firstOrderFreeEnabled) return false;
   const fod = memberData.firstOrderDone;
@@ -852,6 +905,26 @@ function checkIsFirstOrder(memberData) {
 }
 
 async function init() {
+  // ✅ ถ้ามี cache ร้าน/เมนูเก่าอยู่ ให้เตรียมพร้อมแสดงทันทีที่รู้ว่าเป็นสมาชิกแล้ว (ลดเวลารอจอขาวสำหรับเน็ตช้า)
+  const cachedShops = loadDataCache(SHOP_CACHE_KEY);
+  const cachedMenus = loadDataCache(MENU_CACHE_KEY);
+  const hasCachedData = !!cachedShops;
+  if (cachedShops) allShops = cachedShops;
+  if (cachedMenus) {
+    cachedMenus.forEach(item => {
+      if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
+      menuCache[item.restaurantId].push(item);
+    });
+  }
+  // ✅ ถ้ามี cache ให้เตรียม render ไว้ล่วงหน้า (ยังไม่โชว์หน้า เพราะยังไม่รู้ว่าเป็นสมาชิกหรือยัง แต่พอ showPage("page-shops") ทีหลัง จะไม่มีจอว่างรอ)
+  if (hasCachedData) {
+    renderCategories();
+    renderShops(allShops);
+    menusLoaded = true;
+    renderWeekly();
+    renderFeaturedMenus();
+  }
+
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isInClient()) {
@@ -918,8 +991,13 @@ async function loadInitialData(isRetry) {
       }
     }
 
-    allShops = shopsRes.data || [];
-    renderCategories(); renderShops(allShops);
+    const freshShopsData = shopsRes.data || [];
+    const shopsChanged = JSON.stringify(freshShopsData) !== JSON.stringify(allShops);
+    allShops = freshShopsData;
+    saveDataCache(SHOP_CACHE_KEY, allShops); // ✅ เก็บ cache ไว้ใช้รอบหน้า
+    renderCategories();
+    // ✅ re-render เฉพาะตอนข้อมูลเปลี่ยนจริง กันจอกระตุกโดยไม่จำเป็นตอนข้อมูลเหมือนเดิม
+    if (shopsChanged) renderShops(allShops);
 
     // ✅ 1) เช็คสมาชิกก่อนเสมอ — ยังไม่ใช่สมาชิกให้ไปหน้า register ทันที ไม่ว่าร้านจะเปิดหรือปิด
     if (!memberRes.success) {
@@ -983,6 +1061,7 @@ async function prefetchAllMenus() {
         if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
         menuCache[item.restaurantId].push(item);
       });
+      saveDataCache(MENU_CACHE_KEY, r.data); // ✅ เก็บ cache ไว้ใช้รอบหน้า
     }
   } catch(_) {}
   menusLoaded = true;
@@ -1493,20 +1572,27 @@ function renderShops(shops) {
 
 async function openShop(restaurantId) {
   let shop = allShops.find(s => s.restaurantId === restaurantId);
-  if (!shop) {
-    try {
-      const r = await apiGet("action=getRestaurants");
-      if (r.success) {
-        allShops = r.data || [];
-        shop = allShops.find(s => s.restaurantId === restaurantId);
-      }
-    } catch(_) {}
+
+  // ✅ ยืนยันสถานะร้านสดก่อนเปิดเมนู แต่ใช้ timeout สั้น (4 วิ) เฉพาะจุดนี้
+  // กันเน็ตช้าทำให้กดเข้าร้านช้าเกินไป — ถ้าเช็คไม่ทันก็ใช้ cache เดิมไปก่อน
+  // ความถูกต้องจริงๆ ยังมี safety net ที่ createOrder ฝั่ง server เช็คซ้ำอยู่ดี ไม่ต้องรอสมบูรณ์แบบตรงนี้
+  try {
+    const r = await fetchWithTimeout(`${API}?action=getRestaurants`, {}, 4000);
+    const json = JSON.parse(await r.text());
+    if (json.success) {
+      allShops = json.data || [];
+      shop = allShops.find(s => s.restaurantId === restaurantId);
+    }
+  } catch(_) {
+    // เน็ตช้าหรือ timeout — ใช้ข้อมูล cache เดิมไปก่อน (ยังมี safety net ตอน createOrder อยู่ดี)
   }
+
   if (!shop) { showToast("ไม่พบร้านนี้ครับ กรุณาลองใหม่"); showPage("page-shops"); return; }
-  if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); return; }
+  if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); renderShops(allShops); return; }
   if (!isShopOpen(shop)) {
     const timeText = (shop.open && shop.close) ? ` (เปิด ${shop.open} - ปิด ${shop.close})` : (shop.close ? ` (ปิด ${shop.close})` : "");
     showToast(`ร้านนี้ปิดแล้วครับ${timeText}`);
+    renderShops(allShops); // ✅ อัปเดตหน้าจอให้ป้ายสถานะร้านตรงกับความจริงทันที
     return;
   }
   if (Object.keys(cart).length && currentShop?.restaurantId !== restaurantId) {

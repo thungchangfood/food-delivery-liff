@@ -517,7 +517,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
     </div>
      
     <div id="first-order-notice" style="display:none;" class="first-order-notice">
-      🎉 ออเดอร์แรกของคุณ! <strong>ส่งฟรีทันที ไม่มีขั้นต่ำ</strong>
+      🎉 ออเดอร์แรกของคุณ <strong>ส่งฟรีทันที! </strong>
     </div>
     <div id="free-delivery-notice" style="display:none;" class="free-delivery-notice"></div>
     <div id="small-order-notice" style="display:none;" class="deposit-notice"></div>
@@ -1962,7 +1962,7 @@ function renderCart() {
   const origDel = currentShop?.deliveryFee || 0;
   const delivery = calcDelivery(subtotal);
   const foodDiscount = calcFoodDiscount(subtotal);
-  const smallFee = calcSmallOrderFee(subtotal, currentShop);
+  const smallFee = isFirst ? 0 : calcSmallOrderFee(subtotal, currentShop);
 
   document.getElementById("s-subtotal").textContent = `฿${subtotal}`;
 
@@ -2213,8 +2213,9 @@ async function submitOrder() {
 
     const items = Object.values(cart);
     const subtotal = items.reduce((s,e) => s + e.price*e.qty, 0);
+    const isFirstNow = firstOrderFreeEnabled && currentMember?.isFirstOrder && subtotal >= FIRST_ORDER_MIN_SUBTOTAL;
     const foodDiscount = calcFoodDiscount(subtotal);
-    const smallFee = calcSmallOrderFee(subtotal, currentShop);
+    const smallFee = isFirstNow ? 0 : calcSmallOrderFee(subtotal, currentShop);
     const netSubtotal = subtotal - foodDiscount + smallFee;
     if (autoConfirmEnabled && netSubtotal > 300) {
       showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿300 กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");

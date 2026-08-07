@@ -2008,26 +2008,30 @@ function renderCart() {
     }
 
     firstOrderNotice.style.display = "none";
-    if (firstOrderFreeEnabled && currentMember?.isFirstOrder && !isFirst && subtotal > 0) {
+    const isFirstOrderCustomer = firstOrderFreeEnabled && currentMember?.isFirstOrder;
+    if (isFirstOrderCustomer && !isFirst && subtotal > 0) {
+      // ✅ ลูกค้าออเดอร์แรกที่ยังไม่ถึงขั้นต่ำ — โชว์เฉพาะข้อความนี้เท่านั้น
+      // ไม่ปนกับเงื่อนไขลดค่าส่งแบบขั้นบันได/แผนร้าน (ไม่เข้า block ด้านล่างเลย)
       const remain = FIRST_ORDER_MIN_SUBTOTAL - subtotal;
       fdNotice.style.display = "block";
       fdNotice.innerHTML = `🎉 สั่งอีก <strong>฿${remain}</strong> เพื่อรับสิทธิ์ <strong>ส่งฟรีออเดอร์แรก!</strong>`;
-    }
-    const isSelfDeliveryCart = currentShop?.gpPlan === "gp_self";
-    const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
-    if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FULL_FREE_DELIVERY_THRESHOLD) {
-      if (subtotal < FREE_DELIVERY_THRESHOLD) {
-        const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
-        const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
-        fdNotice.style.display = "block";
-        fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
-      } else {
-        const remaining = FULL_FREE_DELIVERY_THRESHOLD - subtotal;
-        fdNotice.style.display = "block";
-        fdNotice.innerHTML = `🎉 สั่งอีก <strong>฿${remaining}</strong> รับ <strong>ส่งฟรี!</strong> ครับ (ยอดครบ ฿${FULL_FREE_DELIVERY_THRESHOLD} ส่งฟรีทันที)`;
-      }
     } else {
-      fdNotice.style.display = "none";
+      const isSelfDeliveryCart = currentShop?.gpPlan === "gp_self";
+      const promoIsDeliveryType = promoApplied && ["free_delivery","delivery_percent","delivery_fixed"].includes(promoInfo?.promoType || "free_delivery");
+      if (!isSelfDeliveryCart && !promoIsDeliveryType && subtotal > 0 && subtotal < FULL_FREE_DELIVERY_THRESHOLD) {
+        if (subtotal < FREE_DELIVERY_THRESHOLD) {
+          const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
+          const saveAmount = currentShop?.gpPlan === "gp25" ? 4 : 5;
+          fdNotice.style.display = "block";
+          fdNotice.innerHTML = `🛵 สั่งอีก <strong>฿${remaining}</strong> รับส่วนลดค่าส่ง <strong>฿${saveAmount}</strong> ครับ! (ยอดครบ ฿${FREE_DELIVERY_THRESHOLD} รับส่วนลดทันที)`;
+        } else {
+          const remaining = FULL_FREE_DELIVERY_THRESHOLD - subtotal;
+          fdNotice.style.display = "block";
+          fdNotice.innerHTML = `🎉 สั่งอีก <strong>฿${remaining}</strong> รับ <strong>ส่งฟรี!</strong> ครับ (ยอดครบ ฿${FULL_FREE_DELIVERY_THRESHOLD} ส่งฟรีทันที)`;
+        }
+      } else {
+        fdNotice.style.display = "none";
+      }
     }
   }
 

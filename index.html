@@ -1903,6 +1903,8 @@ function calcFoodDiscount(subtotal) {
   return getPromoFoodDiscount(subtotal);
 }
 function getSmallOrderThreshold(shop) {
+  // ✅ ลูกค้าที่ยังมีสิทธิ์ออเดอร์แรก ใช้เกณฑ์ออเดอร์แรก ไม่ผูกกับแผนร้าน
+  if (firstOrderFreeEnabled && currentMember?.isFirstOrder) return FIRST_ORDER_MIN_SUBTOTAL;
   const plan = shop?.gpPlan;
   return smallOrderThresholds[plan] ?? smallOrderThresholds.default;
 }

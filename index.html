@@ -525,7 +525,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
     <div class="cart-section" id="promo-section">
       <div class="cart-section-title">🎟 โค้ดส่วนลด</div>
       <div class="fg" style="display:flex;gap:8px;align-items:center;">
-        <input class="fi" id="promo-input" placeholder="กรอกโค้ดโปรโมชั่น (ถ้ามี)" style="flex:1;">
+        <input class="fi" id="promo-input" placeholder="กรอกโค้ดโปรโมชั่น (ถ้ามี)" style="flex:1;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
         <button onclick="applyPromo()" style="padding:10px 14px;background:#06C755;color:white;border:none;border-radius:10px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap;">ใช้โค้ด</button>
       </div>
       <div id="promo-msg" style="font-size:12px;padding:0 16px 8px;display:none;"></div>

@@ -1261,10 +1261,11 @@ function renderOrders() {
           <div class="section-label">รายการอาหาร</div>
           <div class="items-list">
             ${items.map(i => `
-              <div class="item-row">
+              <div class="item-row" style="${i.note ? 'flex-wrap:wrap;' : ''}">
                 <span class="item-name">${escapeHtml(i.name)}</span>
                 <span class="item-qty">×${i.qty}</span>
                 <span class="item-price">฿${i.price * i.qty}</span>
+                ${i.note ? `<div style="width:100%;font-size:12px;color:#b45309;margin-top:2px;">📝 ${escapeHtml(i.note)}</div>` : ""}
               </div>`).join("")}
           </div>
         </div>

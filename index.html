@@ -982,6 +982,7 @@ async function loadInitialData(isRetry) {
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
+      DEPOSIT_THRESHOLD = Number(statusRes.data.depositThreshold ?? DEPOSIT_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1162,6 +1163,7 @@ async function refreshShopData(silent) {
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
+      DEPOSIT_THRESHOLD = Number(statusRes.data.depositThreshold ?? DEPOSIT_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1247,6 +1249,7 @@ async function checkAndLoadShops() {
       FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
       FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
       FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
+      DEPOSIT_THRESHOLD = Number(statusRes.data.depositThreshold ?? DEPOSIT_THRESHOLD);
       if (statusRes.data.smallOrderThresholds) {
         try {
           const t = typeof statusRes.data.smallOrderThresholds === "string"
@@ -1866,6 +1869,7 @@ function showShopMenuPage(shop) {
 }
 let FREE_DELIVERY_THRESHOLD = 125;
 let FULL_FREE_DELIVERY_THRESHOLD = 210;
+let DEPOSIT_THRESHOLD = 300;
 let availableRiderCount = 1;
 
 function getPromoDeliveryDiscount(deliveryFee) {
@@ -2045,21 +2049,21 @@ function renderCart() {
   const acNotice = document.getElementById("auto-confirm-notice");
   const orderBtnEl = document.getElementById("order-btn");
   const netSubtotalForLimit = subtotal - foodDiscount + smallFee;
-  const overAutoConfirmLimit = autoConfirmEnabled && netSubtotalForLimit > 300;
+  const overAutoConfirmLimit = autoConfirmEnabled && netSubtotalForLimit > DEPOSIT_THRESHOLD;
 
   if (acNotice) {
     acNotice.style.display = autoConfirmEnabled ? "block" : "none";
     if (overAutoConfirmLimit) {
-      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง — <strong style='color:#EF4444;'>⚠️ ยอดตะกร้าเกิน ฿300 (ยอดปัจจุบัน ฿" + netSubtotalForLimit + ") เกินยอดที่กำหนด กรุณาลดรายการก่อนสั่งครับ</strong>";
+      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง — <strong style='color:#EF4444;'>⚠️ ยอดตะกร้าเกิน ฿" + DEPOSIT_THRESHOLD + " (ยอดปัจจุบัน ฿" + netSubtotalForLimit + ") เกินยอดที่กำหนด กรุณาลดรายการก่อนสั่งครับ</strong>";
     } else {
-      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำเงินระเงินปลายทาง — <strong>ยอดสั่งไม่เกิน ฿300/ออเดอร์ครับ</strong>";
+      acNotice.innerHTML = "⚡ ขณะนี้ระบบรับเฉพาะออเดอร์ชำเงินระเงินปลายทาง — <strong>ยอดสั่งไม่เกิน ฿" + DEPOSIT_THRESHOLD + "/ออเดอร์ครับ</strong>";
     }
   }
 
   if (orderBtnEl) {
     if (overAutoConfirmLimit) {
       orderBtnEl.disabled = true;
-      orderBtnEl.textContent = "❌ ยอดเกิน ฿300 — สั่งไม่ได้ในช่วงนี้";
+      orderBtnEl.textContent = "❌ ยอดเกิน ฿" + DEPOSIT_THRESHOLD + " — สั่งไม่ได้ในช่วงนี้";
       orderBtnEl.style.opacity = "0.5";
       orderBtnEl.style.cursor = "not-allowed";
     } else {
@@ -2110,9 +2114,9 @@ function updateDepositNotice() {
   if (!notice) return;
   const isSelfDelivery = currentShop?.gpPlan === "gp_self";
 
-  if (payment === "cash" && netSubtotal > 300 && !isSelfDelivery) {
+  if (payment === "cash" && netSubtotal > DEPOSIT_THRESHOLD && !isSelfDelivery) {
     notice.style.display = "block";
-    notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿300</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
+    notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿${DEPOSIT_THRESHOLD}</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
   } else if (payment !== "cash") {
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
@@ -2223,10 +2227,10 @@ async function submitOrder() {
     const foodDiscount = calcFoodDiscount(subtotal);
     const smallFee = isFirstNow ? 0 : calcSmallOrderFee(subtotal, currentShop);
     const netSubtotal = subtotal - foodDiscount + smallFee;
-    if (autoConfirmEnabled && netSubtotal > 300) {
-      showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿300 กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
+    if (autoConfirmEnabled && netSubtotal > DEPOSIT_THRESHOLD) {
+      showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿" + DEPOSIT_THRESHOLD + " กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
       return;
-    }
+    }}
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     const isSelfDelivery = currentShop?.gpPlan === "gp_self";

@@ -925,6 +925,7 @@ async function init() {
     renderFeaturedMenus();
   }
 
+  let liffFailed = false;
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isInClient()) {
@@ -938,12 +939,31 @@ async function init() {
     }
     if (!liff.isLoggedIn()) { liff.login(); return; }
     lineProfile = await liff.getProfile();
+  } catch(e) {
+    console.error("LIFF:", e);
+    liffFailed = true;
+  }
 
-  } catch(e) { console.error("LIFF:", e); }
+  // ✅ ถ้า LIFF ล้มเหลว ลองซ้ำอีก 1 ครั้งก่อน ห้ามด่วนสรุปว่าเป็นลูกค้าใหม่
+  if (!lineProfile && liffFailed) {
+    try {
+      await new Promise(res => setTimeout(res, 800));
+      lineProfile = await liff.getProfile();
+    } catch(e2) {
+      console.error("LIFF retry:", e2);
+    }
+  }
 
+  // ✅ ยังไม่ได้ lineProfile จริงๆ (ไม่ใช่แค่ไม่มีบัญชี) — ต้องโชว์หน้า error ให้ลองใหม่
+  // ไม่ใช่หน้าสมัครสมาชิก เพราะเรายังไม่รู้เลยว่าเป็นลูกค้าเก่าหรือใหม่
   if (!lineProfile) {
-    await checkAndLoadShops();
-    showRegisterPage();
+    document.getElementById("page-loading").innerHTML = `
+      <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
+        <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px;">เชื่อมต่อ LINE ไม่สำเร็จ</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่ครับ</div>
+        <button class="btn-green" style="max-width:200px;" onclick="location.reload()">ลองใหม่</button>
+      </div>`;
     return;
   }
   await loadInitialData(false);

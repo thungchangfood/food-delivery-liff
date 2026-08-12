@@ -1047,12 +1047,16 @@ async function loadInitialData(isRetry, alreadyShowing) {
     }
 
     const freshShopsData = shopsRes.data || [];
-    const shopsChanged = JSON.stringify(freshShopsData) !== JSON.stringify(allShops);
-    allShops = freshShopsData;
-    saveDataCache(SHOP_CACHE_KEY, allShops); // ✅ เก็บ cache ไว้ใช้รอบหน้า
-    renderCategories();
-    // ✅ re-render เฉพาะตอนข้อมูลเปลี่ยนจริง กันจอกระตุกโดยไม่จำเป็นตอนข้อมูลเหมือนเดิม
-    if (shopsChanged) renderShops(allShops);
+    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าได้ร้านว่างเปล่ากลับมาทั้งที่เดิมมีร้านอยู่แล้ว ไม่เชื่อข้อมูลนี้
+    const shopsSuspicious = shopsRes.success && freshShopsData.length === 0 && allShops.length > 0;
+    if (!shopsSuspicious) {
+      const shopsChanged = JSON.stringify(freshShopsData) !== JSON.stringify(allShops);
+      allShops = freshShopsData;
+      saveDataCache(SHOP_CACHE_KEY, allShops); // ✅ เก็บ cache ไว้ใช้รอบหน้า
+      renderCategories();
+      // ✅ re-render เฉพาะตอนข้อมูลเปลี่ยนจริง กันจอกระตุกโดยไม่จำเป็นตอนข้อมูลเหมือนเดิม
+      if (shopsChanged) renderShops(allShops);
+    }
 
     // ✅ 1) เช็คสมาชิกก่อนเสมอ — ยังไม่ใช่สมาชิกให้ไปหน้า register ทันที ไม่ว่าร้านจะเปิดหรือปิด
     if (!memberRes.success) {
@@ -1119,7 +1123,9 @@ async function loadInitialData(isRetry, alreadyShowing) {
 async function prefetchAllMenus() {
   try {
     const r = await apiGet("action=getAllMenus");
-    if (r.success) {
+    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าเมนูว่างเปล่าทั้งที่เดิมมีเมนูอยู่แล้ว ไม่เชื่อข้อมูลนี้ (response ผิดพลาดชั่วคราว)
+    const menusSuspicious = r.success && (!r.data || r.data.length === 0) && Object.keys(menuCache).length > 0;
+    if (r.success && !menusSuspicious) {
       Object.keys(menuCache).forEach(k => delete menuCache[k]);
       r.data.forEach(item => {
         if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
@@ -1235,8 +1241,14 @@ async function refreshShopData(silent) {
         } catch(_) {}
       }
     }
-    allShops = shopsRes.data || [];
-    if (menusRes.success) {
+    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าได้ร้าน/เมนูว่างเปล่ากลับมาทั้งที่เดิมมีอยู่แล้ว ไม่เชื่อข้อมูลนี้
+    const freshShopsData2 = shopsRes.data || [];
+    const shopsSuspicious2 = shopsRes.success && freshShopsData2.length === 0 && allShops.length > 0;
+    if (!shopsSuspicious2) {
+      allShops = freshShopsData2;
+    }
+    const menusSuspicious = menusRes.success && (!menusRes.data || menusRes.data.length === 0) && Object.keys(menuCache).length > 0;
+    if (menusRes.success && !menusSuspicious) {
       Object.keys(menuCache).forEach(k => delete menuCache[k]);
       menusRes.data.forEach(item => {
         if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
@@ -1321,7 +1333,12 @@ async function checkAndLoadShops() {
         } catch(_) {}
       }
     }
-    allShops = shopsRes.data || [];
+    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าได้ร้านว่างเปล่ากลับมาทั้งที่เดิมมีร้านอยู่แล้ว ไม่เชื่อข้อมูลนี้
+    const freshShopsData3 = shopsRes.data || [];
+    const shopsSuspicious3 = shopsRes.success && freshShopsData3.length === 0 && allShops.length > 0;
+    if (!shopsSuspicious3) {
+      allShops = freshShopsData3;
+    }
     resetShopFilters();
     renderCategories();
     renderFirstOrderBanner();
@@ -1647,8 +1664,13 @@ async function openShop(restaurantId) {
   try {
     const r = await fetchWithTimeout(`${API}?action=getRestaurants`, {}, 4000);
     const json = JSON.parse(await r.text());
-    if (json.success) {
+    // ✅ กันข้อมูลว่างผิดปกติ — ถ้า response ว่างเปล่าทั้งที่เดิมมีร้านอยู่แล้ว
+    // แปลว่าเป็น response ผิดพลาดชั่วคราว ไม่ใช่ร้านหายจริง ไม่เชื่อข้อมูลนี้
+    const looksSuspicious = json.success && (!json.data || json.data.length === 0) && allShops.length > 0;
+    if (json.success && !looksSuspicious) {
       allShops = json.data || [];
+      shop = allShops.find(s => s.restaurantId === restaurantId);
+    } else {
       shop = allShops.find(s => s.restaurantId === restaurantId);
     }
   } catch(_) {

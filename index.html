@@ -467,7 +467,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 <!-- MENU -->
 <div class="page" id="page-menu">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-shops')">← กลับ</div>
+    <div class="header-back" onclick="history.back()">← กลับ</div>
     <div class="header-title" id="menu-shop-name"></div>
     <div class="cart-btn" onclick="goCart()">🛒 <span>ตะกร้า</span><div class="cart-badge" id="cart-badge2" style="display:none">0</div></div>
   </div>
@@ -579,7 +579,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 <!-- TRACK -->
 <div class="page" id="page-track">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-shops')">← กลับ</div>
+    <div class="header-back" onclick="history.back()">← กลับ</div>
     <div class="header-title">ติดตามออเดอร์</div>
   </div>
   <div class="track-wrap" id="track-wrap">
@@ -1087,12 +1087,20 @@ async function loadInitialData(isRetry, alreadyShowing) {
     renderFirstOrderBanner();
     updateRiderWarningBanner();
     prefetchAllMenus();
+
+    // ✅ เช็คว่าลูกค้ากำลังทำอะไรค้างอยู่ ถ้าใช่ ไม่ต้องเด้งกลับหน้าร้าน ปล่อยให้ sync เงียบๆ พอ
+    const busyPages = new Set(["page-menu", "page-cart", "page-track", "page-deposit", "page-success"]);
+    const currentActivePage = document.querySelector(".page.active")?.id;
+    const userIsMidFlow = busyPages.has(currentActivePage);
+
     const urlPage = new URLSearchParams(window.location.search).get("page");
-    if (urlPage === "track") {
-      showPage("page-shops");
-      goTrack();
-    } else {
-      showPage("page-shops");
+    if (!userIsMidFlow) {
+      if (urlPage === "track") {
+        showPage("page-shops");
+        goTrack();
+      } else {
+        showPage("page-shops");
+      }
     }
     restoreLocalStateIfAny();
   } catch(e) {
@@ -2659,12 +2667,59 @@ async function confirmCancelOrder() {
   }
 }
 
-function showPage(id) {
+// ============================================================
+//  ✅ Back button / swipe-back handling
+//  Android hardware back และ iOS swipe-back คือ history.back() ธรรมดา
+//  ต้อง push history เองทุกครั้งที่เข้าหน้าใหม่ ไม่งั้นกด back ครั้งแรกจะหลุดออกจาก LIFF ทันที
+// ============================================================
+let navStack = ["page-shops"];
+
+function showPageInternal(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   window.scrollTo(0, 0);
   if (id !== "page-track" && trackTimer) { clearInterval(trackTimer); trackTimer = null; }
 }
+
+function showPage(id) {
+  showPageInternal(id);
+  if (id === "page-shops") {
+    // ✅ page-shops คือหน้าหลัก/ราก — รีเซ็ต stack กลับมาเหลือหน้าเดียวเสมอ กัน stack บวมไม่รู้จบ
+    navStack = ["page-shops"];
+    history.replaceState({ tcPage: "page-shops" }, "", location.href);
+    return;
+  }
+  if (navStack[navStack.length - 1] === id) return; // กันซ้ำ ไม่ push ซ้อนถ้าอยู่หน้านี้อยู่แล้ว
+  navStack.push(id);
+  history.pushState({ tcPage: id }, "", location.href);
+}
+
+// ✅ ดักจับปุ่ม back ของเครื่อง (Android) และปัดกลับ (iOS) — ทั้งสองแบบ fire "popstate" เหมือนกัน
+window.addEventListener("popstate", () => {
+  // ถ้ามี sheet เปิดค้างอยู่ ให้ปิด sheet ก่อน ไม่ถือเป็นการเปลี่ยนหน้า
+  if (document.getElementById("options-sheet")?.classList.contains("show")) {
+    closeSheet();
+    history.pushState({ tcPage: navStack[navStack.length - 1] }, "", location.href);
+    return;
+  }
+  if (document.getElementById("cancel-sheet")?.classList.contains("show")) {
+    closeCancelSheet();
+    history.pushState({ tcPage: navStack[navStack.length - 1] }, "", location.href);
+    return;
+  }
+  if (document.getElementById("error-modal-overlay")?.classList.contains("show")) {
+    closeErrorModal();
+    history.pushState({ tcPage: navStack[navStack.length - 1] }, "", location.href);
+    return;
+  }
+  if (navStack.length > 1) {
+    navStack.pop();
+    showPageInternal(navStack[navStack.length - 1]);
+  }
+  // ถ้าอยู่หน้ารากแล้ว (page-shops) ไม่ทำอะไรเพิ่ม ปล่อยให้ back ครั้งถัดไปออกจาก LIFF ตามปกติ
+});
+
+history.replaceState({ tcPage: "page-shops" }, "", location.href);
 function updateCartUI() {
   const items = Object.values(cart);
   const total = items.reduce((s,e) => s + e.qty, 0);

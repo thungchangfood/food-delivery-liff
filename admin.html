@@ -800,16 +800,38 @@ async function apiGet(params, _isRetry) {
     throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้งครับ");
   }
 }
-async function apiPost(body) {
+async function apiPost(body, _isRetry) {
   const token = localStorage.getItem("admin_token") || "";
-  const r = await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...body, adminToken: token })
-  });
-  const txt = await r.text();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  let r, txt;
+  try {
+    r = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...body, adminToken: token }),
+      signal: controller.signal
+    });
+    txt = await r.text();
+  } catch(e) {
+    clearTimeout(timeoutId);
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 800));
+      return apiPost(body, true);
+    }
+    throw new Error(e.name === "AbortError" ? "เชื่อมต่อช้าเกินไป ลองใหม่ครับ" : "เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่ครับ");
+  }
+  clearTimeout(timeoutId);
   console.log("API RESPONSE:", txt);
-  return JSON.parse(txt);
+  try {
+    return JSON.parse(txt);
+  } catch(e) {
+    if (!_isRetry) {
+      await new Promise(res => setTimeout(res, 800));
+      return apiPost(body, true);
+    }
+    throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง ลองใหม่อีกครั้งครับ");
+  }
 }
 
 // ── SYSTEM STATUS ──────────────────────────────────────

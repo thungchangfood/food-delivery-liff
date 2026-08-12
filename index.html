@@ -482,7 +482,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 <!-- CART -->
 <div class="page" id="page-cart">
   <div class="header">
-    <div class="header-back" onclick="goBackFromCart()">← กลับ</div>
+    <div class="header-back" onclick="history.back()">← กลับ</div>
     <div class="header-title">ตะกร้าสินค้า</div>
   </div>
   <div class="pb-80">
@@ -590,7 +590,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
 <!-- DEPOSIT -->
 <div class="page" id="page-deposit">
   <div class="header">
-    <div class="header-back" onclick="showPage('page-cart')">← กลับ</div>
+    <div class="header-back" onclick="history.back()">← กลับ</div>
     <div class="header-title">สรุปออเดอร์</div>
   </div>
   <div class="dep-wrap">
@@ -1666,25 +1666,6 @@ function renderShops(shops) {
 async function openShop(restaurantId) {
   let shop = allShops.find(s => s.restaurantId === restaurantId);
 
-  // ✅ ยืนยันสถานะร้านสดก่อนเปิดเมนู แต่ใช้ timeout สั้น (4 วิ) เฉพาะจุดนี้
-  // กันเน็ตช้าทำให้กดเข้าร้านช้าเกินไป — ถ้าเช็คไม่ทันก็ใช้ cache เดิมไปก่อน
-  // ความถูกต้องจริงๆ ยังมี safety net ที่ createOrder ฝั่ง server เช็คซ้ำอยู่ดี ไม่ต้องรอสมบูรณ์แบบตรงนี้
-  try {
-    const r = await fetchWithTimeout(`${API}?action=getRestaurants`, {}, 4000);
-    const json = JSON.parse(await r.text());
-    // ✅ กันข้อมูลว่างผิดปกติ — ถ้า response ว่างเปล่าทั้งที่เดิมมีร้านอยู่แล้ว
-    // แปลว่าเป็น response ผิดพลาดชั่วคราว ไม่ใช่ร้านหายจริง ไม่เชื่อข้อมูลนี้
-    const looksSuspicious = json.success && (!json.data || json.data.length === 0) && allShops.length > 0;
-    if (json.success && !looksSuspicious) {
-      allShops = json.data || [];
-      shop = allShops.find(s => s.restaurantId === restaurantId);
-    } else {
-      shop = allShops.find(s => s.restaurantId === restaurantId);
-    }
-  } catch(_) {
-    // เน็ตช้าหรือ timeout — ใช้ข้อมูล cache เดิมไปก่อน (ยังมี safety net ตอน createOrder อยู่ดี)
-  }
-
   if (!shop) { showToast("ไม่พบร้านนี้ครับ กรุณาลองใหม่"); showPage("page-shops"); return; }
   if (shop.status !== "active") { showToast("ร้านนี้ปิดอยู่ครับ"); renderShops(allShops); return; }
   if (!isShopOpen(shop)) {
@@ -1697,6 +1678,8 @@ async function openShop(restaurantId) {
     if (!confirm(`ตะกร้ามีรายการจากร้าน "${currentShop.name}" อยู่แล้ว\nต้องการเปลี่ยนร้านไหมครับ?`)) return;
     cart = {}; updateCartUI();
   }
+
+  // ✅ เข้าหน้าเมนูทันทีจาก cache ไม่ต้องรอ network — ลูกค้าเห็นหน้าร้านไวขึ้นมาก
   currentShop = shop;
   saveLocalState();
   document.getElementById("menu-shop-name").textContent = shop.name;
@@ -1721,6 +1704,44 @@ async function openShop(restaurantId) {
       currentMenus = r.data;
       renderMenus();
     } catch(e) { showToast("โหลดเมนูไม่สำเร็จครับ"); }
+  }
+
+  // ✅ เช็คสถานะร้านสดๆ แบบ background ทีหลัง (ไม่บล็อกการเข้าหน้าเมนู)
+  // ความถูกต้องจริงๆ ยังมี safety net ที่ createOrder ฝั่ง server เช็คซ้ำอยู่ดี ตรงนี้แค่กันร้านปิดกะทันหันแล้วลูกค้าไม่รู้
+  verifyShopStillOpenInBackground(restaurantId);
+}
+
+async function verifyShopStillOpenInBackground(restaurantId) {
+  try {
+    const r = await fetchWithTimeout(`${API}?action=getRestaurants`, {}, 6000);
+    const json = JSON.parse(await r.text());
+    const looksSuspicious = json.success && (!json.data || json.data.length === 0) && allShops.length > 0;
+    if (!json.success || looksSuspicious) return;
+
+    allShops = json.data || [];
+    const freshShop = allShops.find(s => s.restaurantId === restaurantId);
+
+    // ✅ ลูกค้าอาจกดออกจากหน้าเมนูไปแล้วระหว่างรอ ให้เช็คก่อนว่ายังอยู่ร้านเดิมและหน้าเมนูอยู่ไหม
+    const stillOnThisShop = currentShop?.restaurantId === restaurantId &&
+      document.getElementById("page-menu").classList.contains("active");
+    if (!stillOnThisShop) return;
+
+    if (!freshShop || freshShop.status !== "active") {
+      showToast("⚠️ ร้านนี้เพิ่งปิดให้บริการครับ ยังสั่งได้ไม่ทันนะครับ");
+      renderShops(allShops);
+      return;
+    }
+    if (!isShopOpen(freshShop)) {
+      const timeText = (freshShop.open && freshShop.close) ? ` (เปิด ${freshShop.open} - ปิด ${freshShop.close})` : "";
+      showToast(`⚠️ ร้านนี้เพิ่งปิดแล้วครับ${timeText}`);
+      renderShops(allShops);
+      return;
+    }
+    // ✅ ร้านยังเปิดปกติ อัปเดตข้อมูลร้าน (เผื่อค่าส่ง/เวลาเปลี่ยน) เงียบๆ ไม่ต้องแจ้งอะไร
+    currentShop = freshShop;
+    renderShopHoursBar(freshShop);
+  } catch(_) {
+    // เน็ตช้าหรือ timeout — ไม่ต้องทำอะไร ปล่อยผ่าน มี safety net ตอน createOrder อยู่ดี
   }
 }
 
@@ -2696,6 +2717,20 @@ function showPage(id) {
 
 // ✅ ดักจับปุ่ม back ของเครื่อง (Android) และปัดกลับ (iOS) — ทั้งสองแบบ fire "popstate" เหมือนกัน
 window.addEventListener("popstate", () => {
+  // ✅ กันชน: ถ้ากำลังนับถอยหลังยืนยันออเดอร์อยู่ (page-success + ยังไม่สร้างออเดอร์จริง)
+  // ต้องถือว่ากด back = กดปุ่ม "❌ ยกเลิก" ไม่ใช่แค่เปลี่ยนหน้าเฉยๆ
+  // ไม่งั้นลูกค้ากด back คิดว่ายกเลิกแล้ว แต่ตัวจับเวลายังทำงานอยู่ พอครบ 10 วิ ออเดอร์จะถูกสร้างขึ้นจริงโดยไม่รู้ตัว
+  if (document.getElementById("page-success")?.classList.contains("active") && pendingOrderData) {
+    if (isFinalizingOrder) {
+      // กำลังยิง API สร้างออเดอร์พอดี ยกเลิกไม่ทันแล้ว กันไม่ให้หลุดออกจากหน้ากลางทาง
+      showToast("กำลังสร้างออเดอร์อยู่ครับ กรุณารอสักครู่");
+      history.pushState({ tcPage: "page-success" }, "", location.href);
+      return;
+    }
+    cancelPendingOrderBeforeCreate(); // เหมือนกดปุ่ม "❌ ยกเลิก" — ยกเลิกออเดอร์ที่ยังไม่ถูกสร้างจริง แล้วพากลับหน้าหลัก
+    return;
+  }
+
   // ถ้ามี sheet เปิดค้างอยู่ ให้ปิด sheet ก่อน ไม่ถือเป็นการเปลี่ยนหน้า
   if (document.getElementById("options-sheet")?.classList.contains("show")) {
     closeSheet();

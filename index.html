@@ -2230,7 +2230,7 @@ async function submitOrder() {
     if (autoConfirmEnabled && netSubtotal > DEPOSIT_THRESHOLD) {
       showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿" + DEPOSIT_THRESHOLD + " กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
       return;
-    }}
+    }
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     const isSelfDelivery = currentShop?.gpPlan === "gp_self";

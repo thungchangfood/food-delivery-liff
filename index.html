@@ -1051,9 +1051,10 @@ async function init() {
 }
 
 async function loadInitialData(isRetry, alreadyShowing) {
-  // ✅ ถ้ากำลังโชว์ข้อมูล cache ให้ลูกค้าดูอยู่แล้ว ใช้ timeout สั้น + ไม่ retry ซ้อน
-  // กันแถบ "กำลังอัปเดตข้อมูล" ค้างนานเกินไป (เดิมอาจถึง ~1 นาทีถ้าเน็ตช้า)
-  const bgOpts = alreadyShowing ? { timeoutMs: 6000, noRetry: true } : {};
+  // ✅ ถ้ากำลังโชว์ข้อมูล cache ให้ลูกค้าดูอยู่แล้ว sync พื้นหลัง
+  // timeout 10 วิ + ยอมให้ retry ได้ 1 ครั้ง (backend อาจมี cold start บ้าง) กันพลาดง่ายเกินไป
+  // ส่วนแถบ "กำลังอัปเดตข้อมูล" มี safety net ซ่อนเองสูงสุด 8 วิอยู่แล้ว ไม่ทำให้ค้างนานเกินไป
+  const bgOpts = alreadyShowing ? { timeoutMs: 10000, noRetry: false } : {};
   try {
     const [memberRes, statusRes, shopsRes] = await Promise.all([
       apiGet("action=getMember&lineUserId=" + lineProfile.userId, bgOpts),

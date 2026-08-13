@@ -2841,6 +2841,76 @@ window.addEventListener("popstate", () => {
   // ถ้าอยู่หน้ารากแล้ว (page-shops) ไม่ทำอะไรเพิ่ม ปล่อยให้ back ครั้งถัดไปออกจาก LIFF ตามปกติ
 });
 
+// ============================================================
+//  ✅ เช็คสถานะร้านซ้ำเมื่อแอปกลับมา foreground
+//  เดิมโค้ดเช็คสถานะร้าน (system_open) แค่ตอนโหลดหน้าเว็บครั้งแรกเท่านั้น
+//  แต่ LINE LIFF webview เวลาโดนสลับไปพื้นหลัง (กด home / สลับแอป / ปิดจอ) 
+//  แล้วกลับมาเปิดใหม่ มักไม่ reload หน้าเว็บ — JS state เดิมที่โหลดไว้ตอนร้าน "ยังเปิด" จะค้างอยู่
+//  ทำให้ลูกค้าเปิดแอปที่ค้างไว้ข้ามวัน มาเจอว่ายังเข้าหน้าร้านได้ทั้งที่ร้านปิดไปแล้วจริงๆ
+// ============================================================
+let lastVisibilityCheckAt = Date.now();
+const VISIBILITY_RECHECK_MIN_GAP_MS = 60 * 1000; // กันยิงถี่เกินไปถ้าสลับแอปไปมาบ่อยๆ
+
+async function revalidateSystemStatusOnResume() {
+  if (!lineProfile || !currentMember) return; // ยังไม่ผ่านการโหลดครั้งแรกเลย ไม่ต้องเช็ค
+  try {
+    const r = await apiGet("action=getSystemStatus", { timeoutMs: 8000, noRetry: true });
+    if (!r.success) return;
+
+    availableRiderCount = Number(r.data.availableRiderCount ?? 1);
+    if (r.data.businessHours) {
+      const wd = r.data.businessHours.weekday;
+      const we = r.data.businessHours.weekend;
+      if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
+      if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
+    }
+    shopLogoUrl = r.data.shopLogoUrl || shopLogoUrl;
+    systemOpenCached = r.data.open !== false;
+
+    const busyOrderingPages = new Set(["page-cart", "page-deposit", "page-success"]);
+    const currentActivePage = document.querySelector(".page.active")?.id;
+
+    if (!r.data.open) {
+      document.getElementById("closed-msg").textContent = r.data.reason || "กรุณาติดต่อแอดมินครับ";
+      renderClosedPageHours();
+      updateClosedPageLogo();
+      if (busyOrderingPages.has(currentActivePage)) {
+        // ✅ ลูกค้ากำลังทำรายการค้างอยู่ (ตะกร้า/รอมัดจำ/รอยืนยัน) ไม่เด้งหน้าทันทีเพราะจะงงหรือข้อมูลหาย
+        // แจ้งเตือนก่อน กดตกลงแล้วค่อยพาไปหน้าปิดร้าน
+        showNoticeModal(
+          "⚠️ ร้านปิดรับออเดอร์ไปแล้วระหว่างที่คุณทำรายการอยู่ครับ\n" + (r.data.reason || "กรุณาลองใหม่ภายหลังนะครับ"),
+          () => showPage("page-closed"),
+          "ร้านปิดรับออเดอร์"
+        );
+      } else {
+        showPage("page-closed");
+      }
+    } else if (document.getElementById("page-closed")?.classList.contains("active")) {
+      // ✅ ร้านกลับมาเปิดแล้ว แต่ลูกค้ายังค้างอยู่หน้าปิดร้าน — พากลับเข้าหน้าร้านให้เลย
+      checkAndLoadShops();
+    }
+  } catch(_) {
+    // เน็ตมีปัญหาตอนนั้น ไม่ต้องทำอะไร ปล่อยผ่าน รอรอบถัดไปตอนสลับแอปครั้งหน้า
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return; // สนใจแค่ตอน "กลับมา" มองเห็นหน้าจอ ไม่ใช่ตอนซ่อน
+  const now = Date.now();
+  if (now - lastVisibilityCheckAt < VISIBILITY_RECHECK_MIN_GAP_MS) return;
+  lastVisibilityCheckAt = now;
+  revalidateSystemStatusOnResume();
+});
+
+// ✅ เผื่อกรณี iOS Safari/LINE in-app browser คืนหน้าเว็บจาก back-forward cache (bfcache)
+// ซึ่งบางเครื่องไม่ fire visibilitychange ให้ครบ ต้องดัก pageshow เพิ่มเป็นชั้นกันสอง
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    lastVisibilityCheckAt = Date.now();
+    revalidateSystemStatusOnResume();
+  }
+});
+
 history.replaceState({ tcPage: "page-shops" }, "", location.href);
 function updateCartUI() {
   const items = Object.values(cart);

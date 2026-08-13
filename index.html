@@ -912,11 +912,39 @@ async function apiPost(body, _isRetry) {
 
 const menuCache = {};
 
+// ✅ โหลดเมนูทุกร้านล่วงหน้าไว้ background — เดิมโค้ดเรียก prefetchAllMenus() 
+// แต่ไม่มีฟังก์ชันนี้จริง ทำให้เกิด ReferenceError กลางฟังก์ชัน applyLoadedData()
+// ผลคือ showPage("page-shops") ที่อยู่บรรทัดถัดไปไม่เคยถูกเรียก หน้าเว็บค้างที่ loading ตลอดไป
+let _prefetchAllMenusRunning = false;
+async function prefetchAllMenus() {
+  if (_prefetchAllMenusRunning) return;
+  _prefetchAllMenusRunning = true;
+  try {
+    const r = await apiGet("action=getAllMenus", { timeoutMs: 10000 });
+    if (!r.success || !r.data) return;
+    const menusSuspicious = (!r.data.length) && Object.keys(menuCache).length > 0;
+    if (menusSuspicious) return;
+    Object.keys(menuCache).forEach(k => delete menuCache[k]);
+    r.data.forEach(item => {
+      if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
+      menuCache[item.restaurantId].push(item);
+    });
+    menusLoaded = true; // ✅ แถมแก้บั๊กที่ 3 ไปด้วยในตัว
+    if (document.getElementById("page-shops")?.classList.contains("active")) {
+      renderWeekly();
+      renderFeaturedMenus();
+    }
+  } catch(ex) {
+    console.warn("prefetchAllMenus failed:", ex);
+  } finally {
+    _prefetchAllMenusRunning = false;
+  }
+}
+
 const SHOP_CACHE_KEY = "tc_delivery_shops_cache";
 const MENU_CACHE_KEY = "tc_delivery_menus_cache";
 const MEMBER_CACHE_KEY = "tc_delivery_member_cache";
-const CACHE_MAX_AGE_MIN = 30; // cache เก่าเกิน 30 นาทีไม่ใช้แล้ว
-const INSTANT_SHOW_MAX_AGE_MIN = 3; // ✅ cache เก่าเกินนี้ ไม่โชว์ทันที รอ sync จริงก่อน กันลูกค้าเห็นข้อมูลเก่าเกินไป
+const CACHE_MAX_AGE_MIN = 30; // cache เก่าเกิน 30 นาทีไม่ใช้เลย (ใช้เป็นทางสำรองตอนเน็ตช้าเท่านั้น ไม่ใช่ตัวหลัก)
 
 function saveDataCache(key, data) {
   try {
@@ -932,15 +960,6 @@ function loadDataCache(key) {
     if (ageMin > CACHE_MAX_AGE_MIN) return null;
     return parsed.data;
   } catch(_) { return null; }
-}
-// ✅ อายุ cache เป็นนาที ใช้ตัดสินใจว่าจะโชว์ทันทีเลยไหม หรือรอ sync จริงก่อน
-function getDataCacheAgeMin(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return Infinity;
-    const parsed = JSON.parse(raw);
-    return (Date.now() - parsed.savedAt) / 60000;
-  } catch(_) { return Infinity; }
 }
 
 function checkIsFirstOrder(memberData) {
@@ -965,46 +984,18 @@ function hideSyncIndicator() {
   _syncIndicatorSafetyTimer = null;
 }
 
+// ============================================================
+//  ✅ โหลดข้อมูลจริงก่อนเสมอ ให้งบเวลาไม่เกิน 3 วิ
+//  ถ้าเสร็จทัน → โชว์ข้อมูลสดเลย ไม่ยุ่ง cache
+//  ถ้าช้ากว่านั้น (เน็ตอ่อนสัญญาณจริงๆ) → ใช้ cache เป็นทางสำรองระหว่างรอของจริง
+// ============================================================
+const FRESH_LOAD_BUDGET_MS = 3000;
+
 async function init() {
-  // ✅ ถ้ามี cache ร้าน/เมนูเก่าอยู่ ให้เตรียมพร้อมแสดงทันทีที่รู้ว่าเป็นสมาชิกแล้ว (ลดเวลารอจอขาวสำหรับเน็ตช้า)
-  const cachedShops = loadDataCache(SHOP_CACHE_KEY);
-  const cachedMenus = loadDataCache(MENU_CACHE_KEY);
-  const cachedMember = loadDataCache(MEMBER_CACHE_KEY);
-  const hasCachedData = !!cachedShops;
-  if (cachedShops) allShops = cachedShops;
-  if (cachedMenus) {
-    cachedMenus.forEach(item => {
-      if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
-      menuCache[item.restaurantId].push(item);
-    });
-  }
-  if (hasCachedData) {
-    renderCategories();
-    renderShops(allShops);
-    menusLoaded = true;
-    renderWeekly();
-    renderFeaturedMenus();
-  }
-
-  // ✅ จุดสำคัญ: ถ้ามี cache ทั้งร้านและสมาชิกครบ (และไม่ถูกระงับ) → โชว์หน้าร้านทันที ไม่ต้องรอ LIFF/API เลย
-  // ผู้ใช้เห็นหน้าร้านได้ทันที ส่วนแถบเขียวบางๆ ด้านบนจะขึ้นบอกว่ากำลังซิงค์ข้อมูลจริงอยู่เบื้องหลัง
-  const shopCacheAgeMin = getDataCacheAgeMin(SHOP_CACHE_KEY);
-  const canShowInstantly = hasCachedData && cachedMember &&
-    String(cachedMember.status || "").toLowerCase() !== "block" &&
-    shopCacheAgeMin <= INSTANT_SHOW_MAX_AGE_MIN;
-  if (canShowInstantly) {
-    currentMember = cachedMember;
-    currentMember.isFirstOrder = checkIsFirstOrder(cachedMember);
-    renderFirstOrderBanner();
-    showPage("page-shops");
-    showSyncIndicator();
-  }
-
   let liffFailed = false;
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isInClient()) {
-      hideSyncIndicator();
       document.getElementById("page-loading").innerHTML = `
         <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
           <div style="font-size:56px;margin-bottom:16px;">🔒</div>
@@ -1031,12 +1022,6 @@ async function init() {
   }
 
   if (!lineProfile) {
-    hideSyncIndicator();
-    // ✅ ถ้ามีหน้า cache โชว์อยู่แล้ว ไม่ต้องเด้งไปหน้า error — แค่แจ้งเตือนเบาๆ แล้วปล่อยให้ใช้ข้อมูล cache ต่อไปก่อน
-    if (canShowInstantly) {
-      showToast("⚠️ เชื่อมต่อ LINE ไม่สำเร็จ กำลังใช้ข้อมูลที่บันทึกไว้ก่อนหน้าครับ");
-      return;
-    }
     document.getElementById("page-loading").innerHTML = `
       <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
         <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
@@ -1047,148 +1032,72 @@ async function init() {
     showPage("page-loading");
     return;
   }
-  await loadInitialData(false, canShowInstantly);
+
+  await loadShopData(false);
 }
 
-async function loadInitialData(isRetry, alreadyShowing) {
-  // ✅ ถ้ากำลังโชว์ข้อมูล cache ให้ลูกค้าดูอยู่แล้ว sync พื้นหลัง
-  // timeout 10 วิ + ยอมให้ retry ได้ 1 ครั้ง (backend อาจมี cold start บ้าง) กันพลาดง่ายเกินไป
-  // ส่วนแถบ "กำลังอัปเดตข้อมูล" มี safety net ซ่อนเองสูงสุด 8 วิอยู่แล้ว ไม่ทำให้ค้างนานเกินไป
-  const bgOpts = alreadyShowing ? { timeoutMs: 10000, noRetry: false } : {};
-  try {
-    const [memberRes, statusRes, shopsRes] = await Promise.all([
-      apiGet("action=getMember&lineUserId=" + lineProfile.userId, bgOpts),
-      apiGet("action=getSystemStatus", bgOpts),
-      apiGet("action=getRestaurants", bgOpts)
-    ]);
+async function fetchCoreData() {
+  const [memberRes, statusRes, shopsRes] = await Promise.all([
+    apiGet("action=getMember&lineUserId=" + lineProfile.userId),
+    apiGet("action=getSystemStatus"),
+    apiGet("action=getRestaurants")
+  ]);
+  return { memberRes, statusRes, shopsRes };
+}
 
-    // ✅ ตั้งค่า config จาก statusRes เสมอ ไม่ว่าร้านจะเปิดหรือปิด
-    // (ย้าย if (!statusRes.data.open) { ...; return; } ออกจากตรงนี้ไปเช็คทีหลัง)
-    if (statusRes.success) {
-      systemOpenCached = statusRes.data.open !== false;
-      if (statusRes.data.businessHours) {
-        const wd = statusRes.data.businessHours.weekday;
-        const we = statusRes.data.businessHours.weekend;
-        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
-        if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
-        if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
-      }
-      shopLogoUrl = statusRes.data.shopLogoUrl || "";
-      bankAccount = statusRes.data.bankAccount || "";
-      bankName    = statusRes.data.bankName    || "";
-      weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
-      weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
-      firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
-      autoConfirmEnabled = !!statusRes.data.autoConfirmEnabled;
-      retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
-      smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
-      smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
-      PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
-      FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
-      FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
-      FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
-      DEPOSIT_THRESHOLD = Number(statusRes.data.depositThreshold ?? DEPOSIT_THRESHOLD);
-      if (statusRes.data.smallOrderThresholds) {
-        try {
-          const t = typeof statusRes.data.smallOrderThresholds === "string"
-            ? JSON.parse(statusRes.data.smallOrderThresholds)
-            : statusRes.data.smallOrderThresholds;
-          smallOrderThresholds = { ...smallOrderThresholds, ...t };
-        } catch(_) {}
-      }
-    }
+async function loadShopData(isRetry) {
+  // ✅ ยิงโหลดข้อมูลจริงทันที ไม่รอ แล้วแข่งกับเวลา 3 วิ
+  const dataPromise = fetchCoreData();
 
-    const freshShopsData = shopsRes.data || [];
-    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าได้ร้านว่างเปล่ากลับมาทั้งที่เดิมมีร้านอยู่แล้ว ไม่เชื่อข้อมูลนี้
-    const shopsSuspicious = shopsRes.success && freshShopsData.length === 0 && allShops.length > 0;
-    if (!shopsSuspicious) {
-      const shopsChanged = JSON.stringify(freshShopsData) !== JSON.stringify(allShops);
-      allShops = freshShopsData;
-      saveDataCache(SHOP_CACHE_KEY, allShops); // ✅ เก็บ cache ไว้ใช้รอบหน้า
+  const raceResult = await Promise.race([
+    dataPromise.then(() => "FRESH").catch(() => "FRESH"), // พลาดก็ถือว่า "ถึงเวลาแล้ว" ไปเช็ค error ตอน await จริงด้านล่าง
+    new Promise(res => setTimeout(() => res("TIMEOUT"), FRESH_LOAD_BUDGET_MS))
+  ]);
+
+  let usedCacheFallback = false;
+
+  if (raceResult === "TIMEOUT") {
+    // ✅ เกินงบเวลา 3 วิ ลองใช้ cache สำรองแสดงไปพลางๆ ระหว่างรอของจริง
+    const cachedShops = loadDataCache(SHOP_CACHE_KEY);
+    const cachedMenus = loadDataCache(MENU_CACHE_KEY);
+    const cachedMember = loadDataCache(MEMBER_CACHE_KEY);
+    const canUseCache = cachedShops && cachedMember &&
+      String(cachedMember.status || "").toLowerCase() !== "block";
+
+    if (canUseCache) {
+      usedCacheFallback = true;
+      allShops = cachedShops;
+      if (cachedMenus) {
+        cachedMenus.forEach(item => {
+          if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
+          menuCache[item.restaurantId].push(item);
+        });
+      }
+      currentMember = cachedMember;
+      currentMember.isFirstOrder = checkIsFirstOrder(cachedMember);
       renderCategories();
-      // ✅ re-render เฉพาะตอนข้อมูลเปลี่ยนจริง กันจอกระตุกโดยไม่จำเป็นตอนข้อมูลเหมือนเดิม
-      if (shopsChanged) renderShops(allShops);
+      renderShops(allShops);
+      menusLoaded = true;
+      renderWeekly();
+      renderFeaturedMenus();
+      renderFirstOrderBanner();
+      showPage("page-shops");
+      showSyncIndicator();
     }
+    // ถ้าไม่มี cache ให้ปล่อยหน้า loading ค้างไว้ต่อ รอของจริงเท่าที่ต้องใช้เวลาจริง (ไม่มีทางเลือกอื่น)
+  }
 
-    // ✅ 1) เช็คสมาชิกก่อนเสมอ — ยังไม่ใช่สมาชิกให้ไปหน้า register ทันที ไม่ว่าร้านจะเปิดหรือปิด
-    if (!memberRes.success) {
-      // ✅ ถ้าลูกค้ากำลังดูหน้าร้านจาก cache อยู่แล้ว (แปลว่าเคยเป็นสมาชิกมาก่อนแน่ๆ)
-      // การเช็คซ้ำพลาดรอบนี้น่าจะเป็นปัญหาชั่วคราวฝั่ง server ไม่ใช่ว่าลูกค้าไม่ใช่สมาชิกจริงๆ
-      // ห้ามเด้งไปหน้าสมัครสมาชิกเด็ดขาด เพราะลูกค้าอาจมีของอยู่ในตะกร้าอยู่ จะงงและเสียของในตะกร้า
-      if (alreadyShowing) {
-        hideSyncIndicator();
-        showToast("⚠️ ซิงค์ข้อมูลสมาชิกไม่สำเร็จ กำลังใช้ข้อมูลที่บันทึกไว้ก่อนหน้าครับ");
-        writeErrLog && writeErrLog(); // เผื่ออนาคตอยากเก็บ log ฝั่ง client, ไม่มีก็ไม่ error เพราะ optional chaining ไม่ได้ใช้ตรงนี้
-        return;
-      }
-      showRegisterPage();
-      // ✅ โหลดเมนูทุกร้านไว้เบื้องหลังระหว่างที่ลูกค้ากำลังกรอกฟอร์มอยู่
-      // พอสมัครเสร็จจะได้เข้าหน้าร้านได้ทันที ไม่ต้องรอโหลดซ้ำ
-      prefetchAllMenus();
-      return;
-    }
-
-    currentMember = memberRes.data;
-    saveDataCache(MEMBER_CACHE_KEY, currentMember); // ✅ เก็บ cache ไว้เปิดหน้าทันทีในครั้งหน้า
-    if (String(currentMember.status || "").toLowerCase() === "block") {
-      if (alreadyShowing) {
-        // ✅ ลูกค้ากำลังดูหน้าร้าน (จาก cache) อยู่แล้ว — อย่าเด้งหน้าเงียบๆ แจ้งก่อนแล้วค่อยพาไป
-        hideSyncIndicator();
-        showNoticeModal("บัญชีนี้ถูกระงับการใช้งานครับ\nกรุณาติดต่อแอดมินเพื่อสอบถามครับ", () => showPage("page-suspended"), "บัญชีถูกระงับ");
-        return;
-      }
-      showPage("page-suspended");
-      return;
-    }
-
-    // ✅ 2) เป็นสมาชิกแล้ว (และไม่ถูกระงับ) ค่อยเช็คสถานะร้านต่อ
-    if (statusRes.success && !statusRes.data.open) {
-      document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
-      renderClosedPageHours();
-      updateClosedPageLogo();
-      if (alreadyShowing) {
-        // ✅ เช่นกัน — ลูกค้าอาจกำลังเลือกเมนูอยู่ ไม่ควรโดนเด้งหน้าแบบไม่ทันตั้งตัว
-        hideSyncIndicator();
-        showNoticeModal("⚠️ ร้านเพิ่งปิดรับออเดอร์ครับ\n" + (statusRes.data.reason || "กรุณาลองใหม่ภายหลังนะครับ"), () => showPage("page-closed"), "ร้านปิดรับออเดอร์");
-        return;
-      }
-      showPage("page-closed");
-      return;
-    }
-
-    currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
-    renderFirstOrderBanner();
-    updateRiderWarningBanner();
-    prefetchAllMenus();
-
-    // ✅ เช็คว่าลูกค้ากำลังทำอะไรค้างอยู่ ถ้าใช่ ไม่ต้องเด้งกลับหน้าร้าน ปล่อยให้ sync เงียบๆ พอ
-    const busyPages = new Set(["page-menu", "page-cart", "page-track", "page-deposit", "page-success"]);
-    const currentActivePage = document.querySelector(".page.active")?.id;
-    const userIsMidFlow = busyPages.has(currentActivePage);
-
-    const urlPage = new URLSearchParams(window.location.search).get("page");
-    if (!userIsMidFlow) {
-      if (urlPage === "track") {
-        showPage("page-shops");
-        goTrack();
-      } else {
-        showPage("page-shops");
-      }
-    }
-    restoreLocalStateIfAny();
+  let memberRes, statusRes, shopsRes;
+  try {
+    ({ memberRes, statusRes, shopsRes } = await dataPromise);
   } catch(e) {
-    console.error("loadInitialData:", e);
+    console.error("loadShopData:", e);
     hideSyncIndicator();
-    // ✅ ถ้าหน้าร้านโชว์จาก cache อยู่แล้ว ไม่ต้อง retry วนซ้ำจนแถบซิงค์ค้างนาน
-    // แจ้งเตือนแล้วปล่อยให้ลูกค้าใช้ข้อมูล cache ต่อได้เลย (กด 🔄 รีเฟรชเองได้ทีหลัง)
-    if (alreadyShowing) {
-      showToast("⚠️ ซิงค์ข้อมูลล่าสุดไม่สำเร็จ กำลังแสดงข้อมูลที่บันทึกไว้ก่อนหน้าครับ");
+    if (usedCacheFallback) {
+      scheduleSilentResync();
       return;
     }
-    if (!isRetry) {
-      setTimeout(() => loadInitialData(true, alreadyShowing), 1200);
-      return;
-    }
+    if (!isRetry) { setTimeout(() => loadShopData(true), 1200); return; }
     document.getElementById("page-loading").innerHTML = `
       <div class="loading-wrap" style="text-align:center;padding:40px 32px;">
         <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
@@ -1199,27 +1108,128 @@ async function loadInitialData(isRetry, alreadyShowing) {
     showPage("page-loading");
     return;
   }
-  hideSyncIndicator(); // ✅ ซิงค์เสร็จแล้ว (สำเร็จ) ซ่อนแถบเขียวด้านบน
+
+  applyLoadedData(memberRes, statusRes, shopsRes, usedCacheFallback);
 }
 
-async function prefetchAllMenus() {
-  try {
-    const r = await apiGet("action=getAllMenus");
-    // ✅ กันข้อมูลว่างผิดปกติ — ถ้าเมนูว่างเปล่าทั้งที่เดิมมีเมนูอยู่แล้ว ไม่เชื่อข้อมูลนี้ (response ผิดพลาดชั่วคราว)
-    const menusSuspicious = r.success && (!r.data || r.data.length === 0) && Object.keys(menuCache).length > 0;
-    if (r.success && !menusSuspicious) {
-      Object.keys(menuCache).forEach(k => delete menuCache[k]);
-      r.data.forEach(item => {
-        if (!menuCache[item.restaurantId]) menuCache[item.restaurantId] = [];
-        menuCache[item.restaurantId].push(item);
-      });
-      saveDataCache(MENU_CACHE_KEY, r.data); // ✅ เก็บ cache ไว้ใช้รอบหน้า
+function applyLoadedData(memberRes, statusRes, shopsRes, usedCacheFallback) {
+  if (statusRes.success) {
+    systemOpenCached = statusRes.data.open !== false;
+    availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
+    if (statusRes.data.businessHours) {
+      const wd = statusRes.data.businessHours.weekday;
+      const we = statusRes.data.businessHours.weekend;
+      if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
+      if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
     }
-  } catch(_) {}
-  menusLoaded = true;
-  renderWeekly();
-  renderFeaturedMenus();
-  checkCartPriceChanges();
+    shopLogoUrl = statusRes.data.shopLogoUrl || "";
+    bankAccount = statusRes.data.bankAccount || "";
+    bankName    = statusRes.data.bankName    || "";
+    weeklyPicksEnabled = statusRes.data.weeklyPicksEnabled !== false;
+    weeklyPicksCount = Number(statusRes.data.weeklyPicksCount ?? 5);
+    firstOrderFreeEnabled = statusRes.data.firstOrderFreeEnabled !== false;
+    autoConfirmEnabled = !!statusRes.data.autoConfirmEnabled;
+    retentionNoticeText = statusRes.data.orderRetentionNotice || retentionNoticeText;
+    smallOrderFeeEnabled = statusRes.data.smallOrderFeeEnabled !== false;
+    smallOrderFeeAmount = Number(statusRes.data.smallOrderFeeAmount ?? 10);
+    PROMO_MIN_SUBTOTAL = Number(statusRes.data.promoMinSubtotal ?? PROMO_MIN_SUBTOTAL);
+    FIRST_ORDER_MIN_SUBTOTAL = Number(statusRes.data.firstOrderMinSubtotal ?? FIRST_ORDER_MIN_SUBTOTAL);
+    FREE_DELIVERY_THRESHOLD = Number(statusRes.data.deliveryDiscountThreshold ?? FREE_DELIVERY_THRESHOLD);
+    FULL_FREE_DELIVERY_THRESHOLD = Number(statusRes.data.freeDeliveryThreshold ?? FULL_FREE_DELIVERY_THRESHOLD);
+    DEPOSIT_THRESHOLD = Number(statusRes.data.depositThreshold ?? DEPOSIT_THRESHOLD);
+    if (statusRes.data.smallOrderThresholds) {
+      try {
+        const t = typeof statusRes.data.smallOrderThresholds === "string"
+          ? JSON.parse(statusRes.data.smallOrderThresholds)
+          : statusRes.data.smallOrderThresholds;
+        smallOrderThresholds = { ...smallOrderThresholds, ...t };
+      } catch(_) {}
+    }
+  }
+
+  const freshShopsData = shopsRes.data || [];
+  const shopsSuspicious = shopsRes.success && freshShopsData.length === 0 && allShops.length > 0;
+  if (!shopsSuspicious) {
+    allShops = freshShopsData;
+    saveDataCache(SHOP_CACHE_KEY, allShops);
+    renderCategories();
+    renderShops(allShops);
+  }
+
+  if (!memberRes.success) {
+    if (usedCacheFallback) {
+      hideSyncIndicator();
+      console.warn("sync member failed, will retry silently later");
+      scheduleSilentResync();
+      return;
+    }
+    showRegisterPage();
+    prefetchAllMenus();
+    return;
+  }
+
+  currentMember = memberRes.data;
+  saveDataCache(MEMBER_CACHE_KEY, currentMember);
+  if (String(currentMember.status || "").toLowerCase() === "block") {
+    hideSyncIndicator();
+    if (usedCacheFallback) {
+      showNoticeModal("บัญชีนี้ถูกระงับการใช้งานครับ\nกรุณาติดต่อแอดมินเพื่อสอบถามครับ", () => showPage("page-suspended"), "บัญชีถูกระงับ");
+      return;
+    }
+    showPage("page-suspended");
+    return;
+  }
+
+  if (statusRes.success && !statusRes.data.open) {
+    document.getElementById("closed-msg").textContent = statusRes.data.reason || "กรุณาติดต่อแอดมินครับ";
+    renderClosedPageHours();
+    updateClosedPageLogo();
+    hideSyncIndicator();
+    if (usedCacheFallback) {
+      showNoticeModal("⚠️ ร้านเพิ่งปิดรับออเดอร์ครับ\n" + (statusRes.data.reason || "กรุณาลองใหม่ภายหลังนะครับ"), () => showPage("page-closed"), "ร้านปิดรับออเดอร์");
+      return;
+    }
+    showPage("page-closed");
+    return;
+  }
+
+  currentMember.isFirstOrder = checkIsFirstOrder(memberRes.data);
+  renderFirstOrderBanner();
+  updateRiderWarningBanner();
+  prefetchAllMenus();
+
+  // ✅ เช็คว่าลูกค้ากำลังทำอะไรค้างอยู่ (เฉพาะกรณีมาจาก cache fallback ที่โชว์หน้าร้านไปก่อนแล้ว)
+  const busyPages = new Set(["page-menu", "page-cart", "page-track", "page-deposit", "page-success"]);
+  const currentActivePage = document.querySelector(".page.active")?.id;
+  const userIsMidFlow = busyPages.has(currentActivePage);
+
+  const urlPage = new URLSearchParams(window.location.search).get("page");
+  if (!userIsMidFlow) {
+    if (urlPage === "track") {
+      showPage("page-shops");
+      goTrack();
+    } else {
+      showPage("page-shops");
+    }
+  }
+  restoreLocalStateIfAny();
+  hideSyncIndicator();
+  _silentResyncAttempts = 0; // ✅ สำเร็จแล้ว รีเซ็ตตัวนับ
+}
+
+// ✅ กรณี fallback ไปใช้ cache แล้ว sync จริงยังพลาดต่อ — ลองเงียบๆ ใหม่อีกครั้งหลัง 25 วิ ไม่รบกวนลูกค้าด้วย toast
+let _silentResyncAttempts = 0;
+let _silentResyncTimer = null;
+const SILENT_RESYNC_MAX_ATTEMPTS = 3;
+function scheduleSilentResync() {
+  if (_silentResyncTimer) return;
+  if (_silentResyncAttempts >= SILENT_RESYNC_MAX_ATTEMPTS) return;
+  _silentResyncAttempts++;
+  _silentResyncTimer = setTimeout(() => {
+    _silentResyncTimer = null;
+    if (!lineProfile) return;
+    loadShopData(false);
+  }, 25000);
 }
 
 function renderFirstOrderBanner() {
@@ -1287,10 +1297,10 @@ async function refreshShopData(silent) {
       apiGet("action=getAllMenus")
     ]);
     if (statusRes.success) {
+      availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
-        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }
@@ -1380,10 +1390,10 @@ async function checkAndLoadShops() {
       apiGet("action=getRestaurants")
     ]);
     if (statusRes.success) {
+      availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
       if (statusRes.data.businessHours) {
         const wd = statusRes.data.businessHours.weekday;
         const we = statusRes.data.businessHours.weekend;
-        availableRiderCount = Number(statusRes.data.availableRiderCount ?? 1);
         if (wd) businessHoursWeekday = { open: extractTime(wd.open), close: extractTime(wd.close) };
         if (we) businessHoursWeekend = { open: extractTime(we.open), close: extractTime(we.close) };
       }

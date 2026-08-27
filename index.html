@@ -720,6 +720,34 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);max-
   </div>
 </div>
 
+<div class="error-modal-overlay" id="confirm-order-modal-overlay">
+  <div class="error-modal" style="text-align:left;max-width:380px;">
+    <div style="text-align:center;">
+      <div class="error-modal-icon-wrap" style="background:var(--brand-soft);">
+        <span class="error-modal-icon">🧾</span>
+      </div>
+      <div class="error-modal-title">ยืนยันการสั่งอาหาร</div>
+    </div>
+    <div style="background:var(--line-soft);border-radius:12px;padding:12px 14px;margin-bottom:12px;max-height:180px;overflow-y:auto;">
+      <div id="confirm-order-items"></div>
+    </div>
+    <div style="padding:0 2px;margin-bottom:12px;">
+      <div id="confirm-order-rows"></div>
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;padding-top:8px;margin-top:4px;border-top:1px solid var(--line);">
+        <span>รวมทั้งหมด</span><span id="confirm-order-total" style="color:var(--brand-darker);">฿0</span>
+      </div>
+    </div>
+    <div style="background:var(--line-soft);border-radius:12px;padding:12px 14px;margin-bottom:20px;font-size:13px;line-height:1.7;">
+      <div><strong>📍 ที่อยู่:</strong> <span id="confirm-order-address"></span></div>
+      <div><strong>💰 ชำระเงิน:</strong> <span id="confirm-order-payment"></span></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="error-modal-btn" style="background:var(--line);color:var(--ink);flex:1;" onclick="closeConfirmOrderModal()">ยกเลิก</button>
+      <button class="error-modal-btn" style="background:var(--brand);flex:1;" onclick="proceedConfirmedOrder()">✅ ยืนยันสั่ง</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = "https://food-delivery-api.thungchangfood.workers.dev/api";
 const LIFF_ID = "2009898131-0IpEQjEj";
@@ -2414,7 +2442,7 @@ async function submitOrder() {
 
   isSubmittingOrder = true;
   const orderBtn = document.getElementById("order-btn");
-  if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = "กำลังส่งออเดอร์..."; }
+  if (orderBtn) { orderBtn.disabled = true; orderBtn.textContent = "กำลังตรวจสอบ..."; }
 
   try {
     if (!bankAccount) {
@@ -2429,49 +2457,53 @@ async function submitOrder() {
     const netSubtotal = subtotal - foodDiscount + smallFee;
     if (autoConfirmEnabled && netSubtotal > DEPOSIT_THRESHOLD) {
       showToast("ขณะนี้ระบบรับเฉพาะออเดอร์ชำระเงินปลายทาง ระบบจำกัดยอดสั่งไม่เกิน ฿" + DEPOSIT_THRESHOLD + " กรุณาลดรายการหรือลองใหม่ภายหลังนะครับ");
+      isSubmittingOrder = false;
+      if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
       return;
     }
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
-    const isSelfDelivery = currentShop?.gpPlan === "gp_self";
-    const needDeposit = false; // ✅ ปิดเงื่อนไขมัดจำ 50% แล้ว
+    const needDeposit = false;
     const wantsTransfer = payment !== "cash";
     const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? total : 0);
 
-    if (needDeposit || wantsTransfer) {
-      document.getElementById("dep-items").innerHTML = items.map(e =>
-        `<div class="track-item-row" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 16px;"><span>${e.name} ×${e.qty}</span><span>฿${e.price*e.qty}</span></div>`
-      ).join("");
-      document.getElementById("dep-subtotal").textContent=`฿${subtotal}`;
-      const depFoodRow = document.getElementById("dep-food-discount-row");
-      if (foodDiscount > 0) {
-        depFoodRow.style.display = "flex";
-        document.getElementById("dep-food-discount").textContent = `-฿${foodDiscount}`;
-      } else {
-        depFoodRow.style.display = "none";
-      }
-      document.getElementById("dep-delivery").textContent=`฿${delivery}`;
-      document.getElementById("dep-total").textContent=`฿${total}`;
-      document.getElementById("dep-deposit-amount").textContent=`฿${depositAmount}`;
-      document.getElementById("dep-bank-account").textContent=bankAccount||"-";
-      document.getElementById("dep-bank-name").textContent=bankName||"-";
-      if (needDeposit) {
-        document.getElementById("dep-title").textContent="💸 กรุณาชำระ50%ของค่าอาหารก่อนครับ";
-        document.getElementById("dep-desc").textContent="เนื่องจากยอดสั่งเกิน ฿300 ชำระมัดจำ 50% ของค่าอาหารก่อนครับ สว่นที่เหลือชำระเมื่อได้รับสินค้าแล้วครับ";
-        document.getElementById("dep-amount-label").textContent="ยอดมัดจำ";
-      } else {
+    // ✅ เก็บขั้นตอนถัดไปไว้ในตัวแปร แล้วเปิดป๊อบอัพให้ลูกค้ายืนยันรายละเอียดก่อน
+    _confirmedOrderProceed = () => {
+      if (needDeposit || wantsTransfer) {
+        document.getElementById("dep-items").innerHTML = items.map(e =>
+          `<div class="track-item-row" style="display:flex;justify-content:space-between;font-size:13px;padding:3px 16px;"><span>${e.name} ×${e.qty}</span><span>฿${e.price*e.qty}</span></div>`
+        ).join("");
+        document.getElementById("dep-subtotal").textContent=`฿${subtotal}`;
+        const depFoodRow = document.getElementById("dep-food-discount-row");
+        if (foodDiscount > 0) {
+          depFoodRow.style.display = "flex";
+          document.getElementById("dep-food-discount").textContent = `-฿${foodDiscount}`;
+        } else {
+          depFoodRow.style.display = "none";
+        }
+        document.getElementById("dep-delivery").textContent=`฿${delivery}`;
+        document.getElementById("dep-total").textContent=`฿${total}`;
+        document.getElementById("dep-deposit-amount").textContent=`฿${depositAmount}`;
+        document.getElementById("dep-bank-account").textContent=bankAccount||"-";
+        document.getElementById("dep-bank-name").textContent=bankName||"-";
         document.getElementById("dep-title").textContent="💸 กรุณาชำระเงิน";
         document.getElementById("dep-desc").textContent="กรุณาโอนเงินตามยอดด้านล่างครับ แล้วส่งสลิปในแชทไลน์";
         document.getElementById("dep-amount-label").textContent="ยอดที่ต้องโอน";
+        isSubmittingOrder = false;
+        if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
+        showPage("page-deposit");
+        return;
       }
-      showPage("page-deposit"); return;
-    }
-    beginPendingOrder(name, phone, address, note, payment, items);
+      isSubmittingOrder = false;
+      if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
+      beginPendingOrder(name, phone, address, note, payment, items);
+    };
+
+    showOrderConfirmModal({ items, subtotal, foodDiscount, smallFee, delivery, total, address, payment });
   } catch(e) {
-    showErrorModal(e.message);
-  } finally {
     isSubmittingOrder = false;
     if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
+    showErrorModal(e.message);
   }
 }
 
@@ -2834,6 +2866,11 @@ window.addEventListener("popstate", () => {
     history.pushState({ tcPage: navStack[navStack.length - 1] }, "", location.href);
     return;
   }
+  if (document.getElementById("confirm-order-modal-overlay")?.classList.contains("show")) {
+    closeConfirmOrderModal();
+    history.pushState({ tcPage: navStack[navStack.length - 1] }, "", location.href);
+    return;
+  }
   if (navStack.length > 1) {
     navStack.pop();
     showPageInternal(navStack[navStack.length - 1]);
@@ -3060,6 +3097,55 @@ function showErrorModal(msg) {
 // ✅ ใช้แจ้งเตือนก่อนเปลี่ยนหน้า (เช่น ร้านปิด/บัญชีถูกระงับ) แทนการเด้งหน้าเงียบๆ
 // กดตกลงแล้วค่อยเปลี่ยนหน้าตาม callback ที่ส่งมา
 let _noticeModalCallback = null;
+
+let _confirmedOrderProceed = null;
+
+function showOrderConfirmModal({ items, subtotal, foodDiscount, smallFee, delivery, total, address, payment }) {
+  const itemsHtml = items.map(e => `
+    <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;">
+      <span>${e.name}${e.optLabel ? ` <span style="color:#999;">(${e.optLabel})</span>` : ""} ×${e.qty}</span>
+      <span>฿${e.price*e.qty}</span>
+    </div>`).join("");
+
+  let rowsHtml = `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#666;">
+      <span>ยอดอาหาร</span><span>฿${subtotal}</span></div>`;
+  if (foodDiscount > 0) {
+    rowsHtml += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#06C755;">
+      <span>ส่วนลดค่าอาหาร</span><span>-฿${foodDiscount}</span></div>`;
+  }
+  if (smallFee > 0) {
+    rowsHtml += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#dc2626;">
+      <span>ค่าธรรมเนียมออเดอร์ขั้นต่ำ</span><span>+฿${smallFee}</span></div>`;
+  }
+  rowsHtml += `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#666;">
+      <span>ค่าจัดส่ง</span><span>${delivery === 0 ? "ฟรี 🎉" : "฿"+delivery}</span></div>`;
+
+  document.getElementById("confirm-order-items").innerHTML = itemsHtml;
+  document.getElementById("confirm-order-rows").innerHTML = rowsHtml;
+  document.getElementById("confirm-order-total").textContent = `฿${total}`;
+  document.getElementById("confirm-order-address").textContent = address;
+  document.getElementById("confirm-order-payment").textContent = payment === "cash" ? "💵 เงินสด (ชำระปลายทาง)" : "💸 พร้อมเพย์ / โอนเงิน";
+
+  document.getElementById("confirm-order-modal-overlay").classList.add("show");
+}
+
+function closeConfirmOrderModal() {
+  document.getElementById("confirm-order-modal-overlay").classList.remove("show");
+  _confirmedOrderProceed = null;
+  isSubmittingOrder = false;
+  const orderBtn = document.getElementById("order-btn");
+  if (orderBtn) { orderBtn.disabled = false; orderBtn.textContent = "สั่งอาหาร"; }
+}
+
+function proceedConfirmedOrder() {
+  document.getElementById("confirm-order-modal-overlay").classList.remove("show");
+  if (_confirmedOrderProceed) {
+    const fn = _confirmedOrderProceed;
+    _confirmedOrderProceed = null;
+    fn();
+  }
+}
+
 function showNoticeModal(msg, onConfirm, title) {
   _noticeModalCallback = onConfirm || null;
   document.getElementById("error-modal-title").textContent = title || "แจ้งเตือน";

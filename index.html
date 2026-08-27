@@ -2314,7 +2314,7 @@ function updateDepositNotice() {
   if (!notice) return;
   const isSelfDelivery = currentShop?.gpPlan === "gp_self";
 
-  if (payment === "cash" && netSubtotal > DEPOSIT_THRESHOLD && !isSelfDelivery) {
+  if (false) { // ✅ ปิดเงื่อนไขมัดจำ 50% แล้ว (เดิมเช็ค netSubtotal > DEPOSIT_THRESHOLD)
     notice.style.display = "block";
     notice.innerHTML = `⚠️ <strong>ยอดเกิน ฿${DEPOSIT_THRESHOLD}</strong> ต้องโอนมัดจำ <strong>฿${Math.ceil(netSubtotal*.5)}</strong> ก่อนครับ<br><span style="font-size:12px;color:#888;">ส่งสลิปในแชทไลน์ครับ</span>`;
   } else if (payment !== "cash") {
@@ -2434,7 +2434,7 @@ async function submitOrder() {
     const delivery = calcDelivery(subtotal);
     const total = netSubtotal + delivery;
     const isSelfDelivery = currentShop?.gpPlan === "gp_self";
-    const needDeposit = netSubtotal > 300 && payment === "cash" && !isSelfDelivery;
+    const needDeposit = false; // ✅ ปิดเงื่อนไขมัดจำ 50% แล้ว
     const wantsTransfer = payment !== "cash";
     const depositAmount = needDeposit ? Math.ceil(netSubtotal*.5) : (wantsTransfer ? total : 0);
 
